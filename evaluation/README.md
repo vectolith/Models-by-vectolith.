@@ -92,3 +92,8 @@ VECTOLITH_RUN_LIVE_TESTS=1 python -m unittest evaluation.tests.test_live_hugging
 This remains an execution/resource comparison, not a foundation selection. The run uses CPU only and does not predict GPU performance or establish free GPU-provider access. Public smoke-suite outputs require independent rubric grading and are not a hidden holdout.
 
 Every candidate remains `license_review=pending_human_legal_review`, `training_output_permission=not_verified`, and `teacher_qualification=not_qualified`. No student training is performed.
+
+
+## Independent human grading
+
+Raw outputs are never automatically treated as quality scores. Use [`docs/independent-human-rubric-grading.md`](../docs/independent-human-rubric-grading.md) for the human grading protocol and `summarize_human_grades.py` to validate independent rubric grades and produce per-criterion evidence summaries. The report never makes a foundation or teacher qualification decision.
