@@ -2,21 +2,40 @@
 
 ## Canonical topology
 
-- **Models by vectolith** is the canonical model-development source.
-- **VELNOR** is the downstream product/integration repository.
-- **Core Prime** and **Core Prima** are independently trained, versioned, evaluated, and released students.
+- **Models by vectolith** is the canonical model-development and release source.
+- **Core Prime** and **Core Prima** are the two models in the vectolith family.
+- **VELNOR** is one downstream product/integration repository. Future products and external integrations are also first-class consumers.
+- The reusable vectolith runtime provides common execution and integration capabilities without making downstream products depend on model internals.
 
-## Shared family contract
+## Model responsibilities
 
-Both students must share VELNOR identity, instruction hierarchy, safety baseline, disclosure conventions, message/tool-call conventions, serialization expectations, and user-facing interaction principles. Cross-model handoff must not create contradictory identity or incompatible assumptions.
+### Core Prime — general-purpose intelligence
 
-Interoperability is validated at interface and behavioural levels. Identical architecture, tokenizer, or internal representation is not required.
+Core Prime is primarily responsible for understanding user intent and providing general-purpose assistance: conversation, instruction following, reasoning, everyday and professional assistance, writing, learning, planning, broad information synthesis, and communicating outcomes.
 
-## Distinct specialization
+### Core Prima — technical intelligence and execution
 
-**Prime:** general-purpose conversation, instruction following, reasoning, coding, broad knowledge, and reliable tool use.
+Core Prima is primarily responsible for coding, software engineering, system architecture, product and UI design, debugging, testing, technical investigation, tool use, and autonomous task completion.
 
-**Prima:** research decomposition, technical investigation, evidence synthesis, source comparison, uncertainty calibration, and structured analytical work. Prima is not merely Prime trained on more data or a larger checkpoint.
+These are primary responsibilities, not artificial capability walls. Both models must remain independently useful and may handle work outside their primary specialization when appropriate.
+
+## Shared vectolith family contract
+
+Both models must share:
+
+- One vectolith identity.
+- One behavioural and safety contract.
+- Compatible conversation and task-state formats.
+- Interoperable, bidirectional delegation protocols.
+- Consistent user experience across VELNOR and future integrations.
+
+The contract covers instruction hierarchy, safety boundaries, disclosure of uncertainty and limitations, tool-call semantics, task status, handoff metadata, and user-facing interaction principles.
+
+## Delegation and interoperability
+
+Models communicate through versioned, structured task envelopes. A handoff carries the original user intent, task description, constraints, acceptance criteria, relevant context references, permission scope, task ID, and deadline or resource limits where applicable. Results include status, deliverables, test and verification evidence, limitations, and references to actions taken.
+
+Delegation is bidirectional. Either model may ask the other for clarification, request a bounded subtask, return work for revision, or escalate a blocked task. A model must not silently discard requirements or broaden its permission scope.
 
 ## Teacher/student separation
 
