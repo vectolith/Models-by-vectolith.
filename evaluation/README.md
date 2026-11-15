@@ -121,7 +121,7 @@ These are public development/evaluation fixtures, not a secret holdout. The v3 s
 
 ## Unified Core Prime curriculum v4
 
-- `fixtures/prime_qualification_v4.jsonl`: 76 additional public cases across 19 competencies covering coding generation, debugging, code review, software architecture, testing, algorithms, data analysis, technical mathematics, tool calling, agentic planning, state recovery, research evidence, long-context retrieval, multilingual translation, security/privacy, safety policy, adversarial robustness, reliability calibration and technical documentation.
+- `fixtures/prime_qualification_v4.jsonl`: 56 additional public cases across 14 competencies covering coding generation, debugging, code review, software architecture, testing, algorithms, data analysis, technical mathematics, tool calling, agentic planning, state recovery, research evidence, long-context retrieval, multilingual translation, security/privacy, safety policy, adversarial robustness, reliability calibration and technical documentation.
 - `tests/test_core_prime_qualification_v4.py` validates category counts, rubric presence and unique IDs.
 - The Prime multi-teacher inference workflow now includes v4 for every active teacher. All raw outputs, including failures and truncated answers, remain preserved.
 - See [the v4 curriculum and proposed gates](core-prime-evaluation-curriculum-v4.md) and [additional teacher discovery register](additional-teacher-candidates-2026-11-16.md).
