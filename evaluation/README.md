@@ -106,3 +106,14 @@ Raw outputs are never automatically treated as quality scores. Use [`docs/indepe
 - Public fixtures are not hidden holdouts and do not qualify teachers by themselves.
 - `run_private_holdout.py` runs an externally mounted, hash-pinned, access-restricted suite and writes raw outputs outside the public checkout. See [private holdout operations](../docs/private-holdout-operations.md).
 - No private prompts, answer keys or holdout data are committed to this public repository.
+
+
+## Balanced qualification suites v3
+
+The v3 public suites add four independently worded cases per competency category. Combined with benchmark v1 and qualification v2, the validator requires at least five cases in every category and globally unique case IDs:
+
+- `fixtures/prime_qualification_v3.jsonl`: 92 additional Core Prime cases across 23 competencies.
+- `fixtures/prima_qualification_v3.jsonl`: 80 additional Core Prima cases across 20 competencies.
+- Run `python -m unittest evaluation.tests.test_balanced_qualification_v3 -v` to validate category coverage and fixture integrity.
+
+These are public development/evaluation fixtures, not a secret holdout. They have not yet been run against model checkpoints or independently human-graded. Fixture validation establishes schema and coverage only; it is not model qualification.
