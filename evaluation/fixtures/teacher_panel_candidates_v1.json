@@ -27,8 +27,8 @@
           "reason": "Broad generalist, multilingual and multimodal candidate; verify hybrid architecture and serving/training compatibility."
         },
         {
-          "id": "gemma-4-e4b",
-          "repo_id": "google/gemma-4-E4B",
+          "id": "gemma-4-e4b-it",
+          "repo_id": "google/gemma-4-E4B-it",
           "family": "Google Gemma",
           "priority": "primary",
           "qualification_status": "not_qualified",
@@ -208,8 +208,8 @@
           "reason": "Reasoning and structured tool-use candidate; evaluate code correctness and Harmony tool-call fidelity on repository tasks."
         },
         {
-          "id": "gemma-4-e4b",
-          "repo_id": "google/gemma-4-E4B",
+          "id": "gemma-4-e4b-it",
+          "repo_id": "google/gemma-4-E4B-it",
           "family": "Google Gemma",
           "priority": "primary",
           "qualification_status": "not_qualified",
