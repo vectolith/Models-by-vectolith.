@@ -62,7 +62,15 @@ Catalog search returns discovery leads, not qualified candidates. Snapshots pin 
 
 ## Tests
 
-The ordinary unit suite uses deterministic fixtures for edge cases. The opt-in live integration suite makes real HTTPS requests to the public Hugging Face Hub, performs a catalog search, and snapshots a real public checkpoint's metadata/model card. CI enables this live suite on every evaluation workflow run; it does not download model weights or make inference requests.
+The ordinary unit suite uses deterministic fixtures for edge cases. The live integration suite makes real HTTPS requests to the public Hugging Face Hub, performs catalog searches, and snapshots a real public checkpoint's metadata/model card.
+
+CI also downloads the exact pinned Qwen3-0.6B checkpoint and performs CPU generation with Transformers. This proves that one real checkpoint can be loaded and can generate output in the CI environment. It is an execution smoke test only: it is not a Prime/Prima capability score, a comparison across model families, a GPU/free-provider test, or training. The JSON evidence artifact records the exact revision, runtime versions, architecture, tokenizer/model vocabulary, generated text and elapsed time.
+
+Run the checkpoint smoke locally (requires torch, transformers, accelerate and network access):
+
+```bash
+python evaluation/smoke_real_checkpoint.py
+```
 
 ```bash
 python -m unittest discover -s evaluation/tests -v
