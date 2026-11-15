@@ -18,10 +18,10 @@ from evaluation import discover_hf_candidates
 )
 class HuggingFaceLiveIntegrationTests(unittest.TestCase):
     def test_real_catalog_search_returns_public_model_records(self):
-        records = discover_hf_candidates.discover("bert", limit=5, sort="downloads")
+        records = discover_hf_candidates.discover("gpt2", limit=5, sort="downloads", pipeline_tag="text-generation")
         self.assertTrue(records, "Hugging Face catalog search returned no models")
         self.assertTrue(
-            all(isinstance(record.get("id"), str) and "/" in record["id"] for record in records),
+            all(isinstance(record.get("id"), str) and "/" in record["id"] and record.get("pipeline_tag") == "text-generation" for record in records),
             "Hub search returned records without valid repository IDs",
         )
 
