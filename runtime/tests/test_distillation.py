@@ -23,6 +23,9 @@ def teacher(index: int, *, delta: float = 0.02) -> TeacherContribution:
         accepted_examples=100,
         accepted_tokens=10000,
         ablation_quality_delta=delta,
+        quality_score=0.9,
+        p50_latency_ms=450,
+        cost_per_million_tokens_usd=0.25,
     )
 
 
@@ -54,6 +57,9 @@ class DistillationValidationTests(unittest.TestCase):
             accepted_examples=0,
             accepted_tokens=0,
             ablation_quality_delta=0,
+            quality_score=0.9,
+            p50_latency_ms=450,
+            cost_per_million_tokens_usd=0.25,
         )
         errors = invalid.validate()
         self.assertTrue(any("permission" in error for error in errors))
