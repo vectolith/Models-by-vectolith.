@@ -48,7 +48,6 @@ def main() -> int:
     gen=time.perf_counter(); results=[]
     raw_output=a.output.with_suffix('.jsonl')
     raw_output.parent.mkdir(parents=True,exist_ok=True)
-    raw_handle=raw_output.open('w',encoding='utf-8')
     failures=0
     with raw_output.open('w',encoding='utf-8') as raw_handle:
         for suite,case in cases:
