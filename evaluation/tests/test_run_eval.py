@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import io
 import json
 import unittest
-from unittest.mock import patch
 
 from evaluation.run_eval import RunConfig, endpoint_url, load_cases, run_case, safe_endpoint
 
@@ -48,6 +46,8 @@ class RunnerTests(unittest.TestCase):
     def test_safe_endpoint_drops_credentials_query_and_fragment(self):
         value = safe_endpoint("https://user:secret@example.test/v1?token=hidden#fragment")
         self.assertEqual(value, "https://example.test/v1/chat/completions")
+        with_port = safe_endpoint("http://localhost:8000/v1")
+        self.assertEqual(with_port, "http://localhost:8000/v1/chat/completions")
         self.assertNotIn("secret", value)
         self.assertNotIn("hidden", value)
 
