@@ -41,10 +41,12 @@ jobs:
             --search "Granite" \
             --search "Gemma" \
             --search "Ministral" \
+            --search "Ministral" \
             --author "Qwen" \
             --author "ibm-granite" \
             --author "google" \
             --author "mistralai" \
+            --author "ministral" \
             --limit 5 \
             --sort downloads \
             --output artifacts/candidates/huggingface-discovery.jsonl
