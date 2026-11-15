@@ -29,6 +29,7 @@ def command_output(command: list[str]) -> str | None:
 
 def detect_environment() -> list[str]:
     markers = {
+        "github_actions": os.environ.get("GITHUB_ACTIONS", "").lower() == "true",
         "kaggle": bool(os.environ.get("KAGGLE_KERNEL_RUN_TYPE") or os.environ.get("KAGGLE_URL_BASE")),
         "colab": bool(os.environ.get("COLAB_RELEASE_TAG") or os.path.exists("/content")),
         "modal": bool(os.environ.get("MODAL_TASK_ID")),
@@ -50,6 +51,7 @@ def main(argv: list[str] | None = None) -> int:
     record: dict[str, Any] = {
         "schema_version": "vectolith-compute-observation/1.0",
         "observed_at": datetime.now(timezone.utc).isoformat(),
+        "process_session": "active_session_observed",
         "environment_markers": detect_environment(),
         "platform": platform.platform(),
         "python": sys.version,
