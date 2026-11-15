@@ -151,6 +151,18 @@ class VectolithRuntime:
             return failed
 
         if result.status != TaskStatus.COMPLETED:
+            if result.status not in {
+                TaskStatus.PARTIALLY_COMPLETED,
+                TaskStatus.FAILED,
+                TaskStatus.CANCELLED,
+            }:
+                invalid = TaskResult(
+                    request.task_id, TaskStatus.FAILED,
+                    "executor returned an invalid terminal status",
+                    unresolved_issues=(f"invalid status: {result.status.value}",),
+                )
+                await self.store.set_result(request.task_id, invalid)
+                return invalid
             await self.store.set_result(request.task_id, result)
             return result
 
@@ -167,7 +179,13 @@ class VectolithRuntime:
             await self.store.set_result(request.task_id, failed)
             return failed
 
-        reviewed = await self.reviewer(request, result)
+        try:
+            reviewed = await self.reviewer(request, result)
+        except Exception as exc:
+            reviewed = False
+            review_issue = f"reviewer raised {type(exc).__name__}: {exc}"
+        else:
+            review_issue = "Core Prime review did not approve completion"
         if not reviewed:
             rejected = TaskResult(
                 request.task_id, TaskStatus.PARTIALLY_COMPLETED,
@@ -175,7 +193,7 @@ class VectolithRuntime:
                 deliverables=result.deliverables,
                 tests=result.tests,
                 evidence=result.evidence,
-                unresolved_issues=("Core Prime review did not approve completion",),
+                unresolved_issues=(review_issue,),
                 assumptions=result.assumptions,
             )
             await self.store.set_result(request.task_id, rejected)
