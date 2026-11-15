@@ -64,7 +64,7 @@ def sha256_text(value: str | None) -> str | None:
     return hashlib.sha256(value.encode("utf-8")).hexdigest() if value is not None else None
 
 
-def discover(search: str, limit: int = 50, sort: str = "downloads") -> list[dict[str, Any]]:
+def discover(search: str, limit: int = 50, sort: str = "downloads", pipeline_tag: str | None = "text-generation") -> list[dict[str, Any]]:
     """Search the public Hub catalog, following pagination up to limit."""
     if not search.strip():
         raise ValueError("search query must not be empty")
@@ -77,13 +77,19 @@ def discover(search: str, limit: int = 50, sort: str = "downloads") -> list[dict
         "limit": page_size,
         "sort": sort,
         "direction": "-1",
+        **({"pipeline_tag": pipeline_tag} if pipeline_tag else {}),
     })
     next_url: str | None = f"{API}?{params}"
     while next_url and len(results) < limit:
         page, next_url = get_json_page(next_url)
         if not isinstance(page, list) or not page:
             break
-        results.extend(item for item in page if isinstance(item, dict))
+        results.extend(
+            item for item in page
+            if isinstance(item, dict) and (
+                pipeline_tag is None or item.get("pipeline_tag") == pipeline_tag
+            )
+        )
     return results[:limit]
 
 
@@ -149,6 +155,7 @@ def main(argv: list[str] | None = None) -> int:
     source.add_argument("--search", action="append", help="Search public Hub catalog; repeat for multiple queries")
     parser.add_argument("--limit", type=int, default=50, help="Maximum results per search query (1-1000)")
     parser.add_argument("--sort", choices=("downloads", "likes", "lastModified", "createdAt"), default="downloads")
+    parser.add_argument("--pipeline-tag", default="text-generation", help="Require this Hub pipeline tag; use 'none' to disable filtering")
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args(argv)
 
@@ -157,7 +164,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.search:
         for query in args.search:
             try:
-                matches = discover(query, args.limit, args.sort)
+                pipeline_tag = None if args.pipeline_tag.lower() == "none" else args.pipeline_tag
+                matches = discover(query, args.limit, args.sort, pipeline_tag)
                 repo_ids.extend(
                     item["id"] for item in matches
                     if isinstance(item.get("id"), str)
