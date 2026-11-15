@@ -89,6 +89,10 @@ class ComputeProbeTests(unittest.TestCase):
         with patch.dict("os.environ", {"KAGGLE_KERNEL_RUN_TYPE": "Interactive"}, clear=True):
             self.assertEqual(probe_compute.detect_environment(), ["kaggle"])
 
+    def test_detects_github_actions_environment(self):
+        with patch.dict("os.environ", {"GITHUB_ACTIONS": "true"}, clear=True):
+            self.assertEqual(probe_compute.detect_environment(), ["github_actions"])
+
     def test_generic_probe_source_keeps_account_status_unverified(self):
         source = Path(probe_compute.__file__).read_text(encoding="utf-8")
         self.assertIn('"provider_quota": "not_observable_from_generic_process"', source)
