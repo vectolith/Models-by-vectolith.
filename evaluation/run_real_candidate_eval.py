@@ -42,6 +42,9 @@ def main() -> int:
     model=AutoModelForCausalLM.from_pretrained(snapshot,local_files_only=True,torch_dtype=dtype,low_cpu_mem_usage=True)
     model.eval(); load_s=round(time.perf_counter()-load,3)
     gen=time.perf_counter(); results=[]
+    raw_output=a.output.with_suffix('.jsonl')
+    raw_output.parent.mkdir(parents=True,exist_ok=True)
+    raw_handle=raw_output.open('w',encoding='utf-8')
     for suite,case in cases:
         encoded=render_prompt(tok,case["messages"]); start=time.perf_counter()
         with torch.inference_mode():
@@ -58,7 +61,10 @@ def main() -> int:
           "max_new_tokens":a.max_new_tokens,"generation_cap_reached":hit_token_cap,
           "generation_status":"token_limit_reached" if hit_token_cap else "eos_or_early_stop",
           "latency_seconds":latency,"response_text":response,"error":None})
+        raw_handle.write(json.dumps(results[-1],ensure_ascii=False,sort_keys=True)+"\\n")
+        raw_handle.flush()
         print(f"{case['id']}: {len(new)} tokens in {latency}s",flush=True)
+    raw_handle.close()
     generation_s=round(time.perf_counter()-gen,3)
     vocab=int(model.get_input_embeddings().weight.shape[0])
     if len(tok)>vocab: raise RuntimeError("tokenizer vocabulary exceeds model embedding vocabulary")
@@ -72,7 +78,7 @@ def main() -> int:
       "generation_seconds":generation_s,"total_seconds":round(time.perf_counter()-total,3),
       "torch_version":torch.__version__,"transformers_version":transformers.__version__,
       "decoding":{"do_sample":False,"max_new_tokens":a.max_new_tokens,"chat_template":True,"enable_thinking":False},
-      "case_count":len(results),"max_rss_kib":resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+      "case_count":len(results),"raw_results_file":str(raw_output),"max_rss_kib":resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
       "license_review":"pending_human_legal_review","training_output_permission":"not_verified",
       "teacher_qualification":"not_qualified","training_started":False,"grading":"human_review_required","results":results}
     a.output.parent.mkdir(parents=True,exist_ok=True)
