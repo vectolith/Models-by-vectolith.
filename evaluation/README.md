@@ -97,3 +97,12 @@ Every candidate remains `license_review=pending_human_legal_review`, `training_o
 ## Independent human grading
 
 Raw outputs are never automatically treated as quality scores. Use [`docs/independent-human-rubric-grading.md`](../docs/independent-human-rubric-grading.md) for the human grading protocol and `summarize_human_grades.py` to validate independent rubric grades and produce per-criterion evidence summaries. The report never makes a foundation or teacher qualification decision.
+
+
+## Expanded competency suites and private holdout
+
+- `fixtures/prime_qualification_v2.jsonl`: 20 additional Core Prime public cases with explicit competency rubrics.
+- `fixtures/prima_qualification_v2.jsonl`: 21 additional Core Prima public cases with explicit competency rubrics.
+- Public fixtures are not hidden holdouts and do not qualify teachers by themselves.
+- `run_private_holdout.py` runs an externally mounted, hash-pinned, access-restricted suite and writes raw outputs outside the public checkout. See [private holdout operations](../docs/private-holdout-operations.md).
+- No private prompts, answer keys or holdout data are committed to this public repository.
