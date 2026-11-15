@@ -21,7 +21,7 @@ class HuggingFaceLiveIntegrationTests(unittest.TestCase):
         records = discover_hf_candidates.discover("Qwen3", limit=5, sort="downloads", pipeline_tag="text-generation", author="Qwen")
         self.assertTrue(records, "Hugging Face catalog search returned no models")
         self.assertTrue(
-            all(isinstance(record.get("id"), str) and "/" in record["id"] and record.get("pipeline_tag") == "text-generation" and record.get("author") == "Qwen" for record in records),
+            all(isinstance(record.get("id"), str) and "/" in record["id"] and record.get("pipeline_tag") == "text-generation" and record["id"].split("/", 1)[0] == "Qwen" for record in records),
             "Hub search returned records without valid repository IDs",
         )
 
