@@ -6,6 +6,8 @@ import argparse
 import gc
 import hashlib
 import json
+import os
+import platform
 import resource
 import shutil
 import time
@@ -19,6 +21,23 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from run_real_checkpoint_suite import prompt_hash, render_prompt
 from run_eval import load_cases
+
+
+def cpu_model_name() -> str | None:
+    try:
+        for line in Path("/proc/cpuinfo").read_text(encoding="utf-8").splitlines():
+            if line.lower().startswith("model name"):
+                return line.split(":", 1)[1].strip()
+    except OSError:
+        return platform.processor() or None
+    return platform.processor() or None
+
+
+def total_memory_bytes() -> int | None:
+    try:
+        return os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
+    except (AttributeError, OSError, ValueError):
+        return None
 
 
 def main() -> int:
@@ -130,6 +149,9 @@ def main() -> int:
         "device": "cpu",
         "dtype": args.dtype,
         "cpu_capability": torch.backends.cpu.get_cpu_capability(),
+        "cpu_model": cpu_model_name(),
+        "cpu_count": os.cpu_count(),
+        "system_memory_bytes": total_memory_bytes(),
         "torch_version": torch.__version__,
         "transformers_version": transformers.__version__,
         "decoding": {"do_sample": False, "max_new_tokens": args.max_new_tokens, "chat_template": True, "enable_thinking": False},
