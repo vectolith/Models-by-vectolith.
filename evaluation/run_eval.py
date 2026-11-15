@@ -52,14 +52,16 @@ def endpoint_url(base_url: str) -> str:
 
 
 def safe_endpoint(base_url: str) -> str:
-    """Return endpoint origin/path without credentials, query, or fragment."""
-    parsed = urlsplit(endpoint_url(base_url))
-    host = parsed.hostname or ""
+    """Return the normalized endpoint without credentials, query, or fragment."""
+    supplied = urlsplit(base_url)
+    host = supplied.hostname or ""
     if ":" in host and not host.startswith("["):
         host = f"[{host}]"
-    if parsed.port is not None:
-        host = f"{host}:{parsed.port}"
-    return urlunsplit((parsed.scheme, host, parsed.path, "", ""))
+    if supplied.port is not None:
+        host = f"{host}:{supplied.port}"
+    sanitized_base = urlunsplit((supplied.scheme, host, supplied.path, "", ""))
+    parsed = urlsplit(endpoint_url(sanitized_base))
+    return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, "", ""))
 
 
 def load_cases(path: Path) -> list[dict[str, Any]]:
