@@ -77,7 +77,7 @@ jobs:
           python evaluation/run_real_checkpoint_suite.py \
             --suite evaluation/fixtures/prime_smoke.jsonl \
             --suite evaluation/fixtures/prima_smoke.jsonl \
-            --max-new-tokens 64
+            --max-new-tokens 256
       - name: Capture actual runner hardware and accelerator availability
         run: python evaluation/probe_compute.py --output artifacts/compute/github-actions-runner.json
       - name: Preserve real checkpoint evaluation evidence
