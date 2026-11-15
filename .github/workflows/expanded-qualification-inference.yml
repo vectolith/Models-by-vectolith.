@@ -1,0 +1,131 @@
+name: Expanded Prime and Prima qualification inference
+
+on:
+  pull_request:
+    paths:
+      - "evaluation/**"
+      - ".github/workflows/expanded-qualification-inference.yml"
+  push:
+    branches: [main]
+    paths:
+      - "evaluation/**"
+      - ".github/workflows/expanded-qualification-inference.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  expanded-inference:
+    name: ${{ matrix.candidate_id }} / ${{ matrix.role }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        include:
+          - candidate_id: qwen3-0.6b
+            repo: Qwen/Qwen3-0.6B
+            family: Qwen
+            revision: c1899de289a04d12100db370d81485cdf75e47ca
+            role: core_prime
+            suite_a: evaluation/fixtures/prime_benchmark_v1.jsonl
+            suite_b: evaluation/fixtures/prime_qualification_v2.jsonl
+            suite_c: evaluation/fixtures/prime_qualification_v3.jsonl
+          - candidate_id: qwen3-0.6b
+            repo: Qwen/Qwen3-0.6B
+            family: Qwen
+            revision: c1899de289a04d12100db370d81485cdf75e47ca
+            role: core_prima
+            suite_a: evaluation/fixtures/prima_benchmark_v1.jsonl
+            suite_b: evaluation/fixtures/prima_qualification_v2.jsonl
+            suite_c: evaluation/fixtures/prima_qualification_v3.jsonl
+          - candidate_id: qwen3-4b
+            repo: Qwen/Qwen3-4B
+            family: Qwen
+            revision: 1cfa9a7208912126459214e8b04321603b3df60c
+            role: core_prime
+            suite_a: evaluation/fixtures/prime_benchmark_v1.jsonl
+            suite_b: evaluation/fixtures/prime_qualification_v2.jsonl
+            suite_c: evaluation/fixtures/prime_qualification_v3.jsonl
+          - candidate_id: qwen3-4b
+            repo: Qwen/Qwen3-4B
+            family: Qwen
+            revision: 1cfa9a7208912126459214e8b04321603b3df60c
+            role: core_prima
+            suite_a: evaluation/fixtures/prima_benchmark_v1.jsonl
+            suite_b: evaluation/fixtures/prima_qualification_v2.jsonl
+            suite_c: evaluation/fixtures/prima_qualification_v3.jsonl
+          - candidate_id: qwen2.5-7b-instruct
+            repo: Qwen/Qwen2.5-7B-Instruct
+            family: Qwen
+            revision: a09a35458c702b33eeacc393d103063234e8bc28
+            role: core_prime
+            suite_a: evaluation/fixtures/prime_benchmark_v1.jsonl
+            suite_b: evaluation/fixtures/prime_qualification_v2.jsonl
+            suite_c: evaluation/fixtures/prime_qualification_v3.jsonl
+          - candidate_id: qwen2.5-7b-instruct
+            repo: Qwen/Qwen2.5-7B-Instruct
+            family: Qwen
+            revision: a09a35458c702b33eeacc393d103063234e8bc28
+            role: core_prima
+            suite_a: evaluation/fixtures/prima_benchmark_v1.jsonl
+            suite_b: evaluation/fixtures/prima_qualification_v2.jsonl
+            suite_c: evaluation/fixtures/prima_qualification_v3.jsonl
+          - candidate_id: granite-3.1-3b-a800m
+            repo: ibm-granite/granite-3.1-3b-a800m-instruct
+            family: IBM Granite
+            revision: a02780686e08a03fe0d2679a293b5c74a90efa89
+            role: core_prime
+            suite_a: evaluation/fixtures/prime_benchmark_v1.jsonl
+            suite_b: evaluation/fixtures/prime_qualification_v2.jsonl
+            suite_c: evaluation/fixtures/prime_qualification_v3.jsonl
+          - candidate_id: granite-3.1-3b-a800m
+            repo: ibm-granite/granite-3.1-3b-a800m-instruct
+            family: IBM Granite
+            revision: a02780686e08a03fe0d2679a293b5c74a90efa89
+            role: core_prima
+            suite_a: evaluation/fixtures/prima_benchmark_v1.jsonl
+            suite_b: evaluation/fixtures/prima_qualification_v2.jsonl
+            suite_c: evaluation/fixtures/prima_qualification_v3.jsonl
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pinned CPU inference dependencies
+        run: |
+          python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==4.57.1 accelerate==1.10.1 safetensors==0.6.2 huggingface_hub==0.36.0
+      - name: Record actual runner resources
+        run: python evaluation/probe_compute.py --output artifacts/compute/runner.json
+      - name: Run all public competency cases against the pinned checkpoint
+        run: |
+          mkdir -p artifacts/evaluations
+          set -o pipefail
+          python evaluation/run_real_candidate_eval.py \
+            --repo "${{ matrix.repo }}" \
+            --revision "${{ matrix.revision }}" \
+            --family "${{ matrix.family }}" \
+            --suite "${{ matrix.suite_a }}" \
+            --suite "${{ matrix.suite_b }}" \
+            --suite "${{ matrix.suite_c }}" \
+            --dtype bfloat16 \
+            --max-new-tokens 256 \
+            --cache-dir "${{ runner.temp }}/hf-cache" \
+            --output "artifacts/evaluations/${{ matrix.candidate_id }}-${{ matrix.role }}.json" \
+            2>&1 | tee "artifacts/evaluations/${{ matrix.candidate_id }}-${{ matrix.role }}.log"
+      - name: Preserve raw per-case outputs and resource evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: expanded-${{ matrix.candidate_id }}-${{ matrix.role }}
+          path: |
+            artifacts/evaluations/${{ matrix.candidate_id }}-${{ matrix.role }}.json
+            artifacts/evaluations/${{ matrix.candidate_id }}-${{ matrix.role }}.jsonl
+            artifacts/evaluations/${{ matrix.candidate_id }}-${{ matrix.role }}.log
+            artifacts/compute/runner.json
+          if-no-files-found: warn
+          retention-days: 90
