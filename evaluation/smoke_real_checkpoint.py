@@ -69,6 +69,7 @@ def main() -> int:
         "model_class": model.__class__.__name__,
         "tokenizer_vocab_size": len(tokenizer),
         "model_vocab_size": model.get_input_embeddings().weight.shape[0],
+        "embedding_vocab_padding": model.get_input_embeddings().weight.shape[0] - len(tokenizer),
         "device": "cpu",
         "dtype": str(next(model.parameters()).dtype),
         "torch_version": torch.__version__,
@@ -81,8 +82,8 @@ def main() -> int:
         "training_started": False,
         "result": "pass",
     }
-    if record["tokenizer_vocab_size"] != record["model_vocab_size"]:
-        raise RuntimeError("tokenizer/model vocabulary mismatch")
+    if record["tokenizer_vocab_size"] > record["model_vocab_size"]:
+        raise RuntimeError("tokenizer vocabulary exceeds the model embedding vocabulary")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(record, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(json.dumps(record, indent=2, ensure_ascii=False))
