@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 jobs:
-  expanded-inference:
+  prime-teacher-response-collection:
     name: ${{ matrix.candidate_id }} / ${{ matrix.role }}
     runs-on: ubuntu-latest
     timeout-minutes: 360
@@ -72,7 +72,7 @@ jobs:
           python -m pip install "transformers==${{ matrix.transformers_version || '4.57.1' }}" accelerate==1.10.1 safetensors==0.6.2 huggingface_hub==0.36.0
       - name: Record actual runner resources
         run: python evaluation/probe_compute.py --output artifacts/compute/runner.json
-      - name: Run all public competency cases against the pinned checkpoint
+      - name: Collect and preserve every real Prime teacher response
         run: |
           mkdir -p artifacts/evaluations
           set -o pipefail
