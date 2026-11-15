@@ -1,41 +1,45 @@
 # Models by vectolith
 
-Canonical upstream project for the VELNOR model family. This repository owns foundation selection, model specifications, training pipelines, evaluation, artifacts, and releases. The downstream `vectolith/velnor` repository consumes approved releases and remains intact.
+Canonical upstream project for the vectolith model family. This repository owns model specifications, foundation selection, training pipelines, evaluation, artifacts, and releases. VELNOR and other products may consume approved family models through the shared runtime.
 
 ## Model family
 
-| Model | Role | Distinct training objective |
-|---|---|---|
-| **VELNOR Core Prime** | General-purpose assistant: conversation, instruction following, reasoning, coding, knowledge work, and tool use | Broad capability, instruction adherence, reasoning reliability, coding competence, and conversational consistency |
-| **VELNOR Core Prima** | Specialist assistant: research synthesis, technical investigation, structured analysis, and multi-step problem solving | Evidence-grounded synthesis, source comparison, uncertainty calibration, decomposition, and reproducible analytical workflows |
+**Models by vectolith is an extensible model ecosystem.** Core Prime and Core Prima are the first family members, not the only models.
 
-Prime and Prima are independent student models, not one checkpoint with different names. They share VELNOR identity, behaviour, safety, and interoperability contracts. Their foundations may differ when evidence supports that choice.
+| Model | Initial specialization |
+|---|---|
+| **Core Prime** | General-purpose reasoning, conversation, instruction following, planning, synthesis, and coordination |
+| **Core Prima** | Coding, software engineering, architecture, debugging, technical design, testing, and technical execution |
+| **Future family models** | Additional specializations and modalities, each with its own training objectives, evaluations, and release lifecycle |
 
-## Collective distillation
+Every model has its own identity within the family, version, specialization, training objectives, evaluation criteria, and release lifecycle. All models share vectolith identity, behavioural and safety standards, compatible task/message contracts, and collaboration protocols. Different model architectures and tokenizers are permitted when interoperability is proven at the contract boundary.
 
-The initial teacher candidate pool covers IBM Granite, Google Gemma, Mistral Ministral, and Alibaba Qwen families. Teachers contribute independently generated responses, critiques, disagreement signals, and curated examples. Do not merge weights across different architectures. Use logit-level distillation only when tokenizer and output compatibility are proven.
+## Runtime architecture
 
-Teachers are training-time dependencies only. Released students must run independently without teacher inference.
+A model-neutral registry publishes machine-readable capabilities and modality support. Capability discovery returns compatible candidates; orchestration applies release policy, evaluation evidence, resource constraints, availability, and permissions before execution. Registry membership alone does not imply that weights are available or that a model is released.
 
-## Current status
-
-This is the initial project scaffold. **No foundation has been selected, no expensive training has started, and no trained student weights are claimed to exist.** Candidate selection must precede expensive training.
-
+- [Extensible family specification](docs/model-family-specification.md)
+- [Shared identity contract](docs/shared-identity-contract.md)
+- [Model registry and capability discovery](docs/model-registry-and-capabilities.md)
 - [Architecture](docs/architecture.md)
 - [Foundation selection](docs/foundation-selection.md)
 - [Collective distillation](docs/collective-distillation.md)
 - [Training and promotion](docs/training-and-promotion.md)
 - [Release policy](docs/release-policy.md)
 
+## Collective distillation
+
+Teacher models are training-time dependencies only. Released students must run independently without teacher inference. Do not merge weights across different architectures. Use logit-level distillation only when tokenizer and output compatibility are proven.
+
+## Current status
+
+No foundation has been selected and no expensive training or release of student weights is claimed. Candidate selection must precede expensive training.
+
 ## Principles
 
-1. Evidence before selection; selection before expensive training.
+1. Evidence before foundation selection; selection before expensive training.
 2. Immutable model revisions and verified licenses.
-3. Separate objectives, datasets, evaluations, and promotion for Prime and Prima.
+3. Independent objectives, datasets, evaluations, and promotion for each model.
 4. Shared family identity, safety baseline, and interoperability.
-5. Reproducible runs, auditable data lineage, honest model cards.
+5. Reproducible runs, auditable data lineage, and honest model cards.
 6. Never commit credentials, private datasets, or large model weights to Git.
-
-## Licensing
-
-The source-code license does not automatically apply to foundation models, teacher outputs, datasets, or model weights. Record each component's actual license and obligations separately.
