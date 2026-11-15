@@ -1,4 +1,4 @@
-name: Expanded Prime and Prima qualification inference
+name: Core Prime multi-teacher inference evidence
 
 on:
   pull_request:
