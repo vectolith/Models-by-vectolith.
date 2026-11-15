@@ -10,6 +10,7 @@ class HumanGradeSummaryTests(unittest.TestCase):
         self.evidence = [
             {
                 "benchmark_case_id": f"case-{number}",
+                "started_at": f"2026-11-15T00:00:0{number}+00:00",
                 "candidate_id": "candidate-a",
                 "model_revision": "abcdef123456",
                 "role": "core_prime",
@@ -26,6 +27,7 @@ class HumanGradeSummaryTests(unittest.TestCase):
                 self.grades.append({
                     "schema_version": GRADE_SCHEMA,
                     "benchmark_case_id": case["benchmark_case_id"],
+                    "evidence_started_at": case["started_at"],
                     "candidate_id": "candidate-a",
                     "model_revision": "abcdef123456",
                     "role": "core_prime",
@@ -76,6 +78,12 @@ class HumanGradeSummaryTests(unittest.TestCase):
         ]
         with self.assertRaisesRegex(ValueError, "numeric 0..4"):
             build_report(self.evidence, invalid)
+
+    def test_rejects_grading_failed_evidence(self):
+        failed = [dict(self.evidence[0], error="timeout", response_text=None)]
+        grades = [dict(self.grades[0])]
+        with self.assertRaisesRegex(ValueError, "no successful model response"):
+            build_report(failed, grades)
 
 
 if __name__ == "__main__":
