@@ -76,6 +76,18 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.status, TaskStatus.FAILED)
         self.assertIn("compiler failed", result.unresolved_issues[0])
 
+    async def test_reviewer_exception_cannot_mark_task_complete(self):
+        async def prima(task):
+            return TaskResult(task.task_id, TaskStatus.COMPLETED, "done", evidence=("build log",))
+
+        async def review(task, result):
+            raise RuntimeError("review service unavailable")
+
+        runtime = VectolithRuntime({ModelRole.CORE_PRIMA: prima}, review)
+        result = await runtime.delegate(request())
+        self.assertEqual(result.status, TaskStatus.PARTIALLY_COMPLETED)
+        self.assertIn("review service unavailable", result.unresolved_issues[0])
+
     async def test_tool_permissions_and_approval_are_enforced(self):
         registry = ToolRegistry()
 
