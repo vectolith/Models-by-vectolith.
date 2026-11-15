@@ -28,7 +28,7 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
-def evidence_index(rows: list[dict[str, Any]]) -> dict[tuple[str, str, str, str, str], dict[str, Any]]:
+def evidence_index(rows: list[dict[str, Any]]) -> dict[tuple[str, str, str, str, str, str], dict[str, Any]]:
     indexed: dict[tuple[str, str, str, str, str], dict[str, Any]] = {}
     for row in rows:
         required = ("benchmark_case_id", "candidate_id", "model_revision", "role", "category")
@@ -37,14 +37,16 @@ def evidence_index(rows: list[dict[str, Any]]) -> dict[tuple[str, str, str, str,
         key = tuple(row[name] for name in required) + (row.get("started_at", ""),)
         if key in indexed:
             raise ValueError(f"duplicate evidence identity: {key}")
-        if not isinstance(row.get("rubric"), list) or not row["rubric"]:
-            raise ValueError(f"evidence row {key} has no rubric criteria")
+        if (not isinstance(row.get("rubric"), list) or not row["rubric"]
+                or any(not isinstance(item, str) or not item.strip() for item in row["rubric"])
+                or len(set(row["rubric"])) != len(row["rubric"])):
+            raise ValueError(f"evidence row {key} has invalid or duplicate rubric criteria")
         indexed[key] = row
     return indexed
 
 
 def validate_grades(
-    evidence: dict[tuple[str, str, str, str, str], dict[str, Any]],
+    evidence: dict[tuple[str, str, str, str, str, str], dict[str, Any]],
     grades: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     seen: set[tuple[str, str, str, str, str, str]] = set()
@@ -82,6 +84,8 @@ def validate_grades(
                 raise ValueError(f"grade {number}: each rubric score must be an object")
             criterion = item.get("criterion")
             score = item.get("score")
+            if not isinstance(criterion, str) or not criterion.strip():
+                raise ValueError(f"grade {number}: criterion must be non-empty text")
             if criterion not in criteria:
                 raise ValueError(f"grade {number}: unknown rubric criterion {criterion!r}")
             if criterion in by_criterion:
