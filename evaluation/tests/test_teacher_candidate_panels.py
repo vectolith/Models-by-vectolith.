@@ -3,6 +3,16 @@ import unittest
 from pathlib import Path
 
 MANIFEST = Path(__file__).parents[1] / "fixtures" / "teacher_panel_candidates_v1.json"
+SNAPSHOTTED_REPO_IDS = {
+    "Qwen/Qwen3.5-9B", "Qwen/Qwen3.5-4B", "Qwen/Qwen3.8-27B",
+    "Qwen/Qwen3.6-27B", "Qwen/Qwen3.6-35B-A3B",
+    "google/gemma-4-E2B-it", "google/gemma-4-E4B-it",
+    "google/gemma-4-12B-it", "google/gemma-4-26B-A4B-it",
+    "google/gemma-4-31B-it", "ibm-granite/granite-4.2-8b",
+    "openai/gpt-oss-20b", "Qwen/Qwen2.5-7B-Instruct",
+    "mistralai/Devstral-Small-2-24B-Instruct-2512",
+    "Qwen/Qwen3-Coder-Next", "Qwen/Qwen2.5-Coder-7B-Instruct",
+}
 
 
 class TeacherCandidatePanelManifestTests(unittest.TestCase):
@@ -16,6 +26,11 @@ class TeacherCandidatePanelManifestTests(unittest.TestCase):
             ids = [candidate["id"] for candidate in panel["candidates"]]
             self.assertGreaterEqual(len(ids), 4, student)
             self.assertEqual(len(ids), len(set(ids)), student)
+
+    def test_every_panel_candidate_has_a_pinned_snapshot_target(self):
+        for student, panel in self.manifest["students"].items():
+            for candidate in panel["candidates"]:
+                self.assertIn(candidate["repo_id"], SNAPSHOTTED_REPO_IDS, (student, candidate["repo_id"]))
 
     def test_gemma_instruction_candidate_matches_the_snapshotted_repo_id(self):
         for panel in self.manifest["students"].values():
