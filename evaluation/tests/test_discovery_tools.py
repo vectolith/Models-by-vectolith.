@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from evaluation import discover_hf_candidates, probe_compute
+from evaluation import discover_hf_candidates, probe_compute, summarize_real_candidate_results
 
 
 class CandidateDiscoveryTests(unittest.TestCase):
@@ -86,6 +86,36 @@ class CandidateDiscoveryTests(unittest.TestCase):
         self.assertEqual(record["training_output_permission"], "not_verified")
 
 
+class CandidateReportTests(unittest.TestCase):
+    def test_summary_reports_execution_metrics_without_quality_score(self):
+        record = {
+            "family": "Example",
+            "repo_id": "org/model",
+            "immutable_revision": "a" * 40,
+            "cpu_capability": "AVX512",
+            "cpu_count_visible": 4,
+            "dtype": "bfloat16",
+            "snapshot_size_bytes": 2 * 1024**3,
+            "max_rss_kib": 3 * 1024**2,
+            "download_seconds": 10.0,
+            "model_load_seconds": 5.0,
+            "generation_seconds": 20.0,
+            "total_seconds": 35.0,
+            "results": [
+                {"latency_seconds": 4.0, "generated_tokens": 40, "role": "core_prime"},
+                {"latency_seconds": 6.0, "generated_tokens": 60, "role": "core_prima"},
+            ],
+        }
+        summary = summarize_real_candidate_results.summarize(record)
+        self.assertEqual(summary["checkpoint_gib"], 2.0)
+        self.assertEqual(summary["peak_rss_gib"], 3.0)
+        self.assertEqual(summary["tokens_per_second"], 5.0)
+        self.assertEqual(summary["mean_case_latency_seconds"], 5.0)
+        self.assertEqual(summary["role_case_counts"], {"core_prime": 1, "core_prima": 1})
+        self.assertEqual(summary["grading"], "human_review_required")
+        self.assertEqual(summary["teacher_qualification"], "not_qualified")
+
+
 class ComputeProbeTests(unittest.TestCase):
     def test_environment_markers_do_not_claim_quota(self):
         with patch.dict("os.environ", {"KAGGLE_KERNEL_RUN_TYPE": "Interactive"}, clear=True):
@@ -104,7 +134,9 @@ class ComputeProbeTests(unittest.TestCase):
         for candidate in candidates:
             with self.subTest(candidate=candidate["id"]):
                 self.assertRegex(candidate["revision"], re.compile(r"^[0-9a-f]{40}$"))
-                self.assertFalse(candidate["gated"])
+                if candidate["gated"]:
+                    self.assertEqual(candidate["gate_type"], "manual")
+                    self.assertEqual(candidate["access_status"], "manual_acceptance_required")
                 self.assertEqual(candidate["license_review"], "pending_human_legal_review")
                 self.assertEqual(candidate["training_output_permission"], "not_verified")
                 self.assertEqual(candidate["teacher_qualification"], "not_qualified")
