@@ -34,7 +34,7 @@ def evidence_index(rows: list[dict[str, Any]]) -> dict[tuple[str, str, str, str,
         required = ("benchmark_case_id", "candidate_id", "model_revision", "role", "category")
         if any(not isinstance(row.get(key), str) or not row[key].strip() for key in required):
             raise ValueError("evidence row is missing case, candidate, revision, role, or category")
-        key = tuple(row[name] for name in required)
+        key = tuple(row[name] for name in required) + (row.get("started_at", ""),)
         if key in indexed:
             raise ValueError(f"duplicate evidence identity: {key}")
         if not isinstance(row.get("rubric"), list) or not row["rubric"]:
@@ -61,13 +61,17 @@ def validate_grades(
             raise ValueError(f"grade {number}: evaluator_version is required")
         if not isinstance(grade.get("run_id"), str) or not grade["run_id"].strip():
             raise ValueError(f"grade {number}: run_id is required")
-        key = tuple(grade[name] for name in identity_fields) + (grade.get("category", ""),)
+        if not isinstance(grade.get("evidence_started_at", ""), str):
+            raise ValueError(f"grade {number}: evidence_started_at must be text")
+        key = tuple(grade[name] for name in identity_fields) + (grade.get("category", ""), grade.get("evidence_started_at", ""))
         if key not in evidence:
             raise ValueError(f"grade {number}: no matching raw evidence row for {key}")
         unique = key + (grade["evaluator_id"],)
         if unique in seen:
             raise ValueError(f"grade {number}: duplicate grade from evaluator for {key}")
         seen.add(unique)
+        if evidence[key].get("error") or (evidence[key].get("response_text") is None and not evidence[key].get("tool_calls")):
+            raise ValueError(f"grade {number}: matching raw evidence has no successful model response")
         criteria = evidence[key]["rubric"]
         scores = grade.get("rubric_scores")
         if not isinstance(scores, list):
