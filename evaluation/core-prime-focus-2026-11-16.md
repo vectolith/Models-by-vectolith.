@@ -1,36 +1,41 @@
-# Core Prime multi-teacher evaluation and training plan — 2026-11-16
+# Core Prime multi-teacher knowledge accumulation plan — 2026-11-16
 
-## Scope decision
+## Scope
 
-Core Prima is **paused**. Do not run, train, rank, or qualify Core Prima candidates in this evaluation cycle. Its teacher panel and evidence must be handled separately.
+Core Prima is **paused**. Do not run, train, rank, or qualify Core Prima in this cycle. It must have a separate teacher panel and evidence.
 
-Core Prime will use a **multi-teacher approach**. The three active candidate models are all intended to contribute to Core Prime; this is not a winner-takes-all model-selection exercise:
+Core Prime will learn from all three active teacher models, in sequence:
 
-1. IBM Granite 3.1 3B-A800M — teacher contribution sequence 1.
-2. IBM Granite 4.2 3B — teacher contribution sequence 2.
-3. OpenBMB MiniCPM5 2B — teacher contribution sequence 3.
+1. IBM Granite 3.1 3B-A800M.
+2. IBM Granite 4.2 3B.
+3. OpenBMB MiniCPM5 2B.
 
-No candidate is declared the winner, and none is discarded merely because another candidate scores higher. The purpose of evaluation is to understand each teacher's strengths, failure modes, coverage and resource profile, and to determine how to safely use and combine their contributions.
+This is not a competition, ranking, or winner-selection exercise. The goal is to accumulate complementary knowledge, explanations, approaches and perspectives from all three teachers to improve Core Prime.
 
-## Evidence collection
+## Preserve every real response
 
 - Run all three pinned Prime candidates against the same Prime public suites and case order.
-- Preserve each teacher's raw per-case outputs, logs, exact model revision, runtime settings, runner measurements and artifact hashes independently.
-- Prepare a blinded Core Prime review packet containing the actual prompts, rubric and all three candidates' actual responses. Replace model names with anonymous candidate IDs in reviewer-facing material; keep the identity mapping in a separate restricted record.
-- Obtain independent human grades. Do not invent or auto-generate human grades.
-- Compare each teacher's response quality, competency coverage, errors, omissions, consistency and compute cost. These comparisons inform contribution controls and quality filtering; they do not select a single winner.
+- Preserve **every actual generated response** from every teacher, including incomplete, incorrect, conflicting, repetitive and token-capped responses. Never silently omit or overwrite a response.
+- Keep the immutable raw response archive separate from any curated or transformed training dataset.
+- Every response must retain its source prompt and case ID, teacher identity, exact model revision, role, generation settings, timestamp, run ID, raw output, completion/cap status, and artifact/hash provenance.
+- If a response is duplicated, retain its raw record and mark the duplicate relationship; do not erase its provenance.
+- If teachers disagree, retain all original responses and record the disagreement. Do not automatically treat majority agreement or any one teacher as ground truth.
 
-## Sequential teaching and combination
+## Sequential contribution
 
-Teaching contributions must be staged, not generated as one undifferentiated simultaneous batch:
+1. **Granite 3.1:** collect and preserve its complete real response set. Review and annotate it; establish the first versioned contribution layer.
+2. **Granite 4.2:** collect and preserve its complete response set. Add its distinct knowledge and approaches as a separately traceable contribution layer; link overlaps and disagreements to the earlier layer without replacing it.
+3. **MiniCPM5:** collect and preserve its complete response set. Add its contribution as a third traceable layer, retaining complementary approaches and disagreements.
+4. **Unified Prime corpus:** consolidate all three contribution layers into one versioned corpus. Preserve per-example and per-span teacher provenance and the link back to the immutable raw response. Keep conflicting answers and uncertainty visible in structured records.
+5. **Training preparation:** convert the accumulated material into training examples without changing or losing the source evidence. Where correctness matters, independently verify claims and label uncertainty, errors and disagreements. Do not teach Prime that an unverified or contradictory answer is certainly true.
 
-1. **Teacher 1 — Granite 3.1:** validate its actual outputs and provenance; accept only evidence-backed, quality-reviewed examples into a separately versioned contribution set.
-2. **Teacher 2 — Granite 4.2:** evaluate its outputs independently, compare against the existing accepted set, resolve conflicts and duplicates, and add only accepted complementary examples to its own contribution set.
-3. **Teacher 3 — MiniCPM5:** repeat the same independent validation and conflict-resolution process; preserve its contribution separately.
-4. **Consolidation:** combine the three accepted contribution sets into one versioned Core Prime training corpus. Preserve per-example teacher provenance, source prompt, model revision, reviewer decision, rubric evidence and transformation history. Deduplicate without erasing provenance; retain disagreements and rejected examples in an audit record.
-5. **Pre-training gate:** run corpus integrity, contamination, coverage, balance, safety, licensing and training-output-permission checks. Only then may a separately approved Prime training run begin.
+The planned order is a contribution sequence, not a quality ranking. All three teachers contribute. Review exists to improve reliability and annotate knowledge—not to choose a winning teacher or discard a teacher's response set.
 
-The order above is the planned contribution order, not a quality ranking. A teacher's output must not be used to silently rewrite or validate another teacher's output. Each contribution is reviewed on its own evidence before consolidation.
+## Blinded review
+
+Prepare a blinded Prime review packet using the real prompts, rubrics and actual responses. Reviewer-facing material must conceal teacher identities; preserve the identity mapping separately. Human reviewers assess factual correctness, reasoning validity, completeness, clarity, safety and uncertainty. Grades must be genuinely supplied by independent humans; never invent or auto-generate human grades.
+
+Blinding is for unbiased assessment, not model selection. The purpose is to identify what each response contributes, what needs verification, and how disagreements should be represented in Prime's learning material.
 
 ## Evaluation controls
 
@@ -39,11 +44,13 @@ The order above is the planned contribution order, not a quality ranking. A teac
 - Maximum two concurrent inference jobs and two CPU math threads per job.
 - Exact immutable model revisions are required.
 - Preserve raw per-case outputs, logs, runner measurements and artifact hashes.
-- Do not start student training during candidate inference or blinded review.
-- Do not use publisher scores or model self-evaluation as qualification evidence.
+- Do not begin student training during inference collection or review.
+- Public suites are not private holdouts.
 
-## Required gates
+## Authorization and safety gates
 
-No teacher contribution is training-authorized until independent human review, legal review and explicit training-output permission are established for that source. The existing four-qualified-teacher requirement, teacher provenance, contribution quality checks, ablations, repeated-run reliability, safety and release evidence remain in force. Three candidate models in this evaluation are not automatically three qualified teachers.
+Preserving and reviewing raw outputs does not itself grant permission to train on them. Before any response is used for training, establish legal review and explicit training-output permission for its source, plus independent review, provenance, corpus integrity, contamination, competency coverage, balance and safety checks.
+
+The existing four-qualified-teacher requirement remains in force; these three candidate models are not automatically three qualified teachers. Training begins only after the applicable teacher, data-permission and safety gates are satisfied.
 
 Core Prima remains pending and must have a separate teacher panel and separately governed evaluation cycle.
