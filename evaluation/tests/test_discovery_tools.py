@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import re
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -92,6 +94,20 @@ class ComputeProbeTests(unittest.TestCase):
     def test_detects_github_actions_environment(self):
         with patch.dict("os.environ", {"GITHUB_ACTIONS": "true"}, clear=True):
             self.assertEqual(probe_compute.detect_environment(), ["github_actions"])
+
+    def test_real_cpu_candidate_manifest_has_unique_pinned_revisions(self):
+        manifest_path = Path(__file__).parents[1] / "fixtures" / "real_cpu_candidates_v1.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        candidates = manifest["candidates"]
+        self.assertGreaterEqual(len(candidates), 4)
+        self.assertEqual(len({item["id"] for item in candidates}), len(candidates))
+        for candidate in candidates:
+            with self.subTest(candidate=candidate["id"]):
+                self.assertRegex(candidate["revision"], re.compile(r"^[0-9a-f]{40}$"))
+                self.assertFalse(candidate["gated"])
+                self.assertEqual(candidate["license_review"], "pending_human_legal_review")
+                self.assertEqual(candidate["training_output_permission"], "not_verified")
+                self.assertEqual(candidate["teacher_qualification"], "not_qualified")
 
     def test_generic_probe_source_keeps_account_status_unverified(self):
         source = Path(probe_compute.__file__).read_text(encoding="utf-8")

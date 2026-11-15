@@ -1,0 +1,55 @@
+{
+  "schema_version": "vectolith-real-cpu-candidate-set/1.0",
+  "purpose": "Initial real CPU execution comparison; not a foundation selection.",
+  "dtype": "bfloat16",
+  "candidates": [
+    {
+      "id": "qwen3-0.6b",
+      "family": "Qwen",
+      "repo_id": "Qwen/Qwen3-0.6B",
+      "revision": "c1899de289a04d12100db370d81485cdf75e47ca",
+      "parameter_count": 751632384,
+      "license_tag": "apache-2.0",
+      "gated": false,
+      "license_review": "pending_human_legal_review",
+      "training_output_permission": "not_verified",
+      "teacher_qualification": "not_qualified"
+    },
+    {
+      "id": "qwen3-4b",
+      "family": "Qwen",
+      "repo_id": "Qwen/Qwen3-4B",
+      "revision": "1cfa9a7208912126459214e8b04321603b3df60c",
+      "parameter_count": 4022468096,
+      "license_tag": "apache-2.0",
+      "gated": false,
+      "license_review": "pending_human_legal_review",
+      "training_output_permission": "not_verified",
+      "teacher_qualification": "not_qualified"
+    },
+    {
+      "id": "granite-3.1-3b-a800m",
+      "family": "IBM Granite",
+      "repo_id": "ibm-granite/granite-3.1-3b-a800m-instruct",
+      "revision": "a02780686e08a03fe0d2679a293b5c74a90efa89",
+      "parameter_count": 3298793472,
+      "license_tag": "apache-2.0",
+      "gated": false,
+      "license_review": "pending_human_legal_review",
+      "training_output_permission": "not_verified",
+      "teacher_qualification": "not_qualified"
+    },
+    {
+      "id": "ministral-3b",
+      "family": "Mistral",
+      "repo_id": "ministral/Ministral-3b-instruct",
+      "revision": "2c95908929198d6e69af8638f0dbbd9bc6b93f9e",
+      "parameter_count": 3315716096,
+      "license_tag": "apache-2.0",
+      "gated": false,
+      "license_review": "pending_human_legal_review",
+      "training_output_permission": "not_verified",
+      "teacher_qualification": "not_qualified"
+    }
+  ]
+}
