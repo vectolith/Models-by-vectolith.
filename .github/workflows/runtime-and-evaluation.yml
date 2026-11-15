@@ -58,67 +58,9 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-  real-checkpoint-smoke:
+  real-sequential-comparison:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install CPU inference dependencies
-        run: |
-          python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
-          python -m pip install transformers==4.57.1 accelerate==1.10.1 safetensors==0.6.2
-      - name: Run Prime and Prima smoke suites against pinned Qwen3 checkpoint
-        run: |
-          python evaluation/run_real_checkpoint_suite.py \
-            --suite evaluation/fixtures/prime_smoke.jsonl \
-            --suite evaluation/fixtures/prima_smoke.jsonl \
-            --max-new-tokens 256
-      - name: Capture actual runner hardware and accelerator availability
-        run: python evaluation/probe_compute.py --output artifacts/compute/github-actions-runner.json
-      - name: Preserve real checkpoint evaluation evidence
-        uses: actions/upload-artifact@v4
-        with:
-          name: qwen3-0.6b-real-suite
-          path: artifacts/evaluations/qwen3-0.6b-smoke-suites.json
-          if-no-files-found: error
-          retention-days: 30
-      - name: Preserve observed compute evidence
-        uses: actions/upload-artifact@v4
-        with:
-          name: github-actions-compute-observation
-          path: artifacts/compute/github-actions-runner.json
-          if-no-files-found: error
-          retention-days: 30
-
-  real-family-comparison:
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      max-parallel: 4
-      matrix:
-        include:
-          - slug: qwen3-0.6b-bf16
-            family: Qwen
-            repo: Qwen/Qwen3-0.6B
-            revision: c1899de289a04d12100db370d81485cdf75e47ca
-          - slug: qwen3-4b-bf16
-            family: Qwen
-            repo: Qwen/Qwen3-4B
-            revision: 1cfa9a7208912126459214e8b04321603b3df60c
-          - slug: granite-3.1-3b-bf16
-            family: IBM Granite
-            repo: ibm-granite/granite-3.1-3b-a800m-instruct
-            revision: a02780686e08a03fe0d2679a293b5c74a90efa89
-          - slug: ministral-3b-bf16
-            family: Mistral
-            repo: ministral/Ministral-3b-instruct
-            revision: 2c95908929198d6e69af8638f0dbbd9bc6b93f9e
+    timeout-minutes: 60
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -130,23 +72,32 @@ jobs:
         run: |
           python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
           python -m pip install transformers==4.57.1 accelerate==1.10.1 safetensors==0.6.2 huggingface_hub==0.36.0
-      - name: Run real candidate evaluation
+      - name: Capture actual runner hardware and accelerator availability
+        run: python evaluation/probe_compute.py --output artifacts/compute/sequential-runner.json
+      - name: Run all pinned candidates sequentially on the same CPU runner
         run: |
-          python evaluation/run_real_candidate_eval.py \
-            --repo "${{ matrix.repo }}" \
-            --revision "${{ matrix.revision }}" \
-            --family "${{ matrix.family }}" \
+          python evaluation/run_real_candidate_matrix.py \
+            --manifest evaluation/fixtures/real_cpu_candidates_v1.json \
             --suite evaluation/fixtures/prime_smoke.jsonl \
             --suite evaluation/fixtures/prima_smoke.jsonl \
             --dtype bfloat16 \
             --max-new-tokens 64 \
             --cache-dir "${{ runner.temp }}/hf-cache" \
-            --output "artifacts/evaluations/${{ matrix.slug }}.json"
-      - name: Preserve real candidate outputs
+            --output-dir artifacts/evaluations/sequential \
+            --summary-output artifacts/evaluations/sequential/summary.json
+      - name: Preserve same-runner candidate outputs and comparison
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: real-candidate-${{ matrix.slug }}
-          path: artifacts/evaluations/${{ matrix.slug }}.json
+          name: real-sequential-candidate-comparison
+          path: artifacts/evaluations/sequential/
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Preserve same-runner compute evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sequential-runner-compute-observation
+          path: artifacts/compute/sequential-runner.json
           if-no-files-found: ignore
           retention-days: 30
