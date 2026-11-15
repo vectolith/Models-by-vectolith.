@@ -127,3 +127,20 @@ These are public development/evaluation fixtures, not a secret holdout. The v3 s
 - See [the v4 curriculum and proposed gates](core-prime-evaluation-curriculum-v4.md) and [additional teacher discovery register](additional-teacher-candidates-2026-11-16.md).
 - The new teacher candidates are discovery-only until exact snapshots, compatibility tests, resource measurements, independent human grading and separate training-output permission review are complete.
 - v4 is a public development suite, not a private holdout. No v4 responses or answers may be used for training.
+
+
+## Sequential additive Prime teachers: immutable snapshot + inference
+
+`snapshot_additional_teacher.py` resolves a public Hub model's current revision to a full immutable commit SHA, downloads that exact revision, validates the expected architecture and license identifier, and emits a manifest containing the complete file inventory, byte sizes and SHA-256 hashes. The manifest includes the Hub revision, config and license-file hashes. The workflow then passes that exact SHA to `run_real_candidate_eval.py`; it never runs inference against a moving `main` ref.
+
+The workflow `.github/workflows/core-prime-additional-teachers.yml` runs SmolLM3-3B, LFM2.5-2.6B and Phi-4-mini-instruct sequentially, each over the same Prime public v1-v4 fixtures and the same deterministic generation cap. Per-candidate manifests, raw JSON/JSONL outputs, logs and compute observations are uploaded as separate artifacts. The actual model snapshot stays in the ephemeral runner cache; model weights are not committed to Git or copied into large CI artifacts. Re-fetching the recorded SHA and validating its file hashes reproduces the same snapshot.
+
+Phi-4 is loaded with `trust_remote_code=False`; the pipeline will not execute model-repository Python code. A load failure is retained as evidence and does not silently relax this security boundary. LFM2.5's LFM Open License requires legal review, and its publisher notes it is not recommended for agentic coding or knowledge-heavy tasks. All training-output permissions remain unverified. No model is qualified and no training is performed by this workflow.
+
+Run the snapshot registry tests with:
+
+```bash
+python -m unittest evaluation.tests.test_additional_teacher_snapshots -v
+```
+
+A passing unit test validates registry guardrails only. Actual loader compatibility, model generation, revision pinning and file hashes are established only by the real workflow artifacts.
