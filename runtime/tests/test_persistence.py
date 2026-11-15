@@ -4,11 +4,14 @@ from pathlib import Path
 from vectolith_runtime import FamilyIdentity, ModelLifecycle, ModelManifest, SQLiteModelRegistry
 
 def manifest(model_id="core-prime", **kwargs):
-    return ModelManifest(
-        model_id=model_id, display_name=model_id, version="1.2.0",
-        specialization="reasoning", capabilities=frozenset({"reasoning", "tool-use"}),
-        **kwargs,
-    )
+    values = {
+        "display_name": model_id,
+        "version": "1.2.0",
+        "specialization": "reasoning",
+        "capabilities": frozenset({"reasoning", "tool-use"}),
+    }
+    values.update(kwargs)
+    return ModelManifest(model_id=model_id, **values)
 
 class SQLiteRegistryTests(unittest.TestCase):
     def test_manifest_survives_close_and_reopen(self):
