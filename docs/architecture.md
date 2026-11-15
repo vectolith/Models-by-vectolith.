@@ -26,6 +26,14 @@ Interoperability is validated at interface and behavioural levels. Identical arc
 
 These are initial roles, not an exhaustive model catalogue. Future specializations are unrestricted subject to the family contract and release gates.
 
+## Delegation and interoperability
+
+Prime-to-Prima software delivery is the canonical delegated workflow: Prime preserves the original request, gathers requirements and acceptance criteria, and delegates implementation; Prima designs, implements, tests, and verifies; Prime independently reviews the evidence and communicates the result. Either model may request clarification, delegate a bounded subtask, return work for revision, or escalate a blocker.
+
+Every handoff uses a versioned task envelope containing task identity, requester and assignee, original intent, requirements, constraints, acceptance criteria, context references, permission scope, and resource limits. Results carry explicit status, deliverables, tests, verification evidence, limitations, and unresolved issues.
+
+Delegation never expands permissions. The runtime enforces least privilege, approval requirements, tenant boundaries, auditability, and truthful task status. Proposed actions must be distinguished from actions actually executed. See [the delegated execution contract](delegated-execution-contract.md) and [runtime architecture](runtime-architecture.md).
+
 ## Teacher/student separation
 
 Teachers supervise training only. Released students must be independently loadable with their own weights, configuration, tokenizer/processor, and runtime requirements.
