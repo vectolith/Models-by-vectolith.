@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run real CPU inference on one immutable foundation candidate checkpoint."""
 from __future__ import annotations
-import argparse, gc, json, os, resource, shutil, time
+import argparse, gc, json, os, resource, shutil, time, uuid
 from datetime import datetime, timezone
 from pathlib import Path
 import torch, transformers
@@ -13,7 +13,7 @@ from run_eval import load_cases
 def main() -> int:
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument("--repo",required=True); p.add_argument("--revision",required=True)
-    p.add_argument("--family",required=True); p.add_argument("--suite",action="append",required=True,type=Path)
+    p.add_argument("--family",required=True); p.add_argument("--candidate-id"); p.add_argument("--suite",action="append",required=True,type=Path)
     p.add_argument("--dtype",choices=("bfloat16","float32"),default="bfloat16")
     p.add_argument("--max-new-tokens",type=int,default=64)
     p.add_argument("--cache-dir",type=Path,default=Path(".hf-cache"))
@@ -31,6 +31,9 @@ def main() -> int:
     if not cases: raise ValueError("no benchmark cases loaded")
     ids=[c["id"] for _,c in cases]
     if len(ids)!=len(set(ids)): raise ValueError("benchmark case IDs must be unique across suites")
+    candidate_id=a.candidate_id or a.repo
+    run_id=uuid.uuid4().hex
+    run_started_at=datetime.now(timezone.utc).isoformat()
     total=time.perf_counter(); dl=time.perf_counter()
     snapshot=Path(snapshot_download(repo_id=a.repo,revision=rev,cache_dir=str(a.cache_dir)))
     download_s=round(time.perf_counter()-dl,3)
@@ -46,7 +49,7 @@ def main() -> int:
     raw_output.parent.mkdir(parents=True,exist_ok=True)
     raw_handle=raw_output.open('w',encoding='utf-8')
     for suite,case in cases:
-        encoded=render_prompt(tok,case["messages"]); start=time.perf_counter()
+        encoded=render_prompt(tok,case["messages"]); case_started_at=datetime.now(timezone.utc).isoformat(); start=time.perf_counter()
         with torch.inference_mode():
             output=model.generate(**encoded,max_new_tokens=a.max_new_tokens,do_sample=False,use_cache=True,pad_token_id=tok.eos_token_id)
         latency=round(time.perf_counter()-start,3); n=int(encoded["input_ids"].shape[1]); new=output[0,n:]
@@ -56,7 +59,7 @@ def main() -> int:
             tok.eos_token_id is None or tok.eos_token_id not in new.tolist()
         )
         results.append({"suite":str(suite),"role":"core_prima" if suite.name.startswith("prima") else "core_prime",
-          "case_id":case["id"],"category":case.get("category","uncategorized"),"prompt_sha256":prompt_hash(case["messages"]),
+          "case_id":case["id"],"benchmark_case_id":case["id"],"candidate_id":candidate_id,"model_revision":rev,"run_id":run_id,"started_at":case_started_at,"recorded_at":datetime.now(timezone.utc).isoformat(),"category":case.get("category","uncategorized"),"prompt_sha256":prompt_hash(case["messages"]),
           "rubric":case.get("rubric"),"input_tokens":n,"generated_tokens":int(new.numel()),
           "max_new_tokens":a.max_new_tokens,"generation_cap_reached":hit_token_cap,
           "generation_status":"token_limit_reached" if hit_token_cap else "eos_or_early_stop",
@@ -69,7 +72,7 @@ def main() -> int:
     vocab=int(model.get_input_embeddings().weight.shape[0])
     if len(tok)>vocab: raise RuntimeError("tokenizer vocabulary exceeds model embedding vocabulary")
     record={"schema_version":"vectolith-real-candidate-evaluation/1.1","completed_at":datetime.now(timezone.utc).isoformat(),
-      "family":a.family,"repo_id":a.repo,"immutable_revision":rev,"loaded_snapshot_path_revision":snapshot.name,
+      "family":a.family,"candidate_id":candidate_id,"run_id":run_id,"started_at":run_started_at,"repo_id":a.repo,"immutable_revision":rev,"loaded_snapshot_path_revision":snapshot.name,
       "architectures":getattr(model.config,"architectures",None),"model_class":model.__class__.__name__,
       "tokenizer_class":tok.__class__.__name__,"tokenizer_vocab_size":len(tok),"model_vocab_size":vocab,
       "embedding_vocab_padding":vocab-len(tok),"device":"cpu","dtype":a.dtype,
