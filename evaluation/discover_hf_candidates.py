@@ -89,7 +89,10 @@ def discover(search: str, limit: int = 50, sort: str = "downloads", pipeline_tag
             item for item in page
             if isinstance(item, dict) and (
                 (pipeline_tag is None or item.get("pipeline_tag") == pipeline_tag)
-                and (author is None or item.get("author") == author)
+                and (author is None or (
+                    isinstance(item.get("id"), str)
+                    and item["id"].split("/", 1)[0].casefold() == author.casefold()
+                ))
             )
         )
     return results[:limit]
@@ -122,6 +125,7 @@ def snapshot(repo_id: str) -> dict[str, Any]:
         "captured_at": datetime.now(timezone.utc).isoformat(),
         "source": "huggingface_hub_public_api",
         "repo_id": repo_id,
+        "author": repo_id.split("/", 1)[0],
         "metadata_url": f"{API}/{urllib.parse.quote(repo_id, safe='/')}",
         "immutable_revision": revision.lower(),
         "private": info.get("private"),
