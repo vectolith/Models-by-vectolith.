@@ -27,6 +27,9 @@ class TeacherContribution:
     accepted_examples: int
     accepted_tokens: int
     ablation_quality_delta: float
+    quality_score: float
+    p50_latency_ms: float
+    cost_per_million_tokens_usd: float
 
     def validate(self) -> list[str]:
         errors: list[str] = []
@@ -47,6 +50,12 @@ class TeacherContribution:
             errors.append(f"{self.teacher_id}: accepted examples and tokens must both be positive")
         if not isfinite(self.ablation_quality_delta) or self.ablation_quality_delta <= 0:
             errors.append(f"{self.teacher_id}: ablation must show a positive, finite contribution")
+        if not isfinite(self.quality_score) or not 0 < self.quality_score <= 1:
+            errors.append(f"{self.teacher_id}: quality_score must be in the interval (0, 1]")
+        if not isfinite(self.p50_latency_ms) or self.p50_latency_ms <= 0:
+            errors.append(f"{self.teacher_id}: p50_latency_ms must be positive and finite")
+        if not isfinite(self.cost_per_million_tokens_usd) or self.cost_per_million_tokens_usd < 0:
+            errors.append(f"{self.teacher_id}: cost per million tokens must be finite and non-negative")
         return errors
 
 
