@@ -49,9 +49,14 @@ def main() -> int:
         latency=round(time.perf_counter()-start,3); n=int(encoded["input_ids"].shape[1]); new=output[0,n:]
         response=tok.decode(new,skip_special_tokens=True)
         if new.numel()<1 or not response.strip(): raise RuntimeError(f"{case['id']}: no visible generated output")
+        hit_token_cap = int(new.numel()) >= a.max_new_tokens and (
+            tok.eos_token_id is None or tok.eos_token_id not in new.tolist()
+        )
         results.append({"suite":str(suite),"role":"core_prima" if suite.name.startswith("prima") else "core_prime",
           "case_id":case["id"],"category":case.get("category","uncategorized"),"prompt_sha256":prompt_hash(case["messages"]),
           "rubric":case.get("rubric"),"input_tokens":n,"generated_tokens":int(new.numel()),
+          "max_new_tokens":a.max_new_tokens,"generation_cap_reached":hit_token_cap,
+          "generation_status":"token_limit_reached" if hit_token_cap else "eos_or_early_stop",
           "latency_seconds":latency,"response_text":response,"error":None})
         print(f"{case['id']}: {len(new)} tokens in {latency}s",flush=True)
     generation_s=round(time.perf_counter()-gen,3)
