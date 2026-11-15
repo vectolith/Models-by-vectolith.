@@ -82,7 +82,7 @@ def main() -> int:
                   "error":f"{type(exc).__name__}: {exc}"})
                 print(f"{case['id']}: ERROR {base['error']}",flush=True)
             results.append(base)
-            raw_handle.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"\\n")
+            raw_handle.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"\n")
             raw_handle.flush()
 
     generation_s=round(time.perf_counter()-gen,3)
