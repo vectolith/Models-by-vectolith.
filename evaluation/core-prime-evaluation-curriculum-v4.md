@@ -10,24 +10,19 @@ This extension adds 2471 cases across 19 competencies specifically needed to val
 |---|---:|
 | coding generation | 4 |
 | debugging | 4 |
-| code review | 4 |
 | software architecture | 4 |
 | testing verification | 4 |
-| algorithms data structures | 4 |
+| algorithms | 4 |
 | data analysis | 4 |
 | technical mathematics | 4 |
 | tool calling | 4 |
-| agentic task planning | 4 |
-| state recovery | 4 |
-| research evidence | 4 |
-| long context retrieval | 4 |
-| multilingual translation | 4 |
+| agentic execution | 4 |
 | security privacy | 4 |
-| safety policy | 4 |
-| robustness adversarial | 4 |
-| reliability calibration | 4 |
-| documentation communication | 4 |
-| **Total** | **2471** |
+| research calibration | 4 |
+| robustness safety | 4 |
+| multilingual translation | 4 |
+| documentation | 4 |
+| **Total** | **56** |
 
 ## Evaluation controls
 
