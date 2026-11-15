@@ -34,3 +34,20 @@ jobs:
         env:
           VECTOLITH_RUN_LIVE_TESTS: "1"
         run: python -m unittest discover -s evaluation/tests -v
+      - name: Discover real model candidates across teacher families
+        run: |
+          python evaluation/discover_hf_candidates.py \
+            --search "Qwen3" \
+            --search "Granite" \
+            --search "Gemma" \
+            --search "Ministral" \
+            --limit 3 \
+            --sort downloads \
+            --output artifacts/candidates/huggingface-discovery.jsonl
+      - name: Preserve live discovery evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: huggingface-candidate-discovery
+          path: artifacts/candidates/huggingface-discovery.jsonl
+          if-no-files-found: error
+          retention-days: 30
