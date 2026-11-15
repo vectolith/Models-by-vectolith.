@@ -28,11 +28,11 @@
       "teacher_qualification": "not_qualified"
     },
     {
-      "id": "granite-3.1-3b-a800m",
-      "family": "IBM Granite",
-      "repo_id": "ibm-granite/granite-3.1-3b-a800m-instruct",
-      "revision": "a02780686e08a03fe0d2679a293b5c74a90efa89",
-      "parameter_count": 3298793472,
+      "id": "qwen2.5-7b-instruct",
+      "family": "Qwen",
+      "repo_id": "Qwen/Qwen2.5-7B-Instruct",
+      "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+      "parameter_count": 7615616512,
       "license_tag": "apache-2.0",
       "gated": false,
       "license_review": "pending_human_legal_review",
@@ -40,11 +40,11 @@
       "teacher_qualification": "not_qualified"
     },
     {
-      "id": "ministral-3b",
-      "family": "Mistral",
-      "repo_id": "ministral/Ministral-3b-instruct",
-      "revision": "2c95908929198d6e69af8638f0dbbd9bc6b93f9e",
-      "parameter_count": 3315716096,
+      "id": "granite-3.1-3b-a800m",
+      "family": "IBM Granite",
+      "repo_id": "ibm-granite/granite-3.1-3b-a800m-instruct",
+      "revision": "a02780686e08a03fe0d2679a293b5c74a90efa89",
+      "parameter_count": 3298793472,
       "license_tag": "apache-2.0",
       "gated": false,
       "license_review": "pending_human_legal_review",
