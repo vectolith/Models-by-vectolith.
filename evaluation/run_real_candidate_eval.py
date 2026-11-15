@@ -49,26 +49,43 @@ def main() -> int:
     raw_output=a.output.with_suffix('.jsonl')
     raw_output.parent.mkdir(parents=True,exist_ok=True)
     raw_handle=raw_output.open('w',encoding='utf-8')
-    for suite,case in cases:
-        encoded=render_prompt(tok,case["messages"]); case_started_at=datetime.now(timezone.utc).isoformat(); start=time.perf_counter()
-        with torch.inference_mode():
-            output=model.generate(**encoded,max_new_tokens=a.max_new_tokens,do_sample=False,use_cache=True,pad_token_id=tok.eos_token_id)
-        latency=round(time.perf_counter()-start,3); n=int(encoded["input_ids"].shape[1]); new=output[0,n:]
-        response=tok.decode(new,skip_special_tokens=True)
-        if new.numel()<1 or not response.strip(): raise RuntimeError(f"{case['id']}: no visible generated output")
-        hit_token_cap = int(new.numel()) >= a.max_new_tokens and (
-            tok.eos_token_id is None or tok.eos_token_id not in new.tolist()
-        )
-        results.append({"suite":str(suite),"role":"core_prima" if suite.name.startswith("prima") else "core_prime",
-          "case_id":case["id"],"benchmark_case_id":case["id"],"candidate_id":candidate_id,"model_revision":rev,"run_id":run_id,"started_at":case_started_at,"recorded_at":datetime.now(timezone.utc).isoformat(),"category":case.get("category","uncategorized"),"prompt_sha256":prompt_hash(case["messages"]),
-          "rubric":case.get("rubric"),"input_tokens":n,"generated_tokens":int(new.numel()),
-          "max_new_tokens":a.max_new_tokens,"generation_cap_reached":hit_token_cap,
-          "generation_status":"token_limit_reached" if hit_token_cap else "eos_or_early_stop",
-          "latency_seconds":latency,"response_text":response,"error":None})
-        raw_handle.write(json.dumps(results[-1],ensure_ascii=False,sort_keys=True)+"\n")
-        raw_handle.flush()
-        print(f"{case['id']}: {len(new)} tokens in {latency}s",flush=True)
-    raw_handle.close()
+    failures=0
+    with raw_output.open('w',encoding='utf-8') as raw_handle:
+        for suite,case in cases:
+            case_started_at=datetime.now(timezone.utc).isoformat()
+            base={"suite":str(suite),"role":"core_prime","case_id":case["id"],"benchmark_case_id":case["id"],
+              "candidate_id":candidate_id,"model_revision":rev,"run_id":run_id,"started_at":case_started_at,
+              "recorded_at":datetime.now(timezone.utc).isoformat(),"category":case.get("category","uncategorized"),
+              "prompt_sha256":prompt_hash(case["messages"]),"rubric":case.get("rubric"),
+              "max_new_tokens":a.max_new_tokens,"generation_cap_reached":False,
+              "generation_status":"error","latency_seconds":None,"input_tokens":None,
+              "generated_tokens":0,"response_text":None,"error":None}
+            start=time.perf_counter()
+            try:
+                encoded=render_prompt(tok,case["messages"])
+                with torch.inference_mode():
+                    output=model.generate(**encoded,max_new_tokens=a.max_new_tokens,do_sample=False,use_cache=True,pad_token_id=tok.eos_token_id)
+                latency=round(time.perf_counter()-start,3); n=int(encoded["input_ids"].shape[1]); new=output[0,n:]
+                response=tok.decode(new,skip_special_tokens=True)
+                if new.numel()<1 or not response.strip():
+                    raise RuntimeError("no visible generated output")
+                hit_token_cap = int(new.numel()) >= a.max_new_tokens and (
+                    tok.eos_token_id is None or tok.eos_token_id not in new.tolist()
+                )
+                base.update({"input_tokens":n,"generated_tokens":int(new.numel()),
+                  "generation_cap_reached":hit_token_cap,
+                  "generation_status":"token_limit_reached" if hit_token_cap else "eos_or_early_stop",
+                  "latency_seconds":latency,"response_text":response,"error":None})
+                print(f"{case['id']}: {len(new)} tokens in {latency}s",flush=True)
+            except Exception as exc:
+                failures+=1
+                base.update({"latency_seconds":round(time.perf_counter()-start,3),
+                  "error":f"{type(exc).__name__}: {exc}"})
+                print(f"{case['id']}: ERROR {base['error']}",flush=True)
+            results.append(base)
+            raw_handle.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"\\n")
+            raw_handle.flush()
+
     generation_s=round(time.perf_counter()-gen,3)
     vocab=int(model.get_input_embeddings().weight.shape[0])
     if len(tok)>vocab: raise RuntimeError("tokenizer vocabulary exceeds model embedding vocabulary")
@@ -82,7 +99,7 @@ def main() -> int:
       "generation_seconds":generation_s,"total_seconds":round(time.perf_counter()-total,3),
       "torch_version":torch.__version__,"transformers_version":transformers.__version__,
       "decoding":{"do_sample":False,"max_new_tokens":a.max_new_tokens,"chat_template":True,"enable_thinking":False},
-      "case_count":len(results),"raw_results_file":str(raw_output),"max_rss_kib":resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+      "case_count":len(results),"error_count":failures,"successful_case_count":len(results)-failures,"raw_results_file":str(raw_output),"max_rss_kib":resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
       "license_review":"pending_human_legal_review","training_output_permission":"not_verified",
       "teacher_qualification":"not_qualified","training_started":False,"grading":"human_review_required","results":results}
     a.output.parent.mkdir(parents=True,exist_ok=True)
