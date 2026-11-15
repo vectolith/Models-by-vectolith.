@@ -104,8 +104,10 @@ class ComputeProbeTests(unittest.TestCase):
         for candidate in candidates:
             with self.subTest(candidate=candidate["id"]):
                 self.assertRegex(candidate["revision"], re.compile(r"^[0-9a-f]{40}$"))
-                self.assertEqual(candidate["gated"], False)
-                self.assertEqual(candidate["teacher_qualification"], "not_qualified") if "teacher_qualification" in candidate else None
+                self.assertFalse(candidate["gated"])
+                self.assertEqual(candidate["license_review"], "pending_human_legal_review")
+                self.assertEqual(candidate["training_output_permission"], "not_verified")
+                self.assertEqual(candidate["teacher_qualification"], "not_qualified")
 
     def test_generic_probe_source_keeps_account_status_unverified(self):
         source = Path(probe_compute.__file__).read_text(encoding="utf-8")
