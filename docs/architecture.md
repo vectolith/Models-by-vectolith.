@@ -20,15 +20,15 @@ Interoperability is validated at interface and behavioural levels. Identical arc
 
 ## Initial specializations
 
-**Core Prime:** general-purpose conversation, instruction following, reasoning, planning, synthesis, and user-facing coordination.
+**Core Prime:** unified general intelligence and end-to-end task ownership: conversation, instruction following, reasoning, research, evidence synthesis, planning, writing, mathematics, data analysis, coding, software engineering, architecture, debugging, technical design, testing, structured tool use, agentic execution, and verification.
 
-**Core Prima:** coding, software engineering, architecture, debugging, technical design, testing, and technical execution.
+**Core Prima:** paused. The former Prima engineering capability set is being absorbed into Prime. A future Prima would need a distinct specialization and independent evidence; it is not currently a required delegate.
 
 These are initial roles, not an exhaustive model catalogue. Future specializations are unrestricted subject to the family contract and release gates.
 
 ## Delegation and interoperability
 
-Prime-to-Prima software delivery is the canonical delegated workflow: Prime preserves the original request, gathers requirements and acceptance criteria, and delegates implementation; Prima designs, implements, tests, and verifies; Prime independently reviews the evidence and communicates the result. Either model may request clarification, delegate a bounded subtask, return work for revision, or escalate a blocker.
+Core Prime is expected to own software delivery end to end: preserve the original request, define requirements and acceptance criteria, design, implement, test, debug, verify, and report evidence. It may use approved external tools or optional future specialist models when available, but must not depend on Core Prima to perform engineering work. Any delegation is an optimization, not a capability prerequisite.
 
 Every handoff uses a versioned task envelope containing task identity, requester and assignee, original intent, requirements, constraints, acceptance criteria, context references, permission scope, and resource limits. Results carry explicit status, deliverables, tests, verification evidence, limitations, and unresolved issues.
 
