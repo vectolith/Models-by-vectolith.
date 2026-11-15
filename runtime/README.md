@@ -14,6 +14,21 @@ This package is the first executable foundation for the reusable vectolith orche
 - Tool registry with per-task allowlists and explicit approval gates.
 - Completion evidence requirement and independent review hook.
 
+## Multi-teacher distillation gates
+
+The `vectolith_runtime.distillation` module provides dependency-free validation for
+teacher-panel manifests and student-independence evidence. Each student run
+requires at least four distinct teachers, verified training-output permissions,
+immutable teacher and foundation revisions, accepted contribution records, and
+positive per-teacher ablation results. Release independence evidence requires
+teacher endpoints disabled, teacher credentials absent, zero teacher calls,
+a student checkpoint digest, and passing standalone capability checks.
+
+These validators do not select teachers, query providers, generate datasets, or
+run training. Those operations require a separately secured and budget-approved
+training pipeline. See
+[the multi-teacher architecture](../docs/multi-teacher-distillation-and-student-independence.md).
+
 ## Quick start
 
 Python 3.11+ is required.
