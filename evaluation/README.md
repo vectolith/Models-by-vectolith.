@@ -64,12 +64,15 @@ Catalog search returns discovery leads, not qualified candidates. Snapshots pin 
 
 The ordinary unit suite uses deterministic fixtures for edge cases. The live integration suite makes real HTTPS requests to the public Hugging Face Hub, performs catalog searches, and snapshots a real public checkpoint's metadata/model card.
 
-CI also downloads the exact pinned Qwen3-0.6B checkpoint and performs CPU generation with Transformers. This proves that one real checkpoint can be loaded and can generate output in the CI environment. It is an execution smoke test only: it is not a Prime/Prima capability score, a comparison across model families, a GPU/free-provider test, or training. The JSON evidence artifact records the exact revision, runtime versions, architecture, tokenizer/model vocabulary, generated text and elapsed time.
+CI downloads Qwen3-0.6B at an immutable revision and runs both public Prime and Prima smoke suites through the real tokenizer and model using Transformers on CPU. It records raw outputs, prompt hashes, rubric text, input/output token counts, per-case latency, runtime versions, architecture and peak RSS. These public smoke fixtures are execution-path checks, not secret holdouts and not a capability score. This is not a comparison across model families, a GPU/free-provider test, or training.
 
-Run the checkpoint smoke locally (requires torch, transformers, accelerate and network access):
+Run the real checkpoint suite locally (requires torch, transformers, accelerate and network access):
 
 ```bash
-python evaluation/smoke_real_checkpoint.py
+python evaluation/run_real_checkpoint_suite.py \
+  --suite evaluation/fixtures/prime_smoke.jsonl \
+  --suite evaluation/fixtures/prima_smoke.jsonl \
+  --max-new-tokens 64
 ```
 
 ```bash
