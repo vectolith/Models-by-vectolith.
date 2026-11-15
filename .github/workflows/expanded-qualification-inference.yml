@@ -88,6 +88,42 @@ jobs:
             suite_a: evaluation/fixtures/prima_benchmark_v1.jsonl
             suite_b: evaluation/fixtures/prima_qualification_v2.jsonl
             suite_c: evaluation/fixtures/prima_qualification_v3.jsonl
+          - candidate_id: granite-4.2-3b
+            repo: ibm-granite/granite-4.2-3b
+            family: IBM Granite
+            revision: 4e9c275e232f10211ec88644d106a1f6a1b60e06
+            transformers_version: 5.0.0
+            role: core_prime
+            suite_a: evaluation/fixtures/prime_benchmark_v1.jsonl
+            suite_b: evaluation/fixtures/prime_qualification_v2.jsonl
+            suite_c: evaluation/fixtures/prime_qualification_v3.jsonl
+          - candidate_id: granite-4.2-3b
+            repo: ibm-granite/granite-4.2-3b
+            family: IBM Granite
+            revision: 4e9c275e232f10211ec88644d106a1f6a1b60e06
+            transformers_version: 5.0.0
+            role: core_prima
+            suite_a: evaluation/fixtures/prima_benchmark_v1.jsonl
+            suite_b: evaluation/fixtures/prima_qualification_v2.jsonl
+            suite_c: evaluation/fixtures/prima_qualification_v3.jsonl
+          - candidate_id: minicpm5-2b
+            repo: openbmb/MiniCPM5-2B
+            family: OpenBMB MiniCPM
+            revision: 42433e90dad95123ab87729fd7011e7110629556
+            transformers_version: 4.57.1
+            role: core_prime
+            suite_a: evaluation/fixtures/prime_benchmark_v1.jsonl
+            suite_b: evaluation/fixtures/prime_qualification_v2.jsonl
+            suite_c: evaluation/fixtures/prime_qualification_v3.jsonl
+          - candidate_id: minicpm5-2b
+            repo: openbmb/MiniCPM5-2B
+            family: OpenBMB MiniCPM
+            revision: 42433e90dad95123ab87729fd7011e7110629556
+            transformers_version: 4.57.1
+            role: core_prima
+            suite_a: evaluation/fixtures/prima_benchmark_v1.jsonl
+            suite_b: evaluation/fixtures/prima_qualification_v2.jsonl
+            suite_c: evaluation/fixtures/prima_qualification_v3.jsonl
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -98,7 +134,7 @@ jobs:
       - name: Install pinned CPU inference dependencies
         run: |
           python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
-          python -m pip install transformers==4.57.1 accelerate==1.10.1 safetensors==0.6.2 huggingface_hub==0.36.0
+          python -m pip install "transformers==${{ matrix.transformers_version || '4.57.1' }}" accelerate==1.10.1 safetensors==0.6.2 huggingface_hub==0.36.0
       - name: Record actual runner resources
         run: python evaluation/probe_compute.py --output artifacts/compute/runner.json
       - name: Run all public competency cases against the pinned checkpoint
