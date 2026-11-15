@@ -1,0 +1,158 @@
+{
+  "schema_version": "vectolith-teacher-candidate-panels/1.0",
+  "purpose": "Role-specific candidate pools for independent teacher qualification. This is not an appointment or qualification record.",
+  "required_qualified_teachers_per_student": 4,
+  "selection_policy": {
+    "distinct_model_ids_required": true,
+    "prefer_provider_diversity": true,
+    "require_measurable_contribution": true,
+    "require_exact_immutable_revision": true,
+    "require_verified_training_output_permission": true,
+    "require_zero_cost_execution_or_explicitly_approved_cost": true,
+    "qualification_status_default": "not_qualified"
+  },
+  "students": {
+    "core_prime": {
+      "specialization": "general reasoning, knowledge, writing, instruction following, multilingual comprehension, planning, synthesis, calibration",
+      "candidates": [
+        {
+          "id": "qwen3.5-9b",
+          "repo_id": "Qwen/Qwen3.5-9B",
+          "family": "Qwen",
+          "priority": "primary",
+          "qualification_status": "not_qualified",
+          "revision": null,
+          "license_review": "pending",
+          "training_output_permission": "not_verified",
+          "reason": "Broad generalist, multilingual and multimodal candidate; verify hybrid architecture and serving/training compatibility."
+        },
+        {
+          "id": "gemma-4-e4b",
+          "repo_id": "google/gemma-4-E4B",
+          "family": "Google Gemma",
+          "priority": "primary",
+          "qualification_status": "not_qualified",
+          "revision": null,
+          "license_review": "pending",
+          "training_output_permission": "not_verified",
+          "reason": "Compact effective-parameter profile with multilingual and multimodal capability; full weight and PLE memory costs still matter."
+        },
+        {
+          "id": "granite-4.2-8b",
+          "repo_id": "ibm-granite/granite-4.2-8b",
+          "family": "IBM Granite",
+          "priority": "primary",
+          "qualification_status": "not_qualified",
+          "revision": null,
+          "license_review": "pending",
+          "training_output_permission": "not_verified",
+          "reason": "Dense reasoning and reasoning-augmented tool calling; compare its measured memory and throughput against smaller models."
+        },
+        {
+          "id": "gpt-oss-20b",
+          "repo_id": "openai/gpt-oss-20b",
+          "family": "OpenAI",
+          "priority": "primary",
+          "qualification_status": "not_qualified",
+          "revision": null,
+          "license_review": "pending",
+          "training_output_permission": "not_verified",
+          "reason": "MoE reasoning candidate with 3.6B active / 21B total parameters; Harmony formatting and total weight storage must be accounted for."
+        },
+        {
+          "id": "qwen2.5-7b-instruct",
+          "repo_id": "Qwen/Qwen2.5-7B-Instruct",
+          "family": "Qwen",
+          "priority": "comparison",
+          "qualification_status": "not_qualified",
+          "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+          "license_review": "pending",
+          "training_output_permission": "not_verified",
+          "reason": "User-requested replacement candidate; retain as a measured comparator, not an automatic teacher appointment."
+        },
+        {
+          "id": "devstral-small-2-24b",
+          "repo_id": "mistralai/Devstral-Small-2-24B-Instruct-2512",
+          "family": "Mistral",
+          "priority": "reserve",
+          "qualification_status": "not_qualified",
+          "revision": null,
+          "license_review": "pending",
+          "training_output_permission": "not_verified",
+          "reason": "Cross-family reasoning and agentic reference; 24B dense weight footprint may make it inefficient under zero-cost compute constraints."
+        }
+      ]
+    },
+    "core_prima": {
+      "specialization": "software engineering, coding, debugging, mathematics, code review, secure coding, structured tool use, execution recovery, repository-level completion",
+      "candidates": [
+        {
+          "id": "qwen3-coder-next",
+          "repo_id": "Qwen/Qwen3-Coder-Next",
+          "family": "Qwen",
+          "priority": "primary-reference",
+          "qualification_status": "not_qualified",
+          "revision": null,
+          "license_review": "pending",
+          "training_output_permission": "not_verified",
+          "reason": "Coding-agent specialist with 3B active but 80B total parameters; include only if free compute can load it efficiently."
+        },
+        {
+          "id": "granite-4.2-8b",
+          "repo_id": "ibm-granite/granite-4.2-8b",
+          "family": "IBM Granite",
+          "priority": "primary",
+          "qualification_status": "not_qualified",
+          "revision": null,
+          "license_review": "pending",
+          "training_output_permission": "not_verified",
+          "reason": "Reasoning, code generation and tool-calling candidate with dense architecture and documented serving paths."
+        },
+        {
+          "id": "gpt-oss-20b",
+          "repo_id": "openai/gpt-oss-20b",
+          "family": "OpenAI",
+          "priority": "primary",
+          "qualification_status": "not_qualified",
+          "revision": null,
+          "license_review": "pending",
+          "training_output_permission": "not_verified",
+          "reason": "Reasoning and structured tool-use candidate; evaluate code correctness and Harmony tool-call fidelity on repository tasks."
+        },
+        {
+          "id": "gemma-4-e4b",
+          "repo_id": "google/gemma-4-E4B",
+          "family": "Google Gemma",
+          "priority": "primary",
+          "qualification_status": "not_qualified",
+          "revision": null,
+          "license_review": "pending",
+          "training_output_permission": "not_verified",
+          "reason": "Efficient multimodal and function-calling comparator; test real software-engineering tasks rather than relying on published coding scores."
+        },
+        {
+          "id": "qwen2.5-coder-7b-instruct",
+          "repo_id": "Qwen/Qwen2.5-Coder-7B-Instruct",
+          "family": "Qwen",
+          "priority": "primary-specialist",
+          "qualification_status": "not_qualified",
+          "revision": null,
+          "license_review": "pending",
+          "training_output_permission": "not_verified",
+          "reason": "Smaller code-specialist comparator with a more practical weight footprint than very large coding MoEs."
+        },
+        {
+          "id": "devstral-small-2-24b",
+          "repo_id": "mistralai/Devstral-Small-2-24B-Instruct-2512",
+          "family": "Mistral",
+          "priority": "reserve-specialist",
+          "qualification_status": "not_qualified",
+          "revision": null,
+          "license_review": "pending",
+          "training_output_permission": "not_verified",
+          "reason": "Repository-level software engineering specialist; 24B dense footprint and free-compute availability are gating constraints."
+        }
+      ]
+    }
+  }
+}
