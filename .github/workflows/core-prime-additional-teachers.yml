@@ -70,6 +70,7 @@ jobs:
           python evaluation/snapshot_additional_teacher.py --candidate-id lfm2.5-2.6b --output artifacts/snapshots/lfm2.5-2.6b.json --cache-dir "${{ runner.temp }}/hf-cache"
       - name: Run real Prime v1-v4 inference
         run: |
+          set -o pipefail
           REVISION=$(python -c "import json; print(json.load(open('artifacts/snapshots/lfm2.5-2.6b.json'))['immutable_revision'])")
           python evaluation/probe_compute.py --output artifacts/compute/lfm2.5-2.6b-runner.json
           python evaluation/run_real_candidate_eval.py --repo LiquidAI/LFM2.5-2.6B --revision "$REVISION" --family "LiquidAI LFM2.5" --candidate-id lfm2.5-2.6b --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/lfm2.5-2.6b-core_prime.json 2>&1 | tee artifacts/evaluations/lfm2.5-2.6b-core_prime.log
@@ -107,6 +108,7 @@ jobs:
           python evaluation/snapshot_additional_teacher.py --candidate-id phi-4-mini-instruct --output artifacts/snapshots/phi-4-mini-instruct.json --cache-dir "${{ runner.temp }}/hf-cache"
       - name: Run real Prime v1-v4 inference without executing repository remote code
         run: |
+          set -o pipefail
           REVISION=$(python -c "import json; print(json.load(open('artifacts/snapshots/phi-4-mini-instruct.json'))['immutable_revision'])")
           python evaluation/probe_compute.py --output artifacts/compute/phi-4-mini-instruct-runner.json
           python evaluation/run_real_candidate_eval.py --repo microsoft/Phi-4-mini-instruct --revision "$REVISION" --family "Microsoft Phi-4" --candidate-id phi-4-mini-instruct --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/phi-4-mini-instruct-core_prime.json 2>&1 | tee artifacts/evaluations/phi-4-mini-instruct-core_prime.log
