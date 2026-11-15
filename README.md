@@ -24,6 +24,8 @@ A model-neutral registry publishes machine-readable capabilities and modality su
 - [Architecture](docs/architecture.md)
 - [Foundation selection](docs/foundation-selection.md)
 - [Collective distillation](docs/collective-distillation.md)
+- [Multi-teacher distillation and student independence](docs/multi-teacher-distillation-and-student-independence.md)
+- [Teacher candidate efficiency review](docs/teacher-candidate-efficiency-review.md)
 - [Training and promotion](docs/training-and-promotion.md)
 - [Release policy](docs/release-policy.md)
 
