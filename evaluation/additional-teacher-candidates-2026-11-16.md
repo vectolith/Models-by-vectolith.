@@ -4,12 +4,19 @@ This register expands discovery only. No new model is admitted as a teacher unti
 
 | Candidate | Why test it | Main risks / gates | Initial disposition |
 |---|---|---|---|
+| HuggingFaceTB/SmolLM3-3B | Strong first-priority compact text-only candidate: 3B decoder-only GQA model, hybrid reasoning, tool calling, Transformers AutoModelForCausalLM path, Apache-2.0 model-card tag. | Pin immutable revision; verify exact license file and full model snapshot; ensure chat-template thinking controls are handled consistently; measure CPU memory/throughput. | **Priority 1: compatibility + smoke test** |
+| LiquidAI/LFM2.5-2.6B | Strong first-priority efficiency/agentic candidate: text-only 2.69B hybrid model, tool-use post-training, 128K context; official card provides Transformers and CPU inference claims. | Nonstandard hybrid architecture; verify exact revision, actual Transformers version/model class and license terms (LFM Open License); reproduce CPU metrics. | **Priority 1: compatibility + smoke test** |
+| microsoft/Phi-4-mini-instruct | 3.8B dense decoder-only model with 128K context; vendor positions it for constrained-memory/latency scenarios and reasoning, math, coding and function calling. | Verify Hugging Face model card and license files; larger size than 3B candidates; run same memory/latency tests and inspect factual reliability. | Priority 2: license + compatibility review |
 | Qwen/Qwen3.5-2B | Compact 2B multimodal-family model; official card reports Apache-2.0, long context and broad language coverage. A useful independent architecture and efficiency test. | Multimodal/hybrid architecture; current text-only runner must not be assumed compatible. Pin revision, inspect exact license, verify tokenizer/template and Transformers loader. | Snapshot + compatibility smoke test only |
 | google/gemma-4-E2B-it | Efficient edge-oriented model family with instruction tuning, reasoning, native tool/function calling and multimodal support. | Confirm repository access/gating, model-specific terms and full license; multimodal loader required; embeddings make total memory larger than effective parameter count. | Snapshot + compatibility smoke test only |
 | LiquidAI/LFM2.5-2.6B | Hybrid on-device model; publisher reports agentic post-training, tool-use and CPU/edge efficiency. Official card lists LFM Open License rather than Apache-2.0. | Custom hybrid architecture may need a different runtime; benchmark claims are publisher-reported; legal review of LFM Open License required; training-output permission remains unverified. | Snapshot + compatibility smoke test only |
 | nvidia/NVIDIA-Nemotron-3-Nano-4B | Hybrid Mamba/Transformer model with tool-use and edge-inference focus; useful efficiency candidate. | Architecture/runtime compatibility and OpenMDW-1.1 license review required; publisher's GPU measurements are not CPU guarantees. | Defer until license and loader review |
 
 ## Evidence links
+
+- SmolLM3-3B official model card: https://huggingface.co/HuggingFaceTB/SmolLM3-3B
+- SmolLM3 Transformers documentation: https://huggingface.co/docs/transformers/model_doc/smollm3
+- Phi-4-mini-instruct Microsoft model catalog: https://ai.azure.com/catalog/models/Phi-4-mini-instruct
 
 - Qwen3.5-2B official model card: https://huggingface.co/Qwen/Qwen3.5-2B
 - Gemma 4 official model card: https://huggingface.co/google/gemma-4-E2B-it
@@ -31,4 +38,4 @@ Publisher benchmark, latency and memory figures are discovery leads only. Vectol
 
 ## Current status
 
-All candidates above are untested by Vectolith for this curriculum. No new teacher has been admitted, run, qualified or authorized for training.
+All candidates above are discovery-only and untested by Vectolith for this curriculum. SmolLM3-3B and LFM2.5-2.6B are first-priority compatibility candidates because their published model cards expose direct text-generation/Transformers paths and compact parameter counts. Phi-4-mini-instruct is second priority pending license and snapshot review. Qwen3.5-2B and Gemma 4 E2B IT remain lower-priority because multimodal architecture and/or model-specific license/access review add loader and governance complexity. Nemotron remains deferred. No new teacher has been admitted, run, qualified or authorized for training.
