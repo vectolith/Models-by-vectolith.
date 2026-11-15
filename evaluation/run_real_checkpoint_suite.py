@@ -18,7 +18,7 @@ import torch
 import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from evaluation.run_eval import load_cases
+from run_eval import load_cases
 
 DEFAULT_REVISION = "c1899de289a04d12100db370d81485cdf75e47ca"
 DEFAULT_REPO = "Qwen/Qwen3-0.6B"
