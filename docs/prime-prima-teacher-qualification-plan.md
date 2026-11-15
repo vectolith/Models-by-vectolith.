@@ -72,3 +72,16 @@ Each task must have an objective or human-reviewed rubric. Keep public starter t
 The manifest records six candidates for each student. **The number of qualified teachers is currently zero for Prime and zero for Prima.** Qwen2.5-7B-Instruct remains in Prime's evaluation pool as requested; it does not automatically displace newer models or become a teacher without passing the same tests.
 
 Next execution is to resolve immutable revisions and license snapshots for the complete pools, expand the role-specific qualification suites, and run real evaluations on verified no-cost compute. Once evidence exists, appoint the best four or more for each student, create contribution shards, and require positive per-teacher ablation before accepting the panel.
+
+
+## Immutable candidate discovery and free-compute status
+
+CI now snapshots the exact Hub revision, license-file content/hash, model-card content/hash, parameter metadata, tokenizer/config files and weight-file inventory for every manifest candidate. These snapshots are discovery evidence, not legal approval or teacher qualification.
+
+For zero-cost execution, Kaggle documents free GPU notebook access with a P100 or T4 options, but accelerator availability is limited and queues may apply; Google Colab states that free GPU resources are not guaranteed and limits vary dynamically. Therefore these services are **conditionally available**, not verified for this project until an eligible account starts a session and the actual model workload probe succeeds. Promotional credits and paid Colab/Kaggle add-ons are excluded.
+
+Official availability references:
+- Kaggle notebooks: https://www.kaggle.com/docs/notebooks
+- Google Colab resource limits: https://research.google.com/colaboratory/faq.html
+
+A candidate's free-compute status must be recorded per actual account/session, including accelerator model, VRAM, system RAM, free disk, queue/availability, quota remaining, runtime limit and whether the exact candidate loads and completes the qualification workload without billing.
