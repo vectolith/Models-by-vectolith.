@@ -2,13 +2,13 @@
 
 ## Purpose
 
-The vectolith runtime is a reusable execution and integration layer shared by downstream products. It allows Core Prime, Core Prima, or both to serve an application through stable interfaces without exposing or coupling consumers to internal model architectures.
+The vectolith runtime is a reusable execution and integration layer shared by downstream products. It allows Core Prime and future optional specialist models to serve an application through stable interfaces without exposing or coupling consumers to internal model architectures. Core Prime's target scope includes the former Prima engineering capabilities; Prima is paused and is not a required runtime dependency.
 
 The runtime is separate from model weights. A model proposes and reasons about actions; the runtime enforces permissions and executes tools, APIs, workflows, and state transitions.
 
 ## Required capabilities
 
-1. **Model gateway and routing:** select Core Prime, Core Prima, or a coordinated workflow based on task responsibility, capability, availability, and policy.
+1. **Model gateway and routing:** select Core Prime or an optional future specialist based on task responsibility, capability, availability, and policy. Prime must remain capable of handling engineering tasks without a Prima handoff.
 2. **Model-to-model delegation:** support structured, bidirectional handoffs, clarification requests, bounded subtasks, returns for revision, and escalation.
 3. **Task orchestration:** maintain task IDs, ownership, dependencies, status, retries, cancellation, deadlines, and resource limits.
 4. **Shared context and state:** pass versioned conversation and task-state envelopes while respecting tenant boundaries and data minimisation.
@@ -55,4 +55,4 @@ A model cannot mark a task completed solely because it generated a plausible res
 
 ## Integration readiness
 
-The runtime is not integration-ready until contract tests cover direct model use, Prime-to-Prima delegation, Prima-to-Prime delegation, tool success and failure, permission denial, approval-required actions, cancellation, timeout, partial completion, retry, context preservation, and evidence-backed completion.
+The runtime is not integration-ready until contract tests cover direct Prime use across general and engineering tasks, optional specialist delegation, tool success and failure, permission denial, approval-required actions, cancellation, timeout, partial completion, retry, context preservation, and evidence-backed completion.
