@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import unittest
 from collections import Counter
 from pathlib import Path
@@ -11,29 +10,23 @@ FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 EXPECTED_CATEGORIES = {
     "coding_generation",
     "debugging",
-    "code_review",
     "software_architecture",
     "testing_verification",
-    "algorithms_data_structures",
+    "algorithms",
     "data_analysis",
     "technical_mathematics",
     "tool_calling",
-    "agentic_task_planning",
-    "state_recovery",
-    "research_evidence",
-    "long_context_retrieval",
-    "multilingual_translation",
+    "agentic_execution",
     "security_privacy",
-    "safety_policy",
-    "robustness_adversarial",
-    "reliability_calibration",
-    "documentation_communication",
+    "research_calibration",
+    "robustness_safety",
+    "multilingual_translation",
+    "documentation",
 }
 
 class CorePrimeQualificationV4Tests(unittest.TestCase):
     def test_v4_has_four_cases_per_new_competency(self):
-        path = FIXTURES / "prime_qualification_v4.jsonl"
-        cases = load_cases(path)
+        cases = load_cases(FIXTURES / "prime_qualification_v4.jsonl")
         counts = Counter(case.get("category", "uncategorized") for case in cases)
         self.assertEqual(set(counts), EXPECTED_CATEGORIES)
         self.assertEqual(len(cases), 4 * len(EXPECTED_CATEGORIES))
