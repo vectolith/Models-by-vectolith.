@@ -50,6 +50,20 @@
       "license_review": "pending_human_legal_review",
       "training_output_permission": "not_verified",
       "teacher_qualification": "not_qualified"
+    },
+    {
+      "id": "gemma-3-270m-gated",
+      "family": "Google Gemma",
+      "repo_id": "google/gemma-3-270m",
+      "revision": "9b0cfec892e2bc2afd938c98eabe4e4a7b1e0ca1",
+      "parameter_count": 268098176,
+      "license_tag": "gemma",
+      "gated": true,
+      "gate_type": "manual",
+      "access_status": "manual_acceptance_required",
+      "license_review": "pending_human_legal_review",
+      "training_output_permission": "not_verified",
+      "teacher_qualification": "not_qualified"
     }
   ]
 }
