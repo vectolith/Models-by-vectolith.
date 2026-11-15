@@ -14,20 +14,18 @@ This package is the first executable foundation for the reusable vectolith orche
 - Tool registry with per-task allowlists and explicit approval gates.
 - Completion evidence requirement and independent review hook.
 
-## Multi-teacher distillation gates
+## Executable multi-teacher distillation
 
-The `vectolith_runtime.distillation` module provides dependency-free validation for
-teacher-panel manifests and student-independence evidence. Each student run
-requires at least four distinct teachers, verified training-output permissions,
-immutable teacher and foundation revisions, accepted contribution records, and
-positive per-teacher ablation results. Release independence evidence requires
-teacher endpoints disabled, teacher credentials absent, zero teacher calls,
-a student checkpoint digest, and passing standalone capability checks.
+The runtime now includes:
+- endpoint-based teacher qualification against role-specific benchmark tasks;
+- selection of at least four distinct qualified teachers with competency coverage;
+- OpenAI-compatible teacher calls, per-example peer review and provenance-preserving JSONL corpus generation;
+- optional LoRA supervised fine-tuning of a selected student foundation;
+- independent capability scoring, leave-one-teacher-out ablation hooks, teacher-disabled checks and a fail-closed release decision.
 
-These validators do not select teachers, query providers, generate datasets, or
-run training. Those operations require a separately secured and budget-approved
-training pipeline. See
-[the multi-teacher architecture](../docs/multi-teacher-distillation-and-student-independence.md).
+See [the executable pipeline guide](../docs/executable-multi-teacher-pipeline.md) for configuration and execution boundaries. Install optional training dependencies with `python -m pip install -e ".[training]"`.
+
+These components do not select a production teacher or student foundation automatically. Exact model revisions, licenses, provider terms, training-output permissions, held-out evaluation suites, hardware and budget must be reviewed before a run. CI tests do not call providers or start training.
 
 ## Quick start
 
