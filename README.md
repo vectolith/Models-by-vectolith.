@@ -8,15 +8,15 @@ Canonical upstream project for the vectolith model family. This repository owns 
 
 | Model | Initial specialization |
 |---|---|
-| **Core Prime** | General-purpose reasoning, conversation, instruction following, planning, synthesis, and coordination |
-| **Core Prima** | Coding, software engineering, architecture, debugging, technical design, testing, and technical execution |
+| **Core Prime** | Unified general intelligence: reasoning, conversation, research, planning, writing, mathematics, coding, software engineering, architecture, debugging, testing, structured tool use, and verified technical execution |
+| **Core Prima** | Paused initial specialist track; its planned engineering capabilities are being incorporated into Core Prime. Any future Prima release requires a separately justified role, teacher panel, training lineage, and evaluation cycle |
 | **Future family models** | Additional specializations and modalities, each with its own training objectives, evaluations, and release lifecycle |
 
 Every model has its own identity within the family, version, specialization, training objectives, evaluation criteria, and release lifecycle. All models share vectolith identity, behavioural and safety standards, compatible task/message contracts, and collaboration protocols. Different model architectures and tokenizers are permitted when interoperability is proven at the contract boundary.
 
 ## Delegated execution
 
-Core Prime handles general-purpose understanding, requirements and user communication. Core Prima specialises in technical design, coding, debugging, testing, and tool-driven execution. For software-build requests, Prime defines the requirements and acceptance criteria, Prima implements and verifies the work, and Prime independently reviews the returned evidence before reporting completion. Delegation is bidirectional and must preserve user intent, context, permissions, and task state.
+Core Prime is the unified user-facing model and is intended to handle the full task lifecycle itself: understand requests, research, reason, plan, write, calculate, design software, code, debug, test, use approved tools, verify outcomes, and communicate evidence-backed results. Engineering work is no longer excluded from Prime's scope or dependent on a separate Prima handoff. Core Prima remains paused; it may later exist as an optional specialist only if a distinct need is demonstrated. Runtime tool permissions and approval gates remain external and cannot be expanded by model capability.
 
 See the [delegated execution contract](docs/delegated-execution-contract.md) and [runtime architecture](docs/runtime-architecture.md).
 
