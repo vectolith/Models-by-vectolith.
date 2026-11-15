@@ -10,12 +10,18 @@ python evaluation/discover_hf_candidates.py \
   --search "Granite instruct" \
   --search "Gemma instruct" \
   --search "Ministral instruct" \
+  --search "Ministral instruct" \
+  --author "Qwen" \
+  --author "ibm-granite" \
+  --author "google" \
+  --author "mistralai" \
+  --author "ministral" \
   --limit 100 \
   --sort downloads \
   --output artifacts/candidates/huggingface-discovery.jsonl
 ```
 
-Or snapshot exact repository IDs with repeated `--repo` arguments. Search results are discovery leads, not recommendations or qualifications. Search results can change over time; preserve each timestamped output rather than overwriting earlier evidence.
+Or snapshot exact repository IDs with repeated `--repo` arguments. Search results are restricted to the text-generation pipeline and, when supplied, exact official publisher accounts. They are discovery leads, not recommendations or qualifications. Search results can change over time; preserve each timestamped output rather than overwriting earlier evidence.
 
 Each candidate snapshot pins a 40-character immutable Hub commit SHA and records the metadata URL, model-card and license-file source URLs, exact retrieved text, SHA-256 hashes, architecture, parameter metadata when supplied, weight/tokenizer/config file inventories, gating state and tags. The exact text is retained in the JSONL record so legal reviewers can inspect the evidence later. A missing license file is recorded as missing; it is not inferred from a tag.
 

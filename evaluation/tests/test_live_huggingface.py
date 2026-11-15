@@ -18,12 +18,21 @@ from evaluation import discover_hf_candidates
 )
 class HuggingFaceLiveIntegrationTests(unittest.TestCase):
     def test_real_catalog_search_returns_public_model_records(self):
-        records = discover_hf_candidates.discover("bert", limit=5, sort="downloads")
+        records = discover_hf_candidates.discover("Qwen3", limit=5, sort="downloads", pipeline_tag="text-generation", author="Qwen")
         self.assertTrue(records, "Hugging Face catalog search returned no models")
         self.assertTrue(
-            all(isinstance(record.get("id"), str) and "/" in record["id"] for record in records),
+            all(isinstance(record.get("id"), str) and "/" in record["id"] and record.get("pipeline_tag") == "text-generation" and record["id"].split("/", 1)[0] == "Qwen" for record in records),
             "Hub search returned records without valid repository IDs",
         )
+
+    def test_real_ministral_publisher_search_returns_official_text_generation_models(self):
+        records = discover_hf_candidates.discover(
+            "Ministral", limit=5, sort="downloads",
+            pipeline_tag="text-generation", author="ministral"
+        )
+        self.assertTrue(records, "Official Ministral publisher search returned no models")
+        self.assertTrue(all(record["id"].split("/", 1)[0] == "ministral" for record in records))
+        self.assertTrue(all(record.get("pipeline_tag") == "text-generation" for record in records))
 
     def test_real_repository_snapshot_pins_revision_and_preserves_card_evidence(self):
         record = discover_hf_candidates.snapshot("google-bert/bert-base-uncased")
