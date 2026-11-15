@@ -27,15 +27,15 @@
           "reason": "Broad generalist, multilingual and multimodal candidate; verify hybrid architecture and serving/training compatibility."
         },
         {
-          "id": "gemma-4-e4b-it",
-          "repo_id": "google/gemma-4-E4B-it",
-          "family": "Google Gemma",
-          "priority": "primary",
+          "id": "qwen3.6-35b-a3b",
+          "repo_id": "Qwen/Qwen3.6-35B-A3B",
+          "family": "Qwen",
+          "priority": "comparison",
           "qualification_status": "not_qualified",
           "revision": null,
           "license_review": "pending",
           "training_output_permission": "not_verified",
-          "reason": "Compact effective-parameter profile with multilingual and multimodal capability; full weight and PLE memory costs still matter."
+          "reason": "Sparse Qwen reasoning and technical comparator; total checkpoint storage remains a compute constraint."
         },
         {
           "id": "granite-4.2-8b",
@@ -208,15 +208,15 @@
           "reason": "Reasoning and structured tool-use candidate; evaluate code correctness and Harmony tool-call fidelity on repository tasks."
         },
         {
-          "id": "gemma-4-e4b-it",
-          "repo_id": "google/gemma-4-E4B-it",
-          "family": "Google Gemma",
-          "priority": "primary",
+          "id": "qwen3.6-27b",
+          "repo_id": "Qwen/Qwen3.6-27B",
+          "family": "Qwen",
+          "priority": "comparison",
           "qualification_status": "not_qualified",
           "revision": null,
           "license_review": "pending",
           "training_output_permission": "not_verified",
-          "reason": "Efficient multimodal and function-calling comparator; test real software-engineering tasks rather than relying on published coding scores."
+          "reason": "Newer dense Qwen reasoning and coding comparator for technical tasks."
         },
         {
           "id": "qwen2.5-coder-7b-instruct",
