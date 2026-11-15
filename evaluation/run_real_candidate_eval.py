@@ -61,7 +61,7 @@ def main() -> int:
           "max_new_tokens":a.max_new_tokens,"generation_cap_reached":hit_token_cap,
           "generation_status":"token_limit_reached" if hit_token_cap else "eos_or_early_stop",
           "latency_seconds":latency,"response_text":response,"error":None})
-        raw_handle.write(json.dumps(results[-1],ensure_ascii=False,sort_keys=True)+"\\n")
+        raw_handle.write(json.dumps(results[-1],ensure_ascii=False,sort_keys=True)+"\n")
         raw_handle.flush()
         print(f"{case['id']}: {len(new)} tokens in {latency}s",flush=True)
     raw_handle.close()
