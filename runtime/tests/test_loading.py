@@ -57,6 +57,7 @@ class ModelLoadingTests(unittest.IsolatedAsyncioTestCase):
         self.registry.register(ModelManifest(
             model_id="no-backend", display_name="No backend", version="1",
             specialization="test", capabilities=frozenset({"reasoning"}),
+            lifecycle=ModelLifecycle.RELEASED,
         ))
         with self.assertRaises(ValueError):
             await self.runtime.load_model("no-backend")
