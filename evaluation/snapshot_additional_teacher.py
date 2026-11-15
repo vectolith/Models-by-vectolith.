@@ -8,8 +8,6 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from huggingface_hub import HfApi, snapshot_download
-
 
 EXPECTED = {
     "smollm3-3b": {
@@ -48,6 +46,8 @@ def main() -> int:
     parser.add_argument("--cache-dir", type=Path, required=True)
     parser.add_argument("--revision", default="main")
     args = parser.parse_args()
+
+    from huggingface_hub import HfApi, snapshot_download
 
     expected = EXPECTED[args.candidate_id]
     api = HfApi()
