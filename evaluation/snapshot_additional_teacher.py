@@ -59,7 +59,7 @@ def main() -> int:
         raise RuntimeError(f"Candidate is not publicly snapshot-accessible: gated={info.gated}, private={info.private}, disabled={info.disabled}")
 
     card = info.card_data.to_dict() if info.card_data else {}
-    observed_license = str(card.get("license") or "").lower()
+    observed_license = str(card.get("license_name") or card.get("license") or "").lower()
     if observed_license != expected["license"]:
         raise RuntimeError(f"License tag mismatch: expected {expected['license']}, observed {observed_license!r}")
 
