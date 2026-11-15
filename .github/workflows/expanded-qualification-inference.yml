@@ -11,6 +11,10 @@ on:
       - "evaluation/**"
       - ".github/workflows/expanded-qualification-inference.yml"
 
+concurrency:
+  group: core-prime-inference-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
