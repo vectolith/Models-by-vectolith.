@@ -52,7 +52,7 @@ python evaluation/discover_hf_candidates.py \\
   --repo Qwen/Qwen3.5-9B \\
   --repo ibm-granite/granite-4.2-8b \\
   --repo google/gemma-4-E4B \\
-  --repo mistralai/Mistral-Small-4 \\
+  --repo mistralai/Mistral-Small-4-119B-2603 \\
   --output artifacts/candidates/huggingface-snapshot.jsonl
 
 python evaluation/probe_compute.py --output artifacts/compute/observation.json
