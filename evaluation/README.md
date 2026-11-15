@@ -92,3 +92,11 @@ VECTOLITH_RUN_LIVE_TESTS=1 python -m unittest evaluation.tests.test_live_hugging
 This remains an execution/resource comparison, not a foundation selection. The run uses CPU only and does not predict GPU performance or establish free GPU-provider access. Public smoke-suite outputs require independent rubric grading and are not a hidden holdout.
 
 Every candidate remains `license_review=pending_human_legal_review`, `training_output_permission=not_verified`, and `teacher_qualification=not_qualified`. No student training is performed.
+
+
+## Expanded competency suites and private holdout
+
+- `fixtures/prime_qualification_v2.jsonl`: 20 additional Core Prime cases across reasoning, quantitative reasoning, knowledge calibration, planning, instruction following, synthesis, summarization, writing, multilingual comprehension, ambiguity, safety, privacy, uncertainty, causality, data interpretation, temporal reasoning, conflict resolution, explanation quality and execution honesty.
+- `fixtures/prima_qualification_v2.jsonl`: 21 additional Core Prima cases across implementation, input validation, testing, secure coding, concurrency, algorithms, debugging, structured tool use, recovery, API design, migrations, caching, tenant authorization, CI, performance, code review, architecture, mathematics and execution honesty.
+- These are expanded public benchmark suites, not private holdouts. They require human rubric grading and repeated runs; they do not by themselves qualify teachers.
+- `run_private_holdout.py` runs an externally mounted, hash-pinned, access-restricted suite and keeps raw outputs outside the public checkout. See [private holdout operations](../docs/private-holdout-operations.md). No private dataset or answer key is committed here.
