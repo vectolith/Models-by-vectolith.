@@ -2,7 +2,9 @@
 
 ## Scope
 
-Core Prima is **paused**. Do not run, train, rank, or qualify Core Prima in this cycle. It must have a separate teacher panel and evidence.
+Core Prima is **paused**. Do not run, train, rank, or qualify Core Prima in this cycle. Its planned software-engineering, coding, architecture, debugging, testing, and technical-execution abilities are now part of Core Prime's target capability scope. Do not create a separate Prima corpus in this cycle.
+
+Core Prime is being developed as a unified generalist capable of both broad cognitive tasks and specialist-level technical work. The Prime curriculum and future evaluation must cover research, mathematics, writing, data analysis, coding, software architecture, debugging, testing, structured tool use, agentic execution, and evidence-backed completion. The current 124-case response collection is not, by itself, proof of coverage or competence across this expanded scope; additional Prime cases and evaluation gates are required before training or release claims.
 
 Core Prime will learn from all three active teacher models, in sequence:
 
