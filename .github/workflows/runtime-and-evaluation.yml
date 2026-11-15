@@ -97,28 +97,7 @@ jobs:
 
   real-family-comparison:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      max-parallel: 4
-      matrix:
-        include:
-          - slug: qwen3-0.6b-bf16
-            family: Qwen
-            repo: Qwen/Qwen3-0.6B
-            revision: c1899de289a04d12100db370d81485cdf75e47ca
-          - slug: qwen3-4b-bf16
-            family: Qwen
-            repo: Qwen/Qwen3-4B
-            revision: 1cfa9a7208912126459214e8b04321603b3df60c
-          - slug: granite-3.1-3b-bf16
-            family: IBM Granite
-            repo: ibm-granite/granite-3.1-3b-a800m-instruct
-            revision: a02780686e08a03fe0d2679a293b5c74a90efa89
-          - slug: ministral-3b-bf16
-            family: Mistral
-            repo: ministral/Ministral-3b-instruct
-            revision: 2c95908929198d6e69af8638f0dbbd9bc6b93f9e
+    timeout-minutes: 60
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -130,23 +109,37 @@ jobs:
         run: |
           python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
           python -m pip install transformers==4.57.1 accelerate==1.10.1 safetensors==0.6.2 huggingface_hub==0.36.0
-      - name: Run real candidate evaluation
+      - name: Capture the single-runner compute environment
+        run: python evaluation/probe_compute.py --output artifacts/compute/sequential-runner.json
+      - name: Run all accessible pinned candidates sequentially on this same runner
         run: |
-          python evaluation/run_real_candidate_eval.py \
-            --repo "${{ matrix.repo }}" \
-            --revision "${{ matrix.revision }}" \
-            --family "${{ matrix.family }}" \
+          python evaluation/run_real_candidate_matrix.py \
+            --manifest evaluation/fixtures/real_cpu_candidates_v1.json \
             --suite evaluation/fixtures/prime_smoke.jsonl \
             --suite evaluation/fixtures/prima_smoke.jsonl \
             --dtype bfloat16 \
             --max-new-tokens 64 \
             --cache-dir "${{ runner.temp }}/hf-cache" \
-            --output "artifacts/evaluations/${{ matrix.slug }}.json"
-      - name: Preserve real candidate outputs
+            --output-dir artifacts/evaluations/candidates \
+            --run-record artifacts/evaluations/candidate-run.json
+      - name: Generate execution comparison report
+        if: always() && hashFiles('artifacts/evaluations/candidate-run.json') != ''
+        run: |
+          python evaluation/summarize_real_candidate_results.py \
+            --run-record artifacts/evaluations/candidate-run.json \
+            --results-dir artifacts/evaluations/candidates \
+            --output-json artifacts/evaluations/comparison-report.json \
+            --output-markdown artifacts/evaluations/comparison-report.md
+      - name: Preserve raw outputs, logs, hardware and comparison report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: real-candidate-${{ matrix.slug }}
-          path: artifacts/evaluations/${{ matrix.slug }}.json
-          if-no-files-found: ignore
+          name: sequential-real-candidate-comparison
+          path: |
+            artifacts/evaluations/candidates/
+            artifacts/evaluations/candidate-run.json
+            artifacts/evaluations/comparison-report.json
+            artifacts/evaluations/comparison-report.md
+            artifacts/compute/sequential-runner.json
+          if-no-files-found: warn
           retention-days: 30
