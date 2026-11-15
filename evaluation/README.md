@@ -117,3 +117,13 @@ The v3 public suites add four independently worded cases per competency category
 - Run `python -m unittest evaluation.tests.test_balanced_qualification_v3 -v` to validate category coverage and fixture integrity.
 
 These are public development/evaluation fixtures, not a secret holdout. The v3 suites have now been executed against four pinned CPU candidates in both roles (eight candidate/role runs); raw outputs and resource records are preserved as workflow artifacts. The outputs have not been independently human-graded. Fixture validation establishes schema and coverage only; successful inference establishes execution, not model qualification.
+
+
+## Unified Core Prime curriculum v4
+
+- `fixtures/prime_qualification_v4.jsonl`: 76 additional public cases across 19 competencies covering coding generation, debugging, code review, software architecture, testing, algorithms, data analysis, technical mathematics, tool calling, agentic planning, state recovery, research evidence, long-context retrieval, multilingual translation, security/privacy, safety policy, adversarial robustness, reliability calibration and technical documentation.
+- `tests/test_core_prime_qualification_v4.py` validates category counts, rubric presence and unique IDs.
+- The Prime multi-teacher inference workflow now includes v4 for every active teacher. All raw outputs, including failures and truncated answers, remain preserved.
+- See [the v4 curriculum and proposed gates](core-prime-evaluation-curriculum-v4.md) and [additional teacher discovery register](additional-teacher-candidates-2026-11-16.md).
+- The new teacher candidates are discovery-only until exact snapshots, compatibility tests, resource measurements, independent human grading and separate training-output permission review are complete.
+- v4 is a public development suite, not a private holdout. No v4 responses or answers may be used for training.
