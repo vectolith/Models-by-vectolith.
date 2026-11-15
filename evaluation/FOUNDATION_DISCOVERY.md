@@ -10,10 +10,12 @@ python evaluation/discover_hf_candidates.py \
   --search "Granite instruct" \
   --search "Gemma instruct" \
   --search "Ministral instruct" \
+  --search "Ministral instruct" \
   --author "Qwen" \
   --author "ibm-granite" \
   --author "google" \
   --author "mistralai" \
+  --author "ministral" \
   --limit 100 \
   --sort downloads \
   --output artifacts/candidates/huggingface-discovery.jsonl
