@@ -116,4 +116,4 @@ The v3 public suites add four independently worded cases per competency category
 - `fixtures/prima_qualification_v3.jsonl`: 80 additional Core Prima cases across 20 competencies.
 - Run `python -m unittest evaluation.tests.test_balanced_qualification_v3 -v` to validate category coverage and fixture integrity.
 
-These are public development/evaluation fixtures, not a secret holdout. They have not yet been run against model checkpoints or independently human-graded. Fixture validation establishes schema and coverage only; it is not model qualification.
+These are public development/evaluation fixtures, not a secret holdout. The v3 suites have now been executed against four pinned CPU candidates in both roles (eight candidate/role runs); raw outputs and resource records are preserved as workflow artifacts. The outputs have not been independently human-graded. Fixture validation establishes schema and coverage only; successful inference establishes execution, not model qualification.
