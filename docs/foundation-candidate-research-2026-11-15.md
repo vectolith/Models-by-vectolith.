@@ -10,7 +10,7 @@ The initial candidate pool should be expanded beyond one model family. The best 
 - **Qwen3.5-9B** is a high-priority cross-role candidate because its model card documents 201 languages/dialects, multimodal pretraining, 262K native context, and explicit SGLang/vLLM OpenAI-compatible serving and tool-call parsers. Its hybrid Gated DeltaNet/Gated Attention architecture means generic decoder-only LoRA tooling must be validated, not assumed.
 - **IBM Granite 4.2 8B** is a high-priority Prima candidate and Prime comparator: reasoning-augmented tool calling, agentic workflows, Apache 2.0, 128K native context, and a conventional dense decoder-only `GraniteForCausalLM` architecture. IBM documents tested support for 12 languages, not broad dialect coverage. Current vLLM instructions require recent versions and a model-specific reasoning parser.
 - **Gemma 4 E4B** is a high-priority Prime efficiency candidate and multimodal comparator: Apache 2.0, 128K context, audio/image input, and multilingual support described as 35+ supported languages / pretraining across 140+ languages. Its per-layer embeddings and hybrid attention require explicit trainer and serving compatibility checks.
-- **Mistral Small 4** belongs in a high-capability reference tier, not the first constrained deployment tier. It unifies reasoning, coding, agentic and multimodal capabilities under Apache 2.0, but its 119B total / 6.5B active MoE size and stated 4x H100-class minimum infrastructure make its total memory and operational cost materially different from the smaller candidates.
+- **Mistral Small 4** belongs in a high-capability reference tier, not the first constrained deployment tier. It unifies reasoning, coding, agentic and multimodal capabilities under Apache 2.0, but its 119B total / 6B active (8B including embedding and output layers) and stated 4x H100-class minimum infrastructure make its total memory and operational cost materially different from the smaller candidates.
 
 These are candidate hypotheses, not rankings. No model has been benchmarked by vectolith in this repository yet.
 
@@ -21,7 +21,7 @@ These are candidate hypotheses, not rankings. No model has been benchmarked by v
 | `Qwen/Qwen3.5-9B` | Prime and Prima | 9B language model, hybrid Gated DeltaNet + Gated Attention, vision encoder | 262,144 native; vision-language; vendor claims 201 languages and dialects | Apache 2.0 (verify exact revision) | Broad language coverage, reasoning, coding, agents, tool use; SGLang and vLLM OpenAI-compatible server recipes | Newer hybrid architecture; validate PEFT target modules, quantization, model loading, tokenizer/chat template, tool-call parsing and runtime maturity |
 | `ibm-granite/granite-4.2-8b` | Prima primary candidate; Prime comparator | 8B dense decoder-only, `GraniteForCausalLM` | 128K native; text | Apache 2.0 | Reasoning, coding, reasoning-augmented tool calling, agentic workflows; documented vLLM serving | Vendor lists 12 tested languages; no claimed broad dialect benchmark. Validate custom reasoning parser and QLoRA target modules |
 | `google/gemma-4-E4B` | Prime primary candidate; Prima comparator | 4.5B effective / 8B with embeddings; hybrid attention and per-layer embeddings | 128K; text, image, audio input | Apache 2.0 | Edge/consumer efficiency, reasoning, function calling, multimodal input, 35+ supported languages / 140+ pretraining languages | Effective parameter count is not full memory size; validate PLE/hybrid-attention compatibility with trainer, quantization and serving engine |
-| `mistralai/Mistral-Small-4` | High-capability reference candidate for both roles | 119B total / 6.5B active MoE | Multimodal text/image; verify exact context on checkpoint | Apache 2.0 | Unifies instruct, reasoning, multimodal and agentic coding; available in vLLM, llama.cpp, SGLang, Transformers | Provider states minimum infrastructure of 4x H100 / 2x H200 / 1x DGX B200. Likely inappropriate for first low-cost deployment; verify exact checkpoint and total memory |
+| `mistralai/Mistral-Small-4` | High-capability reference candidate for both roles | 119B total / 6B active (8B including embedding and output layers) MoE | Multimodal text/image; verify exact context on checkpoint | Apache 2.0 | Unifies instruct, reasoning, multimodal and agentic coding; available in vLLM, llama.cpp, SGLang, Transformers | Provider states minimum infrastructure of 4x H100 / 2x H200 / 1x DGX B200. Likely inappropriate for first low-cost deployment; verify exact checkpoint and total memory |
 
 ### Official evidence
 
@@ -66,6 +66,10 @@ Prima must be evaluated on repository-level changes, bug localization, debugging
 | Serving compatibility | Official server recipes exist for all candidates or their serving stacks, but exact pinned versions and production reliability have not been validated in VELNOR |
 | Latency, VRAM, cost | No vectolith measurements exist; do not estimate from parameter count alone |
 | Final selection | Not made |
+
+## Zero-budget availability
+
+The project has no approved spending budget. A candidate is not considered practically available merely because its weights are open. Before scheduling an evaluation, record current no-cost GPU access, accelerator memory, quota/session duration, queue availability, model-size limits, storage/egress constraints, account and regional eligibility, and whether payment details or billing activation are required. Distinguish free capacity from trial credits and promotional grants. No paid inference, hosted API, or compute is authorized by this research note. If a candidate cannot be evaluated on genuinely free capacity, record it as pending rather than substituting vendor benchmark claims for measured results.
 
 ## Reproducible evaluation protocol
 
