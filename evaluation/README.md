@@ -64,7 +64,7 @@ Catalog search returns discovery leads, not qualified candidates. Snapshots pin 
 
 The ordinary unit suite uses deterministic fixtures for edge cases. The live integration suite makes real HTTPS requests to the public Hugging Face Hub, performs catalog searches, and snapshots a real public checkpoint's metadata/model card.
 
-CI downloads Qwen3-0.6B at an immutable revision and runs both public Prime and Prima smoke suites through the real tokenizer and model using Transformers on CPU. It records raw outputs, prompt hashes, rubric text, input/output token counts, per-case latency, runtime versions, architecture and peak RSS. These public smoke fixtures are execution-path checks, not secret holdouts and not a capability score. This is not a comparison across model families, a GPU/free-provider test, or training.
+CI downloads exact immutable checkpoints and runs both public Prime and Prima smoke suites through the real tokenizer and models using Transformers on CPU. The candidate comparison runs sequentially on one GitHub-hosted CPU runner, so CPU model, CPU instruction capability, RAM, PyTorch and Transformers versions are verified identical before latency is compared. It records raw outputs, prompt hashes, rubric text, input/output token counts, per-case latency, architecture, dtype and peak RSS. These public smoke fixtures are execution-path checks, not secret holdouts and not a capability score. This is not a GPU/free-provider test or training.
 
 Run the real checkpoint suite locally (requires torch, transformers, accelerate and network access):
 
@@ -85,7 +85,7 @@ VECTOLITH_RUN_LIVE_TESTS=1 python -m unittest evaluation.tests.test_live_hugging
 
 ## Real multi-family CPU comparison
 
-`fixtures/real_cpu_candidates_v1.json` pins an initial comparison set: two Qwen sizes, one IBM Granite checkpoint and one Ministral checkpoint. CI loads each exact revision in a separate GitHub-hosted CPU job, uses BF16, and runs the same Prime/Prima smoke fixtures. Raw outputs, token counts, latency, runtime/model metadata and peak RSS are uploaded as separate artifacts.
+`fixtures/real_cpu_candidates_v1.json` pins an initial comparison set: two Qwen sizes, one IBM Granite checkpoint and one Ministral checkpoint. CI loads each exact revision sequentially on the same GitHub-hosted CPU runner, uses BF16, and runs the same Prime/Prima smoke fixtures. The matrix runner verifies identical CPU model/capability, core count, system RAM, PyTorch and Transformers versions, plus identical case IDs and prompt hashes, before it marks latency metrics comparable. Raw outputs, token counts, latency, runtime/model metadata and peak RSS are uploaded as one comparison artifact.
 
 This is a constrained execution comparison, not a foundation selection. It measures CPU execution only and does not predict GPU latency. Gemma is discovered but not included in this run because the selected official Gemma checkpoints are manually gated; no account acceptance or access token is available to this workflow. A gated model must not be bypassed.
 
