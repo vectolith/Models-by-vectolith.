@@ -6,6 +6,35 @@ from threading import RLock
 
 IDENTITY_CONTRACT_VERSION = "1.0"
 
+# Target capability profile for the unified Core Prime model. These identifiers
+# describe intended scope, not proof that a checkpoint has passed evaluation.
+CORE_PRIME_TARGET_CAPABILITIES = frozenset({
+    "conversation.dialogue",
+    "instruction.following",
+    "reasoning.general",
+    "reasoning.logical",
+    "reasoning.mathematical",
+    "research.decomposition",
+    "research.source_comparison",
+    "research.evidence_synthesis",
+    "knowledge.factual_qa",
+    "writing.general",
+    "planning.task",
+    "planning.project",
+    "analysis.data",
+    "coding.generation",
+    "coding.explanation",
+    "software.architecture.design",
+    "software.debugging",
+    "software.testing",
+    "software.review",
+    "tools.structured_use",
+    "agents.task_execution",
+    "agents.state_management",
+    "verification.results",
+    "communication.uncertainty",
+})
+
 @dataclass(frozen=True, slots=True)
 class FamilyIdentity:
     family: str = "vectolith"
