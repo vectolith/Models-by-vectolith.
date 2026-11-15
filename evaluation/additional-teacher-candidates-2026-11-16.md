@@ -43,7 +43,7 @@ All candidates above are discovery-only and untested by Vectolith for this curri
 
 ## Additional Core Prime teacher pipeline — implementation status
 
-The three selected discovery candidates now have a sequential GitHub Actions pipeline at `.github/workflows/core-prime-additional-teachers.yml`:
+The three selected discovery candidates now have a sequential GitHub Actions pipeline at `.github/workflows/expanded-qualification-inference.yml`:
 
 1. SmolLM3-3B
 2. LFM2.5-2.6B
