@@ -23,6 +23,7 @@ A model-neutral registry publishes machine-readable capabilities and modality su
 - [Model registry and capability discovery](docs/model-registry-and-capabilities.md)
 - [Architecture](docs/architecture.md)
 - [Foundation selection](docs/foundation-selection.md)
+- [Independent foundation selection and global-English standard](docs/independent-foundation-selection-and-global-english.md)
 - [Collective distillation](docs/collective-distillation.md)
 - [Training and promotion](docs/training-and-promotion.md)
 - [Release policy](docs/release-policy.md)
