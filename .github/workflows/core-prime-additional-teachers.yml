@@ -32,6 +32,7 @@ jobs:
           python evaluation/snapshot_additional_teacher.py --candidate-id smollm3-3b --output artifacts/snapshots/smollm3-3b.json --cache-dir "${{ runner.temp }}/hf-cache"
       - name: Run real Prime v1-v4 inference
         run: |
+          set -o pipefail
           REVISION=$(python -c "import json; print(json.load(open('artifacts/snapshots/smollm3-3b.json'))['immutable_revision'])")
           python evaluation/probe_compute.py --output artifacts/compute/smollm3-3b-runner.json
           python evaluation/run_real_candidate_eval.py --repo HuggingFaceTB/SmolLM3-3B --revision "$REVISION" --family "HuggingFaceTB SmolLM3" --candidate-id smollm3-3b --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/smollm3-3b-core_prime.json 2>&1 | tee artifacts/evaluations/smollm3-3b-core_prime.log
