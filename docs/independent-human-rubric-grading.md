@@ -22,6 +22,7 @@ One JSON object per evaluator, candidate, model revision, run, and benchmark cas
 {
   "schema_version": "vectolith-human-grading/1.0",
   "benchmark_case_id": "prime-reasoning-001",
+  "evidence_started_at": "2026-11-15T16:00:00+00:00",
   "candidate_id": "provider/model",
   "model_revision": "IMMUTABLE_REVISION",
   "role": "core_prime",
@@ -39,7 +40,7 @@ One JSON object per evaluator, candidate, model revision, run, and benchmark cas
 }
 ```
 
-Every rubric criterion must be scored exactly once. Each grade must match raw evidence by case, candidate, revision, role, and category. The tool rejects unknown criteria, missing scores, duplicate evaluator grades, invalid scores, and mismatched evidence. Keep evaluator identities stable and use independent reviewers; multiple runs by one person do not count as independent evaluators.
+Every rubric criterion must be scored exactly once. Each grade must match raw evidence by case, candidate, revision, role, category, and exact `started_at` value (`evidence_started_at` in the grade). This distinguishes repeated inference runs of the same case. The tool rejects unknown criteria, missing scores, duplicate evaluator grades, invalid scores, and mismatched evidence. Keep evaluator identities stable and use independent reviewers; multiple runs by one person do not count as independent evaluators. A grade is bound to one exact raw response; do not grade a different repeat using the same run identifier.
 
 ## Generate a summary
 
