@@ -64,7 +64,7 @@ def sha256_text(value: str | None) -> str | None:
     return hashlib.sha256(value.encode("utf-8")).hexdigest() if value is not None else None
 
 
-def discover(search: str, limit: int = 50, sort: str = "downloads", pipeline_tag: str | None = "text-generation") -> list[dict[str, Any]]:
+def discover(search: str, limit: int = 50, sort: str = "downloads", pipeline_tag: str | None = "text-generation", author: str | None = None) -> list[dict[str, Any]]:
     """Search the public Hub catalog, following pagination up to limit."""
     if not search.strip():
         raise ValueError("search query must not be empty")
@@ -78,6 +78,7 @@ def discover(search: str, limit: int = 50, sort: str = "downloads", pipeline_tag
         "sort": sort,
         "direction": "-1",
         **({"pipeline_tag": pipeline_tag} if pipeline_tag else {}),
+        **({"author": author} if author else {}),
     })
     next_url: str | None = f"{API}?{params}"
     while next_url and len(results) < limit:
@@ -87,7 +88,8 @@ def discover(search: str, limit: int = 50, sort: str = "downloads", pipeline_tag
         results.extend(
             item for item in page
             if isinstance(item, dict) and (
-                pipeline_tag is None or item.get("pipeline_tag") == pipeline_tag
+                (pipeline_tag is None or item.get("pipeline_tag") == pipeline_tag)
+                and (author is None or item.get("author") == author)
             )
         )
     return results[:limit]
@@ -156,21 +158,25 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--limit", type=int, default=50, help="Maximum results per search query (1-1000)")
     parser.add_argument("--sort", choices=("downloads", "likes", "lastModified", "createdAt"), default="downloads")
     parser.add_argument("--pipeline-tag", default="text-generation", help="Require this Hub pipeline tag; use 'none' to disable filtering")
+    parser.add_argument("--author", action="append", help="Restrict each --search to an exact Hub author; repeat once per search, or once to apply to all searches")
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args(argv)
 
     repo_ids: list[str] = list(args.repo or [])
     failures = 0
     if args.search:
-        for query in args.search:
+        if args.author and len(args.author) not in (1, len(args.search)):
+            parser.error("provide one --author for all searches or one --author per --search")
+        for index, query in enumerate(args.search):
             try:
                 pipeline_tag = None if args.pipeline_tag.lower() == "none" else args.pipeline_tag
-                matches = discover(query, args.limit, args.sort, pipeline_tag)
+                author = args.author[0] if len(args.author) == 1 else (args.author[index] if args.author else None)
+                matches = discover(query, args.limit, args.sort, pipeline_tag, author)
                 repo_ids.extend(
                     item["id"] for item in matches
                     if isinstance(item.get("id"), str)
                 )
-                print(f"search={query!r}: discovered={len(matches)}", file=sys.stderr)
+                print(f"search={query!r} author={author!r}: discovered={len(matches)}", file=sys.stderr)
             except Exception as exc:
                 failures += 1
                 print(f"search={query!r}: ERROR {type(exc).__name__}: {exc}", file=sys.stderr)
