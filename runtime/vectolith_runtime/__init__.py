@@ -19,7 +19,7 @@ from .engine import (
 from .loading import LoadedModel, ModelLoader, ModelLoaderRegistry, ModelRuntime
 from .persistence import SQLiteModelRegistry
 from .registry import (
-    IDENTITY_CONTRACT_VERSION, FamilyIdentity, ModelLifecycle, ModelManifest, ModelRegistry,
+    CORE_PRIME_TARGET_CAPABILITIES, IDENTITY_CONTRACT_VERSION, FamilyIdentity, ModelLifecycle, ModelManifest, ModelRegistry,
 )
 
 __all__ = [
@@ -28,6 +28,7 @@ __all__ = [
     "ToolRegistry", "VectolithRuntime", "IDENTITY_CONTRACT_VERSION",
     "FamilyIdentity", "ModelLifecycle", "ModelManifest", "ModelRegistry",
     "SQLiteModelRegistry", "LoadedModel", "ModelLoader", "ModelLoaderRegistry", "ModelRuntime",
+    "CORE_PRIME_TARGET_CAPABILITIES",
     "IndependenceEvidence", "TeacherContribution", "TeacherPanel", "validate_panels",
     "OpenAICompatibleTeacher", "QualifiedTeacher", "TeacherAssignmentPanel",
     "TeacherEndpoint", "TeacherQualification", "TeachingTask",
