@@ -1,25 +1,29 @@
 # Automated foundation discovery and qualification
 
-## Current scope
+## Candidate discovery and evidence
 
-The discovery script snapshots public Hugging Face metadata at an immutable commit SHA. It records the repository, revision, architecture, tags, license metadata, model-card hash, license-file hash, gating state, and weight-file inventory. It does not download weights or decide legal suitability. A human review must inspect the exact license text, linked terms, attribution obligations, use restrictions, and whether model outputs may be used to train another model. The latter is recorded as **not verified** by default, even when the weights carry a permissive license.
-
-Run:
+Search the public Hugging Face catalog instead of relying only on a manually curated list:
 
 ```bash
 python evaluation/discover_hf_candidates.py \
-  --repo Qwen/Qwen3.5-9B \
-  --repo ibm-granite/granite-4.2-8b \
-  --repo google/gemma-4-E4B \
-  --repo mistralai/Mistral-Small-4 \
-  --output artifacts/candidates/huggingface-snapshot.jsonl
+  --search "Qwen instruct" \
+  --search "Granite instruct" \
+  --search "Gemma instruct" \
+  --search "Ministral instruct" \
+  --limit 100 \
+  --sort downloads \
+  --output artifacts/candidates/huggingface-discovery.jsonl
 ```
 
-A snapshot is time-stamped evidence. Re-run discovery to detect changed repository heads; do not overwrite an earlier snapshot when comparing results.
+Or snapshot exact repository IDs with repeated `--repo` arguments. Search results are discovery leads, not recommendations or qualifications. Search results can change over time; preserve each timestamped output rather than overwriting earlier evidence.
+
+Each candidate snapshot pins a 40-character immutable Hub commit SHA and records the metadata URL, model-card and license-file source URLs, exact retrieved text, SHA-256 hashes, architecture, parameter metadata when supplied, weight/tokenizer/config file inventories, gating state and tags. The exact text is retained in the JSONL record so legal reviewers can inspect the evidence later. A missing license file is recorded as missing; it is not inferred from a tag.
+
+The script does not determine legal suitability. A human review must inspect the exact license text, linked terms, attribution obligations, use restrictions, and whether model outputs may be used to train another model. The latter remains **not verified** by default, even when the weights carry a permissive license. A model-card license tag is discovery metadata, not legal approval.
 
 ## Compute availability evidence
 
-Run `python evaluation/probe_compute.py --output artifacts/compute/observation.json` inside the actual provider session. The probe captures the hardware visible to the process. It cannot authenticate the account, read private quota dashboards, prove regional eligibility, or guarantee another session. These fields remain explicitly unverified.
+Run `python evaluation/probe_compute.py --output artifacts/compute/observation.json` inside the actual provider session. The probe captures the hardware visible to the process. It cannot authenticate the account, read private quota dashboards, prove regional eligibility, or guarantee another session. Generic hardware observations must never be represented as provider-account availability.
 
 For each provider, maintain a separate account-level record containing:
 
@@ -30,23 +34,25 @@ For each provider, maintain a separate account-level record containing:
 - Storage, persistent volume, egress, download and model-cache limits.
 - Provider terms URL, capture timestamp and the exact no-cost entitlement used.
 - Workload restrictions and whether model inference, benchmarking, fine-tuning and long-running jobs are permitted.
+- Evidence of zero charges and confirmation that no billing-enabled fallback was used.
 
-Only mark a resource **verified available** after a real session starts and a workload probe succeeds. Use **conditional** for queue/quota/account-dependent offers; **promotional** for credits or trials; **unverified** when only public marketing documentation exists. A zero-cost claim requires a zero charge and no billing-enabled fallback. If a provider requires billing activation, it is not eligible for the strict no-budget pool.
+Only mark a resource **verified available** after an eligible account actually starts a session and a workload probe succeeds. Use **conditional** for queue/quota/account-dependent offers; **promotional** for credits or trials; **unverified** when only public marketing documentation exists; **unavailable** when an attempted session cannot start. Promotional credits do not count as recurring free compute. A strict no-budget resource must not require billing activation or permit charges.
 
 ## Benchmark protocol
 
-The checked-in `prime_benchmark_v1.jsonl` and `prima_benchmark_v1.jsonl` are public qualification sets with task diversity. They are not secret holdouts: public fixtures can leak into model training. Keep a separately controlled, access-restricted holdout set outside the public repository and record its cryptographic hash in each evaluation run. Never train on benchmark answers.
+The checked-in `prime_benchmark_v1.jsonl` and `prima_benchmark_v1.jsonl` are public starter qualification sets. They are not secret holdouts: public fixtures can leak into model training. Keep a separately controlled, access-restricted holdout set outside the public repository and record its cryptographic hash in each evaluation run. Never train on benchmark answers.
 
 Before comparing actual checkpoints:
 
 1. Snapshot every candidate at an immutable revision and preserve its model card/license evidence.
 2. Confirm tokenizer, chat template, architecture, serving parser and exact server version.
-3. Run the same prompt suite, decoding parameters, context settings and repeated trials for each candidate.
-4. Grade with blinded evaluators using the case rubrics; retain raw outputs and per-case scores.
-5. Report per-category results, confidence intervals, repeated-run variance, refusals, invalid tool calls and failures. Do not collapse everything into one score without publishing the dimensions.
-6. Measure peak VRAM/RAM, time-to-first-token, output tokens/sec, throughput, concurrency, cold-start time and actual zero-cost quota consumed.
-7. Run a bounded adapter compatibility test: model load, tokenizer consistency, target-module discovery, tiny LoRA/QLoRA step, adapter save/reload and deterministic inference check. This is a compatibility test, not student training.
-8. Select Prime and Prima independently against their own minimum gates and weighted scorecards.
+3. Verify the serving process loaded the same immutable checkpoint revision recorded in the experiment; operator-supplied labels alone are insufficient.
+4. Run the same prompt suite, decoding parameters, context settings and repeated trials for each candidate.
+5. Grade with blinded evaluators using the case rubrics; retain raw outputs, evaluator/version, per-case scores and disagreements.
+6. Report per-category results, confidence intervals, repeated-run variance, refusals, invalid tool calls and failures. Do not collapse everything into one score without publishing the dimensions.
+7. Measure peak VRAM/RAM, time-to-first-token, output tokens/sec, throughput, concurrency, cold-start time and actual zero-cost quota consumed.
+8. Run a bounded adapter compatibility test: model load, tokenizer consistency, target-module discovery, tiny LoRA/QLoRA step, adapter save/reload and deterministic inference check. This is a compatibility test, not student training.
+9. Select Prime and Prima independently against their own minimum gates.
 
 ## Teacher appointment gate
 
@@ -54,11 +60,15 @@ A teacher is not qualified by family name, model-card claim or benchmark result 
 
 ## Stop conditions
 
-- No free GPU session: record not currently testable; do not call paid APIs.
+- No verified zero-cost GPU session: record not currently testable; do not call paid APIs.
 - Missing immutable revision: reject snapshot.
 - Missing or ambiguous license evidence: block appointment.
 - Unverified training-output permission: block use as a distillation teacher.
-- No held-out evaluation: no foundation selection.
+- No controlled held-out evaluation: no foundation selection.
 - Fewer than four qualified teachers for a student: no distillation run.
 - No explicit approval for paid resources: no paid fallback.
 - Any student depends on teachers at inference: release blocked.
+
+## Current implementation boundary
+
+Catalog search and evidence-preserving metadata snapshots are automated. Provider-account quota/eligibility verification still requires a real provider session and account evidence; the generic compute probe does not provide it. This repository does not yet claim actual candidate inference comparisons, hidden-holdout results, or training compatibility. Do not select foundations or start student training until those gates are satisfied.
