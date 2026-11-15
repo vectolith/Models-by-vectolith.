@@ -33,7 +33,7 @@ The output records raw response text, tool calls, refusal, finish reason, token 
 - Pin model weights, tokenizer, server, parser, quantization, and runtime versions in the experiment record.
 - Run repeated trials for variance; do not infer performance from a single response.
 - Record hardware, peak memory, tokens/sec, time-to-first-token, concurrency, and cost separately. This basic runner measures per-request latency and returns provider-reported token usage only.
-- The candidate ID and revision are metadata supplied by the operator; they are not independently verified by the runner.
+- The candidate ID and revision are metadata supplied by the operator; they are not independently verified by the inference runner. The discovery integration tests independently query Hugging Face and pin the revision returned by its API.
 - Keep evaluation suites held out from training. Do not add benchmark answers to training data.
 - Do not expose the endpoint publicly without authentication and network controls.
 
@@ -62,6 +62,11 @@ Catalog search returns discovery leads, not qualified candidates. Snapshots pin 
 
 ## Tests
 
+The ordinary unit suite uses deterministic fixtures for edge cases. The opt-in live integration suite makes real HTTPS requests to the public Hugging Face Hub, performs a catalog search, and snapshots a real public checkpoint's metadata/model card. CI enables this live suite on every evaluation workflow run; it does not download model weights or make inference requests.
+
 ```bash
 python -m unittest discover -s evaluation/tests -v
+
+# Run real public Hugging Face API integration tests (requires network access):
+VECTOLITH_RUN_LIVE_TESTS=1 python -m unittest evaluation.tests.test_live_huggingface -v
 ```
