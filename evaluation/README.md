@@ -81,3 +81,12 @@ python -m unittest discover -s evaluation/tests -v
 # Run real public Hugging Face API integration tests (requires network access):
 VECTOLITH_RUN_LIVE_TESTS=1 python -m unittest evaluation.tests.test_live_huggingface -v
 ```
+
+
+## Real multi-family CPU comparison
+
+`fixtures/real_cpu_candidates_v1.json` pins an initial comparison set: two Qwen sizes, one IBM Granite checkpoint and one Ministral checkpoint. CI loads each exact revision in a separate GitHub-hosted CPU job, uses BF16, and runs the same Prime/Prima smoke fixtures. Raw outputs, token counts, latency, runtime/model metadata and peak RSS are uploaded as separate artifacts.
+
+This is a constrained execution comparison, not a foundation selection. It measures CPU execution only and does not predict GPU latency. Gemma is discovered but not included in this run because the selected official Gemma checkpoints are manually gated; no account acceptance or access token is available to this workflow. A gated model must not be bypassed.
+
+Every candidate remains `license_review=pending_human_legal_review`, `training_output_permission=not_verified`, and `teacher_qualification=not_qualified`. Public smoke-suite outputs require independent rubric grading and are not a hidden holdout. No student training is performed.
