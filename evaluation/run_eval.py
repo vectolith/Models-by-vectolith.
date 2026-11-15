@@ -20,7 +20,6 @@ from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import urlsplit, urlunsplit
 
-
 SCHEMA_VERSION = "vectolith-evaluation-result/1.0"
 
 
@@ -55,7 +54,12 @@ def endpoint_url(base_url: str) -> str:
 def safe_endpoint(base_url: str) -> str:
     """Return endpoint origin/path without credentials, query, or fragment."""
     parsed = urlsplit(endpoint_url(base_url))
-    return urlunsplit((parsed.scheme, parsed.hostname or "", parsed.path, "", ""))
+    host = parsed.hostname or ""
+    if ":" in host and not host.startswith("["):
+        host = f"[{host}]"
+    if parsed.port is not None:
+        host = f"{host}:{parsed.port}"
+    return urlunsplit((parsed.scheme, host, parsed.path, "", ""))
 
 
 def load_cases(path: Path) -> list[dict[str, Any]]:
@@ -145,15 +149,11 @@ def run_case(
         }
     except urllib.error.HTTPError as exc:
         elapsed_ms = round((time.perf_counter() - started) * 1000, 2)
-        # Keep a bounded diagnostic, never include request headers or credentials.
         detail = exc.read(2000).decode("utf-8", errors="replace")
         return _error_record(case, config, started_at, elapsed_ms, f"HTTP {exc.code}: {detail}", exc.code, prompt_hash)
-    except Exception as exc:  # preserve failed cases in the evidence file
+    except Exception as exc:
         elapsed_ms = round((time.perf_counter() - started) * 1000, 2)
-        return _error_record(
-            case, config, started_at, elapsed_ms,
-            f"{type(exc).__name__}: {exc}", None, prompt_hash,
-        )
+        return _error_record(case, config, started_at, elapsed_ms, f"{type(exc).__name__}: {exc}", None, prompt_hash)
 
 
 def _error_record(
@@ -209,6 +209,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--revision must identify an immutable checkpoint revision, not main/latest")
     if args.max_tokens < 1 or args.timeout <= 0:
         parser.error("--max-tokens and --timeout must be positive")
+    if not 0 <= args.temperature <= 2 or not 0 < args.top_p <= 1:
+        parser.error("--temperature must be 0..2 and --top-p must be in (0, 1]")
 
     try:
         cases = load_cases(args.suite)
@@ -236,10 +238,7 @@ def main(argv: list[str] | None = None) -> int:
             output.flush()
             if record["error"]:
                 failures += 1
-            print(
-                f"{case['id']}: {'ERROR' if record['error'] else str(record['latency_ms']) + ' ms'}",
-                file=sys.stderr,
-            )
+            print(f"{case['id']}: {'ERROR' if record['error'] else str(record['latency_ms']) + ' ms'}", file=sys.stderr)
     print(f"Recorded {len(cases)} cases; {failures} request failures; output={args.output}", file=sys.stderr)
     return 1 if failures else 0
 
