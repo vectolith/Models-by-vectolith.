@@ -37,17 +37,21 @@ jobs:
       - name: Discover real model candidates across teacher families
         run: |
           python evaluation/discover_hf_candidates.py \
-            --search "Qwen3" \
-            --search "Qwen2.5" \
-            --search "Granite" \
-            --search "Gemma" \
-            --search "Ministral" \
+            --search "Qwen3.8" \
+            --search "Qwen3.6" \
+            --search "Qwen3.5" \
+            --search "Gemma 4" \
+            --search "Granite 4" \
+            --search "gpt-oss" \
+            --search "Devstral" \
             --author "Qwen" \
-            --author "ibm-granite" \
+            --author "Qwen" \
+            --author "Qwen" \
             --author "google" \
+            --author "ibm-granite" \
+            --author "openai" \
             --author "mistralai" \
-            --author "ministral" \
-            --limit 5 \
+            --limit 10 \
             --sort downloads \
             --output artifacts/candidates/huggingface-discovery.jsonl
       - name: Preserve live discovery evidence
@@ -57,6 +61,33 @@ jobs:
           path: artifacts/candidates/huggingface-discovery.jsonl
           if-no-files-found: error
           retention-days: 30
+      - name: Snapshot exact Prime and Prima teacher candidates
+        run: |
+          python evaluation/discover_hf_candidates.py \
+            --repo Qwen/Qwen3.5-9B \
+            --repo Qwen/Qwen3.5-4B \
+            --repo Qwen/Qwen3.8-27B \
+            --repo Qwen/Qwen3.6-27B \
+            --repo Qwen/Qwen3.6-35B-A3B \
+            --repo google/gemma-4-E2B-it \
+            --repo google/gemma-4-E4B-it \
+            --repo google/gemma-4-12B-it \
+            --repo google/gemma-4-26B-A4B-it \
+            --repo google/gemma-4-31B-it \
+            --repo ibm-granite/granite-4.2-8b \
+            --repo openai/gpt-oss-20b \
+            --repo Qwen/Qwen2.5-7B-Instruct \
+            --repo mistralai/Devstral-Small-2-24B-Instruct-2512 \
+            --repo Qwen/Qwen3-Coder-Next \
+            --repo Qwen/Qwen2.5-Coder-7B-Instruct \
+            --output artifacts/teacher-candidates/pinned-snapshots.jsonl
+      - name: Preserve immutable teacher candidate snapshots and license evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: teacher-candidate-snapshots
+          path: artifacts/teacher-candidates/pinned-snapshots.jsonl
+          if-no-files-found: error
+          retention-days: 90
 
   real-checkpoint-smoke:
     runs-on: ubuntu-latest
