@@ -17,6 +17,11 @@ class TeacherCandidatePanelManifestTests(unittest.TestCase):
             self.assertGreaterEqual(len(ids), 4, student)
             self.assertEqual(len(ids), len(set(ids)), student)
 
+    def test_gemma_instruction_candidate_matches_the_snapshotted_repo_id(self):
+        for panel in self.manifest["students"].values():
+            candidate = next(item for item in panel["candidates"] if item["id"] == "gemma-4-e4b-it")
+            self.assertEqual(candidate["repo_id"], "google/gemma-4-E4B-it")
+
     def test_candidates_are_not_prequalified_by_manifest(self):
         for panel in self.manifest["students"].values():
             for candidate in panel["candidates"]:
