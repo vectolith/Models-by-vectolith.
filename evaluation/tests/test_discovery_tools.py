@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import json
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from evaluation import discover_hf_candidates, probe_compute
@@ -88,7 +88,7 @@ class ComputeProbeTests(unittest.TestCase):
             self.assertEqual(probe_compute.detect_environment(), ["kaggle"])
 
     def test_generic_probe_source_keeps_account_status_unverified(self):
-        source = open(probe_compute.__file__, encoding="utf-8").read()
+        source = Path(probe_compute.__file__).read_text(encoding="utf-8")
         self.assertIn('"provider_quota": "not_observable_from_generic_process"', source)
         self.assertIn('"account_eligibility": "not_verified"', source)
         self.assertIn('"billing_state": "not_verified"', source)
