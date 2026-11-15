@@ -55,8 +55,8 @@ class CandidateDiscoveryTests(unittest.TestCase):
 
     def test_catalog_discovery_paginates_and_encodes_search(self):
         pages = [
-            ([{"id": "org/model-a"}, {"id": "org/model-b"}, {"id": "org/model-c"}], "https://huggingface.co/api/models?cursor=next"),
-            ([{"id": "org/model-d"}], None),
+            ([{"id": "org/model-a", "pipeline_tag": "text-generation"}, {"id": "org/model-b", "pipeline_tag": "text-generation"}, {"id": "org/model-c", "pipeline_tag": "text-generation"}], "https://huggingface.co/api/models?cursor=next"),
+            ([{"id": "org/model-d", "pipeline_tag": "text-generation"}], None),
         ]
         with patch.object(discover_hf_candidates, "get_json_page", side_effect=pages) as get_page:
             found = discover_hf_candidates.discover("small instruct", limit=4, pipeline_tag="text-generation")
