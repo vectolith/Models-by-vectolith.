@@ -36,6 +36,7 @@ jobs:
             suite_a: evaluation/fixtures/prime_benchmark_v1.jsonl
             suite_b: evaluation/fixtures/prime_qualification_v2.jsonl
             suite_c: evaluation/fixtures/prime_qualification_v3.jsonl
+            suite_d: evaluation/fixtures/prime_qualification_v4.jsonl
           - candidate_id: granite-4.2-3b
             repo: ibm-granite/granite-4.2-3b
             family: IBM Granite
@@ -45,6 +46,7 @@ jobs:
             suite_a: evaluation/fixtures/prime_benchmark_v1.jsonl
             suite_b: evaluation/fixtures/prime_qualification_v2.jsonl
             suite_c: evaluation/fixtures/prime_qualification_v3.jsonl
+            suite_d: evaluation/fixtures/prime_qualification_v4.jsonl
           - candidate_id: minicpm5-2b
             repo: openbmb/MiniCPM5-2B
             family: OpenBMB MiniCPM
@@ -54,6 +56,7 @@ jobs:
             suite_a: evaluation/fixtures/prime_benchmark_v1.jsonl
             suite_b: evaluation/fixtures/prime_qualification_v2.jsonl
             suite_c: evaluation/fixtures/prime_qualification_v3.jsonl
+            suite_d: evaluation/fixtures/prime_qualification_v4.jsonl
     env:
       OMP_NUM_THREADS: "2"
       MKL_NUM_THREADS: "2"
@@ -84,6 +87,7 @@ jobs:
             --suite "${{ matrix.suite_a }}" \
             --suite "${{ matrix.suite_b }}" \
             --suite "${{ matrix.suite_c }}" \
+            --suite "${{ matrix.suite_d }}" \
             --dtype bfloat16 \
             --max-new-tokens 256 \
             --cache-dir "${{ runner.temp }}/hf-cache" \
