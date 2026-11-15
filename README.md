@@ -14,6 +14,12 @@ Canonical upstream project for the vectolith model family. This repository owns 
 
 Every model has its own identity within the family, version, specialization, training objectives, evaluation criteria, and release lifecycle. All models share vectolith identity, behavioural and safety standards, compatible task/message contracts, and collaboration protocols. Different model architectures and tokenizers are permitted when interoperability is proven at the contract boundary.
 
+## Delegated execution
+
+Core Prime handles general-purpose understanding, requirements and user communication. Core Prima specialises in technical design, coding, debugging, testing, and tool-driven execution. For software-build requests, Prime defines the requirements and acceptance criteria, Prima implements and verifies the work, and Prime independently reviews the returned evidence before reporting completion. Delegation is bidirectional and must preserve user intent, context, permissions, and task state.
+
+See the [delegated execution contract](docs/delegated-execution-contract.md) and [runtime architecture](docs/runtime-architecture.md).
+
 ## Runtime architecture
 
 A model-neutral registry publishes machine-readable capabilities and modality support. Capability discovery returns compatible candidates; orchestration applies release policy, evaluation evidence, resource constraints, availability, and permissions before execution. Registry membership alone does not imply that weights are available or that a model is released.
@@ -22,6 +28,8 @@ A model-neutral registry publishes machine-readable capabilities and modality su
 - [Shared identity contract](docs/shared-identity-contract.md)
 - [Model registry and capability discovery](docs/model-registry-and-capabilities.md)
 - [Architecture](docs/architecture.md)
+- [Delegated execution contract](docs/delegated-execution-contract.md)
+- [Runtime architecture](docs/runtime-architecture.md)
 - [Foundation selection](docs/foundation-selection.md)
 - [Independent foundation selection and global-English standard](docs/independent-foundation-selection-and-global-english.md)
 - [Collective distillation](docs/collective-distillation.md)
