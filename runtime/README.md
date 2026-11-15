@@ -23,7 +23,7 @@ python -m pip install -e .
 python -m unittest discover -s tests -v
 ~~~
 
-See [model family specification](../docs/model-family-specification.md), [identity contract](../docs/shared-identity-contract.md), [registry design](../docs/model-registry-and-capabilities.md), and [runtime architecture](../docs/runtime-architecture.md).
+See the [model family specification](../docs/model-family-specification.md), [identity contract](../docs/shared-identity-contract.md), [registry design](../docs/model-registry-and-capabilities.md), and [overall architecture](../docs/architecture.md).
 
 ## Important limitations
 
