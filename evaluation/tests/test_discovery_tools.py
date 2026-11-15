@@ -55,14 +55,15 @@ class CandidateDiscoveryTests(unittest.TestCase):
 
     def test_catalog_discovery_paginates_and_encodes_search(self):
         pages = [
-            [{"id": "org/model-a"}, {"id": "org/model-b"}, {"id": "org/model-c"}],
-            [{"id": "org/model-d"}],
+            ([{"id": "org/model-a"}, {"id": "org/model-b"}, {"id": "org/model-c"}], "https://huggingface.co/api/models?cursor=next"),
+            ([{"id": "org/model-d"}], None),
         ]
-        with patch.object(discover_hf_candidates, "get_json", side_effect=pages) as get_json:
+        with patch.object(discover_hf_candidates, "get_json_page", side_effect=pages) as get_page:
             found = discover_hf_candidates.discover("small instruct", limit=4)
         self.assertEqual([item["id"] for item in found], ["org/model-a", "org/model-b", "org/model-c", "org/model-d"])
-        self.assertEqual(get_json.call_count, 2)
-        self.assertIn("search=small+instruct", get_json.call_args_list[0].args[0])
+        self.assertEqual(get_page.call_count, 2)
+        self.assertIn("search=small+instruct", get_page.call_args_list[0].args[0])
+        self.assertEqual(get_page.call_args_list[1].args[0], "https://huggingface.co/api/models?cursor=next")
 
     def test_catalog_discovery_rejects_invalid_limit(self):
         with self.assertRaises(ValueError):
