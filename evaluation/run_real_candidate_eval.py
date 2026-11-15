@@ -107,5 +107,5 @@ def main() -> int:
     print(f"Captured {len(results)} real outputs for {a.repo}@{rev}",flush=True)
     del model,tok; gc.collect()
     shutil.rmtree(a.cache_dir/f"models--{a.repo.replace('/','--')}",ignore_errors=True)
-    return 0
+    return 1 if failures else 0
 if __name__=="__main__": raise SystemExit(main())
