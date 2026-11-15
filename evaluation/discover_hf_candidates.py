@@ -31,8 +31,23 @@ def request(url: str, timeout: float = 30.0) -> bytes:
         return response.read()
 
 
+def get_json_page(url: str, timeout: float = 30.0) -> tuple[Any, str | None]:
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(req, timeout=timeout) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+        link_header = response.headers.get("Link", "")
+    next_url = None
+    for link in link_header.split(","):
+        if 'rel="next"' in link:
+            match = re.search(r"<([^>]+)>", link)
+            if match:
+                next_url = match.group(1)
+                break
+    return payload, next_url
+
+
 def get_json(url: str, timeout: float = 30.0) -> Any:
-    return json.loads(request(url, timeout).decode("utf-8"))
+    return get_json_page(url, timeout)[0]
 
 
 def get_text(url: str, timeout: float = 30.0) -> str | None:
@@ -57,19 +72,18 @@ def discover(search: str, limit: int = 50, sort: str = "downloads") -> list[dict
         raise ValueError("limit must be between 1 and 1000")
     results: list[dict[str, Any]] = []
     page_size = min(100, limit)
-    while len(results) < limit:
-        params = urllib.parse.urlencode({
-            "search": search,
-            "limit": min(page_size, limit - len(results)),
-            "sort": sort,
-            "direction": "-1",
-        })
-        page = get_json(f"{API}?{params}")
+    params = urllib.parse.urlencode({
+        "search": search,
+        "limit": page_size,
+        "sort": sort,
+        "direction": "-1",
+    })
+    next_url: str | None = f"{API}?{params}"
+    while next_url and len(results) < limit:
+        page, next_url = get_json_page(next_url)
         if not isinstance(page, list) or not page:
             break
         results.extend(item for item in page if isinstance(item, dict))
-        if len(page) < min(page_size, limit - (len(results) - len(page))):
-            break
     return results[:limit]
 
 
