@@ -21,7 +21,8 @@ def main() -> int:
     rev=a.revision.lower()
     if len(rev)!=40 or any(ch not in "0123456789abcdef" for ch in rev): p.error("--revision must be a full immutable 40-character commit SHA")
     if not 1<=a.max_new_tokens<=256: p.error("--max-new-tokens must be between 1 and 256")
-    torch.set_num_threads(min(torch.get_num_threads(),4))
+    requested_threads = max(1, int(os.environ.get("VELNOR_INFERENCE_THREADS", "2")))
+    torch.set_num_threads(min(torch.get_num_threads(), requested_threads))
     if a.dtype=="bfloat16":
         try:
             probe=torch.ones((16,16),dtype=torch.bfloat16); _=probe@probe; del probe
