@@ -57,6 +57,25 @@ jobs:
           path: artifacts/candidates/huggingface-discovery.jsonl
           if-no-files-found: error
           retention-days: 30
+      - name: Snapshot exact Prime and Prima teacher candidates
+        run: |
+          python evaluation/discover_hf_candidates.py \
+            --repo Qwen/Qwen3.5-9B \
+            --repo google/gemma-4-E4B \
+            --repo ibm-granite/granite-4.2-8b \
+            --repo openai/gpt-oss-20b \
+            --repo Qwen/Qwen2.5-7B-Instruct \
+            --repo mistralai/Devstral-Small-2-24B-Instruct-2512 \
+            --repo Qwen/Qwen3-Coder-Next \
+            --repo Qwen/Qwen2.5-Coder-7B-Instruct \
+            --output artifacts/teacher-candidates/pinned-snapshots.jsonl
+      - name: Preserve immutable teacher candidate snapshots and license evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: teacher-candidate-snapshots
+          path: artifacts/teacher-candidates/pinned-snapshots.jsonl
+          if-no-files-found: error
+          retention-days: 90
 
   real-checkpoint-smoke:
     runs-on: ubuntu-latest
