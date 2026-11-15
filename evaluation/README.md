@@ -85,8 +85,10 @@ VECTOLITH_RUN_LIVE_TESTS=1 python -m unittest evaluation.tests.test_live_hugging
 
 ## Real multi-family CPU comparison
 
-`fixtures/real_cpu_candidates_v1.json` pins an initial comparison set: two Qwen sizes, one IBM Granite checkpoint and one Ministral checkpoint. CI loads each exact revision in a separate GitHub-hosted CPU job, uses BF16, and runs the same Prime/Prima smoke fixtures. Raw outputs, token counts, latency, runtime/model metadata and peak RSS are uploaded as separate artifacts.
+`fixtures/real_cpu_candidates_v1.json` pins exact immutable revisions for Qwen3-0.6B, Qwen3-4B, IBM Granite 3.1 3B-A800M, Ministral 3B, and a gated Gemma 3-270M candidate. CI downloads and runs every ungated checkpoint sequentially on one GitHub-hosted CPU runner. This avoids comparing throughput across separate runner machines. The gated Gemma entry is explicitly recorded as skipped; no access gate is bypassed.
 
-This is a constrained execution comparison, not a foundation selection. It measures CPU execution only and does not predict GPU latency. Gemma is discovered but not included in this run because the selected official Gemma checkpoints are manually gated; no account acceptance or access token is available to this workflow. A gated model must not be bypassed.
+`run_real_candidate_eval.py` records download time, model-load time, generation time, checkpoint disk size, per-case latency and token counts, CPU capability, visible CPU count, peak process memory, immutable revision, runtime versions and raw model outputs. `summarize_real_candidate_results.py` creates JSON and Markdown reports from those real artifacts. The report intentionally does not invent a capability score or quality ranking.
 
-Every candidate remains `license_review=pending_human_legal_review`, `training_output_permission=not_verified`, and `teacher_qualification=not_qualified`. Public smoke-suite outputs require independent rubric grading and are not a hidden holdout. No student training is performed.
+This remains an execution/resource comparison, not a foundation selection. The run uses CPU only and does not predict GPU performance or establish free GPU-provider access. Public smoke-suite outputs require independent rubric grading and are not a hidden holdout.
+
+Every candidate remains `license_review=pending_human_legal_review`, `training_output_permission=not_verified`, and `teacher_qualification=not_qualified`. No student training is performed.
