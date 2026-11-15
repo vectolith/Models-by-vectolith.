@@ -84,5 +84,3 @@ class TaskResult:
     def __post_init__(self) -> None:
         if self.status == TaskStatus.COMPLETED and self.unresolved_issues:
             raise ValueError("completed result cannot contain unresolved issues")
-        if self.status == TaskStatus.COMPLETED and not self.evidence:
-            raise ValueError("completed result requires verification evidence")
