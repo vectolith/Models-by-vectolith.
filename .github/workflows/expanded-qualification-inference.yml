@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 360
     strategy:
       fail-fast: false
-      max-parallel: 4
+      max-parallel: 2
       matrix:
         include:
           - candidate_id: qwen3-0.6b
@@ -124,6 +124,11 @@ jobs:
             suite_a: evaluation/fixtures/prima_benchmark_v1.jsonl
             suite_b: evaluation/fixtures/prima_qualification_v2.jsonl
             suite_c: evaluation/fixtures/prima_qualification_v3.jsonl
+    env:
+      OMP_NUM_THREADS: "2"
+      MKL_NUM_THREADS: "2"
+      OPENBLAS_NUM_THREADS: "2"
+      TOKENIZERS_PARALLELISM: "false"
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
