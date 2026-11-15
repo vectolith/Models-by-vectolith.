@@ -50,7 +50,7 @@ class HumanGradeSummaryTests(unittest.TestCase):
         self.assertEqual(correct["status"], "rubric_threshold_met")
 
     def test_insufficient_independent_evaluators_is_not_pass(self):
-        report = build_report(self.evidence, self.grades[:3], min_evaluators=2)
+        report = build_report(self.evidence, self.grades[::2], min_evaluators=2)
         self.assertTrue(all(row["status"] == "insufficient_independent_evaluators" for row in report["criterion_results"]))
 
     def test_requires_every_rubric_criterion(self):
