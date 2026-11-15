@@ -41,7 +41,11 @@ jobs:
             --search "Granite" \
             --search "Gemma" \
             --search "Ministral" \
-            --limit 3 \
+            --author "Qwen" \
+            --author "ibm-granite" \
+            --author "google" \
+            --author "mistralai" \
+            --limit 5 \
             --sort downloads \
             --output artifacts/candidates/huggingface-discovery.jsonl
       - name: Preserve live discovery evidence
