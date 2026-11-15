@@ -39,3 +39,27 @@ Publisher benchmark, latency and memory figures are discovery leads only. Vectol
 ## Current status
 
 All candidates above are discovery-only and untested by Vectolith for this curriculum. SmolLM3-3B and LFM2.5-2.6B are first-priority compatibility candidates because their published model cards expose direct text-generation/Transformers paths and compact parameter counts. Phi-4-mini-instruct is second priority pending license and snapshot review. Qwen3.5-2B and Gemma 4 E2B IT remain lower-priority because multimodal architecture and/or model-specific license/access review add loader and governance complexity. Nemotron remains deferred. No new teacher has been admitted, run, qualified or authorized for training.
+
+
+## Additional Core Prime teacher pipeline — implementation status
+
+The three selected discovery candidates now have a sequential GitHub Actions pipeline at `.github/workflows/core-prime-additional-teachers.yml`:
+
+1. SmolLM3-3B
+2. LFM2.5-2.6B
+3. Phi-4-mini-instruct
+
+Each job resolves the current Hub main revision once, records the resulting full 40-character commit SHA, downloads the snapshot at that immutable SHA, validates the expected model type and architecture, inventories every file and computes SHA-256 hashes, and records license-file evidence in a JSON manifest. The exact immutable revision is then passed to the real Prime v1–v4 inference runner. Each teacher job depends on the preceding job, so the three additions run in order. All snapshots, raw JSON/JSONL outputs, logs and runner resource observations are uploaded as separate 90-day artifacts.
+
+The workflow does not commit model weights to Git. The snapshot is held in the runner cache during the job; the artifact preserves a complete file inventory, sizes, hashes, immutable revision, config and license-file hashes. The weights can be re-fetched byte-for-byte by revision and verified against the manifest.
+
+Compatibility is established by the pinned Transformers installation, snapshot config/architecture checks, tokenizer/model loading and actual generation in the inference runner. Phi-4 is deliberately loaded with the runner's default `trust_remote_code=False`; no repository-supplied Python modeling code is executed. If the built-in Transformers implementation cannot load it, that job records the failure rather than silently enabling remote code.
+
+Important limitations:
+- Hub `main` is resolved at the start of each run, then pinned to an immutable SHA for that run. The exact SHA is not guessed or hard-coded before the Hub returns it; the artifact is the source of truth.
+- LFM2.5 publisher guidance does not recommend it for agentic coding or knowledge-heavy tasks. Its contribution is especially relevant to tool use, structured extraction and agentic interaction; its responses must still be retained and independently assessed across all Prime cases.
+- LFM2.5 uses the LFM Open License (`lfm1.0`), so legal review and training-output permission remain separate unresolved gates.
+- Phi-4's public model card documents `trust_remote_code=True` in its example. This pipeline intentionally does not enable that setting without a separate source-code security review.
+- No new teacher is qualified, and no training starts from these artifacts.
+
+The workflow and snapshot guardrail unit tests have been added to PR #33. Their GitHub Actions results, plus all three real teacher artifacts, must be inspected before declaring the new pipeline operational.
