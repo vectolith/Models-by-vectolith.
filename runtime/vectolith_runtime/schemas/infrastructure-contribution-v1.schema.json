@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vectolith.dev/schemas/infrastructure-contribution-v1.json",
+  "title": "Vectolith infrastructure contribution",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "contribution_id",
+    "provider_id",
+    "contribution_class",
+    "name",
+    "source_revision",
+    "license_id",
+    "access_mode",
+    "capabilities",
+    "qualification_status",
+    "evidence_refs"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "contribution_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "provider_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contribution_class": {
+      "enum": [
+        "compute",
+        "training_framework",
+        "orchestration",
+        "data",
+        "evaluation",
+        "serving",
+        "observability",
+        "engineering_reference"
+      ]
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_url": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri"
+    },
+    "source_revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "license_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "permitted_use": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "access_mode": {
+      "enum": [
+        "public_reference",
+        "locally_installed",
+        "self_hosted",
+        "provider_hosted",
+        "provisioned_capacity"
+      ]
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "hardware_requirements": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "region": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "price_or_quota_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "data_handling_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "adapter_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "adapter_version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "qualification_status": {
+      "enum": [
+        "discovered",
+        "documented",
+        "legal_review",
+        "security_review",
+        "compatibility_test",
+        "cost_review",
+        "approved",
+        "blocked",
+        "rejected",
+        "suspended",
+        "retired"
+      ]
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "artifact_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}
