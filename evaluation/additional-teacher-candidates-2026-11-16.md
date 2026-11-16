@@ -69,4 +69,4 @@ The workflow does not commit model weights to Git. Snapshot weights remain in th
 
 All candidates remain unqualified. LFM2.5 is still discovery-only despite having real inference evidence: its 90% token-cap rate requires careful review, and its LFM Open License requires legal review. The model-weight license remains separate from permission to use generated outputs for student training. No candidate is authorized for training, no human grades are inferred, and no training is performed.
 
-PR #33 has been merged on GitHub and cannot be updated in place. Follow-up evidence and the snapshot-manifest correction are being kept in a separate reviewable change; no follow-up PR is merged.
+PR #33 has been merged on GitHub and cannot be updated in place. Follow-up evidence and the snapshot-manifest correction are in draft PR #39; no follow-up PR is merged.
