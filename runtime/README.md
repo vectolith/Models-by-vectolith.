@@ -5,7 +5,7 @@ This package is the first executable foundation for the reusable vectolith orche
 ## Current capabilities
 
 - Versioned task request/result contracts.
-- Extensible in-memory registry and durable SQLite model registry.
+- Extensible in-memory registry and durable SQLite model and infrastructure registries.
 - Shared family identity contract validation.
 - Capability and modality discovery across any number of registered models.
 - Model lifecycle filtering and released-only loading by default.
@@ -30,12 +30,14 @@ These components do not select a production teacher or student foundation automa
 
 ## Infrastructure contribution registry
 
+The infrastructure registry now supports durable SQLite persistence, strict JSON Schema validation, versioned serialization and restart recovery. It stores metadata only; credentials and secret values are rejected by the schemas.
+
 The runtime includes metadata-only provider and contribution records, independent qualification blockers, and a deterministic in-memory mock compute adapter. The mock adapter exercises preflight, submit, status and cancellation without provisioning resources or contacting a provider. Provider credentials are not part of these records.
 
 ```python
-from vectolith_runtime import InfrastructureRegistry, MockComputeAdapter
+from vectolith_runtime import SQLiteInfrastructureRegistry, MockComputeAdapter
 
-registry = InfrastructureRegistry()
+registry = SQLiteInfrastructureRegistry("data/infrastructure.sqlite3")
 adapter = MockComputeAdapter()  # deterministic; no real compute
 ```
 
