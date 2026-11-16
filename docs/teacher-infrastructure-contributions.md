@@ -159,7 +159,23 @@ Teacher outputs, datasets and infrastructure artifacts retain separate provenanc
 
 NeMo/Nemotron is a candidate reference and optional training/execution adapter, not a required dependency. Its specific capabilities must be pinned and verified against the selected release. Other providers and open-source projects are evaluated under the same contribution contract.
 
-## 9. Initial implementation sequence
+## 9. Nemotron integration spike and baseline comparison
+
+The current integration is a CLI bridge implementing the provider-neutral `TrainingAdapter` protocol. It deliberately does not import the Nemotron Python stack or add a NeMo dependency.
+
+| Dimension | Existing Vectolith SFT path | Nemotron Steps bridge |
+|---|---|---|
+| Entry point | `train_student()` in `distillation_training.py` | `nemotron steps show/run` through an isolated CLI adapter |
+| Data contract | Reads accepted Vectolith JSONL and enforces provenance plus at least four teacher identities | Step-specific input configuration; caller must map Vectolith dataset/model revisions using verified dotlist overrides |
+| Training stack | Transformers, Datasets and PEFT optional training extra | Separately installed and pinned Nemotron toolchain |
+| Configuration | Typed Python arguments in the current SFT helper | Nemotron step ID, named config, optional environment profile and dotlist overrides |
+| Execution controls | Explicit function call; no general remote job lifecycle | Explicit approval, host-verified budget reference for profiles, no-shell subprocess, timeout and attached execution |
+| Current evidence | Existing CPU-side validation and training-pipeline tests; no production training run implied | Fake-runner contract tests only; no actual Nemotron invocation or performance measurement |
+| Known gaps | No production run scheduler, full run-manifest service or distributed orchestration | No detached job tracking, cancellation, normalized checkpoint import, artifact lineage or parity proof |
+
+The two paths are complementary integration candidates, not interchangeable trainers yet. The existing Vectolith SFT helper currently has the stronger direct fit with the accepted multi-teacher JSONL contract. Nemotron offers a broader step/configuration/execution environment, but Vectolith must prove data mapping, foundation/tokenizer pinning, output checkpoint provenance, reproducibility, and resource accounting before adoption. Do not select a default backend or claim performance superiority from this CLI spike.
+
+## 10. Initial implementation sequence
 
 **Implementation status:** versioned provider and contribution JSON Schemas, in-memory and SQLite metadata registries, fail-closed qualification blocker checks, compute adapter protocol, and deterministic mock compute lifecycle are implemented. The optional Nemotron Steps CLI bridge is an integration spike: it uses the documented CLI, has explicit approval and budget-reference gates, and does not add a NeMo Python dependency. CPU-only tests use a fake command runner; they do not invoke Nemotron or start training. Production remote-job tracking, artifact lineage, provider provisioning and serving adapters remain future work.
 
@@ -176,7 +192,7 @@ NeMo/Nemotron is a candidate reference and optional training/execution adapter, 
 
 The registry and adapter contract tests must remain CPU-only and network-free. The CLI bridge can invoke a real run only through an explicit operator action after preflight and budget approval; tests must never download model weights, provision cloud resources, invoke teacher APIs or start training.
 
-## 10. Acceptance criteria
+## 11. Acceptance criteria
 
 The contribution system is ready for its first implementation milestone when:
 - schemas reject unknown required versions, missing provenance and invalid lifecycle transitions;
