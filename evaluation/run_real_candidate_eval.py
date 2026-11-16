@@ -69,6 +69,7 @@ def main() -> int:
                 latency=round(time.perf_counter()-start,3); n=int(encoded["input_ids"].shape[1]); new=output[0,n:]
                 response=tok.decode(new,skip_special_tokens=True)
                 if new.numel()<1 or not response.strip():
+                    base["completion_status"] = "empty_output"
                     raise RuntimeError("no visible generated output")
                 completion_status = classify_completion(
                     new.tolist(), a.max_new_tokens, tok.eos_token_id, response
@@ -83,7 +84,8 @@ def main() -> int:
             except Exception as exc:
                 failures+=1
                 base.update({"latency_seconds":round(time.perf_counter()-start,3),
-                  "error":f"{type(exc).__name__}: {exc}","completion_status":"error"})
+                  "error":f"{type(exc).__name__}: {exc}",
+                  "completion_status":"empty_output" if base.get("completion_status")=="empty_output" else "error"})
                 print(f"{case['id']}: ERROR {base['error']}",flush=True)
             results.append(base)
             raw_handle.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"\n")
@@ -93,6 +95,9 @@ def main() -> int:
     vocab=int(model.get_input_embeddings().weight.shape[0])
     if len(tok)>vocab: raise RuntimeError("tokenizer vocabulary exceeds model embedding vocabulary")
     record={"schema_version":"vectolith-real-candidate-evaluation/1.2","completed_at":datetime.now(timezone.utc).isoformat(),
+      "workflow_run_id":os.environ.get("GITHUB_RUN_ID"),
+      "workflow_run_attempt":os.environ.get("GITHUB_RUN_ATTEMPT"),
+      "workflow_job":os.environ.get("GITHUB_JOB"),
       "family":a.family,"candidate_id":candidate_id,"run_id":run_id,"started_at":run_started_at,"repo_id":a.repo,"immutable_revision":rev,"loaded_snapshot_path_revision":snapshot.name,
       "architectures":getattr(model.config,"architectures",None),"model_class":model.__class__.__name__,
       "tokenizer_class":tok.__class__.__name__,"tokenizer_vocab_size":len(tok),"model_vocab_size":vocab,
