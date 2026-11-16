@@ -65,6 +65,7 @@ def run(command: list[str], log_path: Path) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--max-new-tokens", type=int, choices=(512, 768, 1024), required=True)
+    parser.add_argument("--candidate", choices=tuple(x["candidate_id"] for x in CANDIDATES) + ("all",), default="all")
     parser.add_argument("--suite", action="append", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--cache-dir", type=Path, required=True)
@@ -75,7 +76,10 @@ def main() -> int:
     (args.output_dir / "compute").mkdir(exist_ok=True)
     (args.output_dir / "evaluations").mkdir(exist_ok=True)
     results: list[dict[str, Any]] = []
-    for candidate in CANDIDATES:
+    selected_candidates = CANDIDATES if args.candidate == "all" else [
+        candidate for candidate in CANDIDATES if candidate["candidate_id"] == args.candidate
+    ]
+    for candidate in selected_candidates:
         cid = candidate["candidate_id"]
         base = args.output_dir / "evaluations" / f"{cid}-completion-{args.max_new_tokens}"
         compute_path = args.output_dir / "compute" / f"{cid}-runner.json"
@@ -153,6 +157,7 @@ def main() -> int:
         "role": "core_prime",
         "suite_set": [str(path) for path in args.suite],
         "max_new_tokens": args.max_new_tokens,
+        "candidate_selection": args.candidate,
         "decoding": {
             "do_sample": False, "dtype": "bfloat16",
             "chat_template": True, "enable_thinking": False,
