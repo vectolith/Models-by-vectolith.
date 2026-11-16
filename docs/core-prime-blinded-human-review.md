@@ -100,7 +100,7 @@ The summary always sets \`qualification_decision=not_made\`. A rubric threshold 
 
 ## Additional run 42 and 43 response sets
 
-Runs 42 and 43 each produced four more completed artifacts (Granite 3.1, Granite 4.2, MiniCPM5, and LFM2.5), adding 1,440 raw responses across the two runs. The remaining Phi-4 jobs were still in progress at the time of evidence capture; no Phi-4 artifact is assumed. SmolLM3 failed its missing-LICENSE gate in both runs and produced no artifact. Exact job IDs, artifact IDs, revisions, resource measurements, and recomputed ZIP/JSON/JSONL digests are in [follow-up run 42/43 evidence](../evaluation/core-prime-multi-teacher-runs-42-43-evidence-2026-11-16.md).
+Run 42 produced four completed artifacts (Granite 3.1, Granite 4.2, MiniCPM5, and LFM2.5), adding 720 responses. Run 43 produced those four plus a completed Phi-4 artifact, adding 900 responses. Together these runs add 1,620 raw responses. Run 42 Phi-4 remains in progress and has no artifact; run 43 Phi-4 completed and its 180 responses were downloaded and verified. SmolLM3 failed its missing-LICENSE gate in both runs and produced no artifact. Exact job IDs, artifact IDs, revisions, resource measurements, and recomputed ZIP/JSON/JSONL digests are in [follow-up run 42/43 evidence](../evaluation/core-prime-multi-teacher-runs-42-43-evidence-2026-11-16.md).
 
 The blinded package builder accepts multiple inference artifacts for the same candidate, provided each candidate/revision/run tuple is unique and every artifact covers the same exact fixture set. It verifies all eight run 42/43 ZIP digests against their published values and retains each source workflow run, job, artifact, internal run ID, and hashes in the restricted identity key. Candidate aliases remain stable across repeat runs within one reviewer's package and are randomized separately for each reviewer.
 
@@ -116,12 +116,13 @@ python evaluation/prepare_blinded_human_review.py build \\
   --evidence artifacts/source/run43-prime-granite-4.2-3b.zip \\
   --evidence artifacts/source/run43-prime-minicpm5-2b.zip \\
   --evidence artifacts/source/run43-prime-lfm2.5-2.6b.zip \\
+  --evidence artifacts/source/run43-prime-phi-4-mini-instruct.zip \\
   --suite evaluation/fixtures/prime_benchmark_v1.jsonl \\
   --suite evaluation/fixtures/prime_qualification_v2.jsonl \\
   --suite evaluation/fixtures/prime_qualification_v3.jsonl \\
   --suite evaluation/fixtures/prime_qualification_v4.jsonl \\
   --output-dir artifacts/human-review/runs-42-43 \\
-  --reviewers 2 --expected-artifacts 8 --workflow-run-id multi-run
+  --reviewers 2 --expected-artifacts 9 --workflow-run-id multi-run
 \`\`\`
 
-This creates 1,440 response entries per reviewer (2,880 total reviewer assignments), not 1,440 distinct prompts. The same 180 prompts are repeated for each of four candidates across two separate inference runs. Keep this batch separate from run 40 so run-specific evidence and review provenance remain clear. When the in-progress Phi-4 jobs complete, their artifacts must be independently downloaded and verified before being added to a new or explicitly extended review batch.
+This creates 1,620 response entries per reviewer (3,240 total reviewer assignments), not 1,620 distinct prompts. The same 180 prompts are repeated for Granite 3.1, Granite 4.2, MiniCPM5 and LFM2.5 across both runs, plus one Phi-4 run-43 set. Keep this batch separate from run 40 so run-specific evidence and review provenance remain clear. When the run 42 Phi-4 job completes, its artifact must be independently downloaded and verified before being added to a new or explicitly extended review batch.
