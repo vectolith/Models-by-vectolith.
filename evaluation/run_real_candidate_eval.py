@@ -58,7 +58,7 @@ def main() -> int:
               "candidate_id":candidate_id,"model_revision":rev,"run_id":run_id,"started_at":case_started_at,
               "recorded_at":datetime.now(timezone.utc).isoformat(),"category":case.get("category","uncategorized"),
               "prompt_sha256":prompt_hash(case["messages"]),"rubric":case.get("rubric"),
-              "max_new_tokens":a.max_new_tokens,"generation_cap_reached":False,"completion_status":"error",
+              "max_new_tokens":a.max_new_tokens,"generation_cap_reached":False,
               "generation_status":"error","completion_status":"error","latency_seconds":None,"input_tokens":None,
               "generated_tokens":0,"response_text":None,"error":None}
             start=time.perf_counter()
