@@ -106,3 +106,41 @@ Raw outputs are never automatically treated as quality scores. Use [`docs/indepe
 - Public fixtures are not hidden holdouts and do not qualify teachers by themselves.
 - `run_private_holdout.py` runs an externally mounted, hash-pinned, access-restricted suite and writes raw outputs outside the public checkout. See [private holdout operations](../docs/private-holdout-operations.md).
 - No private prompts, answer keys or holdout data are committed to this public repository.
+
+
+## Balanced qualification suites v3
+
+The v3 public suites add four independently worded cases per competency category. Combined with benchmark v1 and qualification v2, the validator requires at least five cases in every category and globally unique case IDs:
+
+- `fixtures/prime_qualification_v3.jsonl`: 92 additional Core Prime cases across 23 competencies.
+- `fixtures/prima_qualification_v3.jsonl`: 80 additional Core Prima cases across 20 competencies.
+- Run `python -m unittest evaluation.tests.test_balanced_qualification_v3 -v` to validate category coverage and fixture integrity.
+
+These are public development/evaluation fixtures, not a secret holdout. The v3 suites have now been executed against four pinned CPU candidates in both roles (eight candidate/role runs); raw outputs and resource records are preserved as workflow artifacts. The outputs have not been independently human-graded. Fixture validation establishes schema and coverage only; successful inference establishes execution, not model qualification.
+
+
+## Unified Core Prime curriculum v4
+
+- `fixtures/prime_qualification_v4.jsonl`: 56 additional public cases across 14 competencies covering coding generation, debugging, code review, software architecture, testing, algorithms, data analysis, technical mathematics, tool calling, agentic planning, state recovery, research evidence, long-context retrieval, multilingual translation, security/privacy, safety policy, adversarial robustness, reliability calibration and technical documentation.
+- `tests/test_core_prime_qualification_v4.py` validates category counts, rubric presence and unique IDs.
+- The Prime multi-teacher inference workflow now includes v4 for every active teacher. All raw outputs, including failures and truncated answers, remain preserved.
+- See [the v4 curriculum and proposed gates](core-prime-evaluation-curriculum-v4.md) and [additional teacher discovery register](additional-teacher-candidates-2026-11-16.md).
+- The new teacher candidates are discovery-only until exact snapshots, compatibility tests, resource measurements, independent human grading and separate training-output permission review are complete.
+- v4 is a public development suite, not a private holdout. No v4 responses or answers may be used for training.
+
+
+## Sequential additive Prime teachers: immutable snapshot + inference
+
+`snapshot_additional_teacher.py` resolves a public Hub model's current revision to a full immutable commit SHA, downloads that exact revision, validates the expected architecture and license identifier, and emits a manifest containing the complete file inventory, byte sizes and SHA-256 hashes. The manifest includes the Hub revision, config and license-file hashes. The workflow then passes that exact SHA to `run_real_candidate_eval.py`; it never runs inference against a moving `main` ref.
+
+The workflow `.github/workflows/expanded-qualification-inference.yml` runs the full six-teacher chain sequentially: Granite 3.1 → Granite 4.2 → MiniCPM5 → SmolLM3-3B → LFM2.5-2.6B → Phi-4-mini-instruct, each over the same Prime public v1-v4 fixtures and the same deterministic generation cap. Per-candidate manifests, raw JSON/JSONL outputs, logs and compute observations are uploaded as separate artifacts. The actual model snapshot stays in the ephemeral runner cache; model weights are not committed to Git or copied into large CI artifacts. Re-fetching the recorded SHA and validating its file hashes reproduces the same snapshot.
+
+Phi-4 is loaded with `trust_remote_code=False`; the pipeline will not execute model-repository Python code. A load failure is retained as evidence and does not silently relax this security boundary. LFM2.5's LFM Open License requires legal review, and its publisher notes it is not recommended for agentic coding or knowledge-heavy tasks. All training-output permissions remain unverified. No model is qualified and no training is performed by this workflow.
+
+Run the snapshot registry tests with:
+
+```bash
+python -m unittest evaluation.tests.test_additional_teacher_snapshots -v
+```
+
+A passing unit test validates registry guardrails only. Actual loader compatibility, model generation, revision pinning and file hashes are established only by the real workflow artifacts.

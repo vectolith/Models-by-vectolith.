@@ -64,6 +64,32 @@
       "license_review": "pending_human_legal_review",
       "training_output_permission": "not_verified",
       "teacher_qualification": "not_qualified"
+    },
+    {
+      "id": "granite-4.2-3b",
+      "family": "IBM Granite",
+      "repo_id": "ibm-granite/granite-4.2-3b",
+      "revision": "4e9c275e232f10211ec88644d106a1f6a1b60e06",
+      "parameter_count": 3700000000,
+      "license_tag": "apache-2.0",
+      "gated": false,
+      "transformers_version": "5.0.0",
+      "license_review": "pending_human_legal_review",
+      "training_output_permission": "not_verified",
+      "teacher_qualification": "not_qualified"
+    },
+    {
+      "id": "minicpm5-2b",
+      "family": "OpenBMB MiniCPM",
+      "repo_id": "openbmb/MiniCPM5-2B",
+      "revision": "42433e90dad95123ab87729fd7011e7110629556",
+      "parameter_count": 2516756480,
+      "license_tag": "apache-2.0",
+      "gated": false,
+      "transformers_version": "4.57.1",
+      "license_review": "pending_human_legal_review",
+      "training_output_permission": "not_verified",
+      "teacher_qualification": "not_qualified"
     }
   ]
 }

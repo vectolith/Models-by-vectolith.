@@ -20,6 +20,4 @@ The initial candidate pool is Granite, Gemma, Ministral, and Qwen. Exact checkpo
 
 Teacher consensus is not proof. Verify factual claims externally and test code where feasible. Exclude personal data, secrets, and data without a documented lawful and license-compatible basis.
 
-**Prime data:** broad instruction following, reasoning, coding, tool use, and conversation.
-
-**Prima data:** research decomposition, evidence synthesis, source comparison, technical diagnosis, traceable claims, and calibrated uncertainty.
+**Core Prime data and objectives:** one unified curriculum spanning broad instruction following, conversation, research decomposition, source comparison, evidence synthesis, factual reasoning, mathematics, writing, planning, coding, software architecture, debugging, testing, technical diagnosis, structured tool use, agentic execution, traceable claims, calibrated uncertainty, and verified task completion. Former Prima-only engineering examples are assigned to Prime's curriculum and evaluation coverage. Core Prima is paused; do not generate a separate Prima corpus in this cycle.

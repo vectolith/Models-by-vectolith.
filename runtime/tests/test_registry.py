@@ -1,5 +1,6 @@
 import unittest
 from vectolith_runtime import FamilyIdentity, ModelLifecycle, ModelManifest, ModelRegistry
+from vectolith_runtime.registry import CORE_PRIME_TARGET_CAPABILITIES
 
 def manifest(model_id="core-prime", *, capabilities=frozenset({"reasoning", "conversation"}), **kwargs):
     return ModelManifest(
@@ -9,6 +10,16 @@ def manifest(model_id="core-prime", *, capabilities=frozenset({"reasoning", "con
     )
 
 class ModelRegistryTests(unittest.TestCase):
+    def test_prime_target_profile_includes_former_prima_engineering_scope(self):
+        required = {
+            "coding.generation", "software.architecture.design",
+            "software.debugging", "software.testing", "software.review",
+            "tools.structured_use", "agents.task_execution",
+            "verification.results", "reasoning.mathematical",
+        }
+        self.assertTrue(required.issubset(CORE_PRIME_TARGET_CAPABILITIES))
+        self.assertIn("research.evidence_synthesis", CORE_PRIME_TARGET_CAPABILITIES)
+
     def test_register_and_get_model(self):
         registry = ModelRegistry()
         item = manifest()

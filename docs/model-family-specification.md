@@ -15,12 +15,12 @@ A model is a vectolith family member when it:
 4. Passes family-wide safety, instruction-following, interoperability, and disclosure evaluations.
 5. Has its own evidence-backed release decision and model card.
 
-The family does not require identical foundations, architectures, tokenizers, processors, context lengths, or modalities. Compatibility must be declared and tested rather than assumed.
+The family does not require identical foundations, architectures, tokenizers, processors, context lengths, or modalities. Compatibility must be declared and tested rather than assumed. Capability declarations describe intended and evaluated scope; they do not prove that an unevaluated checkpoint can perform a capability.
 
 ## Initial members
 
-- **Core Prime:** general-purpose reasoning, conversation, instruction following, planning, synthesis, and user-facing coordination.
-- **Core Prima:** coding, software engineering, architecture, debugging, technical design, testing, and technical execution.
+- **Core Prime:** unified general-purpose intelligence spanning reasoning, conversation, instruction following, research, evidence synthesis, planning, writing, mathematics, data analysis, coding, software engineering, architecture, debugging, technical design, testing, structured tool use, agentic task execution, and verification.
+- **Core Prima:** paused initial specialist track. Its originally planned engineering capabilities are being incorporated into Core Prime. A future Prima must have a distinct, evidence-backed specialization rather than merely duplicating Prime.
 
 These are the initial specialization baselines. Future models may focus on research, mathematics, vision, audio, translation, data analysis, security research, or other areas. Examples are illustrative, not a closed roadmap.
 

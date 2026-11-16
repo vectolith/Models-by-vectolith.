@@ -19,6 +19,7 @@ import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from run_eval import load_cases
+from generation import render_prompt
 
 DEFAULT_REVISION = "c1899de289a04d12100db370d81485cdf75e47ca"
 DEFAULT_REPO = "Qwen/Qwen3-0.6B"
@@ -27,17 +28,6 @@ DEFAULT_REPO = "Qwen/Qwen3-0.6B"
 def prompt_hash(messages: list[dict]) -> str:
     encoded = json.dumps(messages, ensure_ascii=False, sort_keys=True).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
-
-
-def render_prompt(tokenizer, messages: list[dict]):
-    return tokenizer.apply_chat_template(
-        messages,
-        tokenize=True,
-        add_generation_prompt=True,
-        enable_thinking=False,
-        return_tensors="pt",
-        return_dict=True,
-    )
 
 
 def main() -> int:

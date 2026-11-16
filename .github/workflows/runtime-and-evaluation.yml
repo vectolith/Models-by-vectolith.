@@ -1,4 +1,4 @@
-name: Runtime and evaluation tests
+name: Core Prime runtime and evaluation tests
 
 on:
   pull_request:
@@ -12,6 +12,10 @@ on:
       - "runtime/**"
       - "evaluation/**"
       - ".github/workflows/runtime-and-evaluation.yml"
+
+concurrency:
+  group: core-prime-runtime-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -30,147 +34,5 @@ jobs:
         run: python -m pip install -e ./runtime
       - name: Run runtime tests
         run: python -m unittest discover -s runtime/tests -v
-      - name: Run foundation evaluation and live Hugging Face integration tests
-        env:
-          VECTOLITH_RUN_LIVE_TESTS: "1"
+      - name: Run foundation evaluation tests
         run: python -m unittest discover -s evaluation/tests -v
-      - name: Discover real model candidates across teacher families
-        run: |
-          python evaluation/discover_hf_candidates.py \
-            --search "Qwen3.8" \
-            --search "Qwen3.6" \
-            --search "Qwen3.5" \
-            --search "Gemma 4" \
-            --search "Granite 4" \
-            --search "gpt-oss" \
-            --search "Devstral" \
-            --author "Qwen" \
-            --author "Qwen" \
-            --author "Qwen" \
-            --author "google" \
-            --author "ibm-granite" \
-            --author "openai" \
-            --author "mistralai" \
-            --limit 10 \
-            --sort downloads \
-            --output artifacts/candidates/huggingface-discovery.jsonl
-      - name: Preserve live discovery evidence
-        uses: actions/upload-artifact@v4
-        with:
-          name: huggingface-candidate-discovery
-          path: artifacts/candidates/huggingface-discovery.jsonl
-          if-no-files-found: error
-          retention-days: 30
-      - name: Snapshot exact Prime and Prima teacher candidates
-        run: |
-          python evaluation/discover_hf_candidates.py \
-            --repo Qwen/Qwen3.5-9B \
-            --repo Qwen/Qwen3.5-4B \
-            --repo Qwen/Qwen3.8-27B \
-            --repo Qwen/Qwen3.6-27B \
-            --repo Qwen/Qwen3.6-35B-A3B \
-            --repo google/gemma-4-E2B-it \
-            --repo google/gemma-4-E4B-it \
-            --repo google/gemma-4-12B-it \
-            --repo google/gemma-4-26B-A4B-it \
-            --repo google/gemma-4-31B-it \
-            --repo ibm-granite/granite-4.2-8b \
-            --repo openai/gpt-oss-20b \
-            --repo Qwen/Qwen2.5-7B-Instruct \
-            --repo mistralai/Devstral-Small-2-24B-Instruct-2512 \
-            --repo Qwen/Qwen3-Coder-Next \
-            --repo Qwen/Qwen2.5-Coder-7B-Instruct \
-            --output artifacts/teacher-candidates/pinned-snapshots.jsonl
-      - name: Preserve immutable teacher candidate snapshots and license evidence
-        uses: actions/upload-artifact@v4
-        with:
-          name: teacher-candidate-snapshots
-          path: artifacts/teacher-candidates/pinned-snapshots.jsonl
-          if-no-files-found: error
-          retention-days: 90
-
-  real-checkpoint-smoke:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install CPU inference dependencies
-        run: |
-          python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
-          python -m pip install transformers==4.57.1 accelerate==1.10.1 safetensors==0.6.2
-      - name: Run Prime and Prima smoke suites against pinned Qwen3 checkpoint
-        run: |
-          python evaluation/run_real_checkpoint_suite.py \
-            --suite evaluation/fixtures/prime_smoke.jsonl \
-            --suite evaluation/fixtures/prima_smoke.jsonl \
-            --max-new-tokens 256
-      - name: Capture actual runner hardware and accelerator availability
-        run: python evaluation/probe_compute.py --output artifacts/compute/github-actions-runner.json
-      - name: Preserve real checkpoint evaluation evidence
-        uses: actions/upload-artifact@v4
-        with:
-          name: qwen3-0.6b-real-suite
-          path: artifacts/evaluations/qwen3-0.6b-smoke-suites.json
-          if-no-files-found: error
-          retention-days: 30
-      - name: Preserve observed compute evidence
-        uses: actions/upload-artifact@v4
-        with:
-          name: github-actions-compute-observation
-          path: artifacts/compute/github-actions-runner.json
-          if-no-files-found: error
-          retention-days: 30
-
-  real-family-comparison:
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install CPU inference dependencies
-        run: |
-          python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
-          python -m pip install transformers==4.57.1 accelerate==1.10.1 safetensors==0.6.2 huggingface_hub==0.36.0
-      - name: Capture the single-runner compute environment
-        run: python evaluation/probe_compute.py --output artifacts/compute/sequential-runner.json
-      - name: Run all accessible pinned candidates sequentially on this same runner
-        run: |
-          python evaluation/run_real_candidate_matrix.py \
-            --manifest evaluation/fixtures/real_cpu_candidates_v1.json \
-            --suite evaluation/fixtures/prime_smoke.jsonl \
-            --suite evaluation/fixtures/prima_smoke.jsonl \
-            --dtype bfloat16 \
-            --max-new-tokens 64 \
-            --cache-dir "${{ runner.temp }}/hf-cache" \
-            --output-dir artifacts/evaluations/candidates \
-            --run-record artifacts/evaluations/candidate-run.json
-      - name: Generate execution comparison report
-        if: always() && hashFiles('artifacts/evaluations/candidate-run.json') != ''
-        run: |
-          python evaluation/summarize_real_candidate_results.py \
-            --run-record artifacts/evaluations/candidate-run.json \
-            --results-dir artifacts/evaluations/candidates \
-            --output-json artifacts/evaluations/comparison-report.json \
-            --output-markdown artifacts/evaluations/comparison-report.md
-      - name: Preserve raw outputs, logs, hardware and comparison report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sequential-real-candidate-comparison
-          path: |
-            artifacts/evaluations/candidates/
-            artifacts/evaluations/candidate-run.json
-            artifacts/evaluations/comparison-report.json
-            artifacts/evaluations/comparison-report.md
-            artifacts/compute/sequential-runner.json
-          if-no-files-found: warn
-          retention-days: 30
