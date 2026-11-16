@@ -56,7 +56,7 @@ class BlindedHumanReviewTests(unittest.TestCase):
                     "generation_cap_reached": False,
                     "generation_status": "eos_or_early_stop",
                     "generated_tokens": 12,
-                    "response_text": f"Answer {candidate} {n}",
+                    "response_text": f"Answer response {n}",
                     "error": None,
                 })
             record = {
@@ -100,6 +100,7 @@ class BlindedHumanReviewTests(unittest.TestCase):
                 self.assertNotIn("1" * 40, raw)
                 self.assertNotIn("2" * 40, raw)
                 self.assertNotIn("run-secret", raw)
+                self.assertIn("Answer response", raw)
                 self.assertEqual(len(raw.splitlines()), 4)
 
     def test_unblinds_only_complete_distinct_reviewer_submissions(self):
