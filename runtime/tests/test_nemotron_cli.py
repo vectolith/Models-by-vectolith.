@@ -40,7 +40,8 @@ class NemotronCLIAdapterTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             runner = FakeRunner()
             adapter = NemotronCLIAdapter(
-                working_directory=directory, runner=runner, command_exists=lambda _: True
+                working_directory=directory, runner=runner, command_exists=lambda _: True,
+                budget_ref_validator=lambda ref: ref == "budget:local-cpu",
             )
             result = adapter.run_step(
                 NemotronStepRequest("sft/automodel", "tiny", "local_cpu", resource_budget_ref="budget:local-cpu"),
@@ -58,6 +59,19 @@ class NemotronCLIAdapterTests(unittest.TestCase):
             self.assertEqual(result.exit_code, 0)
             self.assertEqual(result.execution_profile, "local_cpu")
             self.assertEqual(result.approval_ref, "change-control:42")
+
+    def test_profile_execution_is_blocked_without_budget_verifier(self):
+        with tempfile.TemporaryDirectory() as directory:
+            adapter = NemotronCLIAdapter(
+                working_directory=directory, runner=FakeRunner(), command_exists=lambda _: True
+            )
+            request = NemotronStepRequest(
+                "sft/automodel", execution_profile="remote_gpu", resource_budget_ref="budget:42"
+            )
+            self.assertIn(
+                "resource budget reference is not verified by the host",
+                adapter.preflight(request),
+            )
 
     def test_environment_profile_is_passed_by_environment_variable(self):
         with tempfile.TemporaryDirectory() as directory:
