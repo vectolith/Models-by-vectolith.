@@ -100,5 +100,3 @@ Both LFM2.5 artifacts include the 11-file immutable snapshot inventory. The LICE
 - Run 43 Phi-4 snapshot manifest SHA-256: \`837c68404e8ccce17fbe7d1c88c23d58731021805663ecea2ba78f06bcd0a1c9\`; 21 files, 7,694,054,130 bytes.
 - Run 43 Phi-4 LICENSE SHA-256: \`fa8235e5b48faca34e3ca98cf4f694ef08bd216d28b58071a1f85b1d50cb814d\`.
 
-- Run 43 Phi-4 manifest SHA-256: `837c68404e8ccce17fbe7d1c88c23d58731021805663ecea2ba78f06bcd0a1c9`; 21 files, 7,694,054,130 bytes.
-- Run 43 Phi-4 LICENSE SHA-256: `fa8235e5b48faca34e3ca98cf4f694ef08bd216d28b58071a1f85b1d50cb814d`.
