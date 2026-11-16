@@ -35,6 +35,41 @@ RUN40_ARTIFACTS = {
         "sha256": "ffb3ce18c6c966b4a2914dc3b9393cedc95585f89b41f2ce7067c677131b34d8",
     },
 }
+RUN42_43_ARTIFACTS = {
+    "run42-prime-granite-3.1-3b-a800m.zip": {
+        "workflow_run_id": "43820188813", "artifact_id": 14207923899, "job_id": 133141260775,
+        "sha256": "8d799a9c015ab6728079fe1f54bf8a6557d0c011d84fd4b826dbbd23e69a81fd",
+    },
+    "run42-prime-granite-4.2-3b.zip": {
+        "workflow_run_id": "43820188813", "artifact_id": 14222803141, "job_id": 133174330091,
+        "sha256": "088e3dbee15c26627cc97d6cb09d46bca0a37340cc5a5ae08af86e4ccebcb45e",
+    },
+    "run42-prime-minicpm5-2b.zip": {
+        "workflow_run_id": "43820188813", "artifact_id": 14230880744, "job_id": 133275261975,
+        "sha256": "8375eb2eb02192c07c5fdebdf661bda4c9eeb54d852f40679a3863f1210e94d4",
+    },
+    "run42-prime-lfm2.5-2.6b.zip": {
+        "workflow_run_id": "43820188813", "artifact_id": 14262556692, "job_id": 133332287803,
+        "sha256": "f6502425a369cd3b86347c311445c729793f45f438e4f4aa4a6f155406216e64",
+    },
+    "run43-prime-granite-3.1-3b-a800m.zip": {
+        "workflow_run_id": "43821046671", "artifact_id": 14208733041, "job_id": 133143953242,
+        "sha256": "3e3e6d563c1deeb696f7004195de09172e4e2f2f49a2229a9c4d8d82d5218c05",
+    },
+    "run43-prime-granite-4.2-3b.zip": {
+        "workflow_run_id": "43821046671", "artifact_id": 14223262221, "job_id": 133178581513,
+        "sha256": "a3781ef0dd5240eca4f223a44f69c39f641bb20d9adf6d2bb7f4efb3b44c2739",
+    },
+    "run43-prime-minicpm5-2b.zip": {
+        "workflow_run_id": "43821046671", "artifact_id": 14231498894, "job_id": 133277594971,
+        "sha256": "109c2f235ab8edde59b2beeeedf778f6ae3babf309e70952c62febf09cf93acb",
+    },
+    "run43-prime-lfm2.5-2.6b.zip": {
+        "workflow_run_id": "43821046671", "artifact_id": 14245324681, "job_id": 133347523890,
+        "sha256": "7130d8c7f4754e689f4652951a12f09e70df43f7c7e67ecc27dfb1a1fea192ca",
+    },
+}
+ARTIFACT_PROVENANCE = {**RUN40_ARTIFACTS, **RUN42_43_ARTIFACTS}
 BLIND_GRADE_SCHEMA = "vectolith-blind-human-grade/1.0"
 GRADE_SCHEMA = "vectolith-human-grading/1.0"
 SCORE_ANCHORS = {
@@ -140,22 +175,26 @@ def build_review_packages(
         raise ValueError(f"expected {expected_artifacts} evidence artifacts, received {len(evidence_paths)}")
     if workflow_run_id == "43796213917" and {path.name for path in evidence_paths} != set(RUN40_ARTIFACTS):
         raise ValueError("run 40 requires the exact five published source artifact files")
+    if len({path.name for path in evidence_paths}) != len(evidence_paths):
+        raise ValueError("source artifact filenames must be unique")
     suites = load_suites(suite_paths)
-    candidates: dict[str, dict[str, Any]] = {}
-    all_rows: list[dict[str, Any]] = []
+    artifacts: list[dict[str, Any]] = []
+    seen_execution_ids = set()
     source_register = []
     for path in evidence_paths:
         record, rows, hashes = load_evidence_archive(path)
-        pinned = RUN40_ARTIFACTS.get(path.name)
+        pinned = ARTIFACT_PROVENANCE.get(path.name)
         if pinned and hashes["archive_sha256"] != pinned["sha256"]:
-            raise ValueError(f"{path}: archive SHA-256 does not match the published run 40 digest")
+            raise ValueError(f"{path}: archive SHA-256 does not match the published artifact digest")
         candidate = record.get("candidate_id")
         revision = record.get("immutable_revision")
         run_id = record.get("run_id")
         if not all(isinstance(x, str) and x for x in (candidate, revision, run_id)):
             raise ValueError(f"{path}: missing candidate, immutable revision, or run id")
-        if candidate in candidates:
-            raise ValueError(f"duplicate candidate artifact: {candidate}")
+        execution_id = (candidate, revision, run_id)
+        if execution_id in seen_execution_ids:
+            raise ValueError(f"duplicate candidate execution artifact: {execution_id}")
+        seen_execution_ids.add(execution_id)
         if len(revision) != 40 or any(c not in "0123456789abcdef" for c in revision.lower()):
             raise ValueError(f"{path}: model revision is not an immutable 40-character SHA")
         if record.get("role") not in (None, "core_prime") and any(r.get("role") != "core_prime" for r in rows):
@@ -182,22 +221,24 @@ def build_review_packages(
         if seen_cases != set(suites):
             missing = sorted(set(suites) - seen_cases)
             raise ValueError(f"{path}: suite coverage mismatch; missing {missing[:5]}")
-        candidates[candidate] = {"record": record, "rows": rows, "hashes": hashes, "path": path}
+        source_run_id = pinned["workflow_run_id"] if pinned and pinned.get("workflow_run_id") else workflow_run_id
+        item = {"record": record, "rows": rows, "hashes": hashes, "path": path, "workflow_run_id": source_run_id, "provenance": pinned}
+        artifacts.append(item)
         source_register.append({
             "candidate_id": candidate,
             "model_revision": revision,
             "run_id": run_id,
             "artifact_file": path.name,
-            "workflow_run_id": workflow_run_id,
+            "workflow_run_id": source_run_id,
             "artifact_id": pinned["artifact_id"] if pinned else None,
             "workflow_job_id": pinned["job_id"] if pinned else None,
             **hashes,
         })
-        all_rows.extend(rows)
 
+    candidate_names = sorted({item["record"]["candidate_id"] for item in artifacts})
     case_sets = [
         {r.get("benchmark_case_id") or r.get("case_id") for r in item["rows"]}
-        for item in candidates.values()
+        for item in artifacts
     ]
     if any(case_set != case_sets[0] for case_set in case_sets[1:]):
         raise ValueError("candidate response sets do not cover identical case IDs")
@@ -205,8 +246,11 @@ def build_review_packages(
     salt = secrets.token_hex(32)
     private_records: dict[str, Any] = {}
     review_rows = []
-    for candidate, item in candidates.items():
+    for item in artifacts:
         record = item["record"]
+        candidate = record["candidate_id"]
+        source_run_id = item["workflow_run_id"]
+        provenance = item["provenance"]
         for row in item["rows"]:
             case_id = row.get("benchmark_case_id") or row.get("case_id")
             started_at = row.get("started_at", "")
@@ -227,9 +271,9 @@ def build_review_packages(
                 "gradeable": gradeable,
                 "source_artifact": item["path"].name,
                 "source_artifact_sha256": item["hashes"]["archive_sha256"],
-                "workflow_run_id": workflow_run_id,
-                "artifact_id": RUN40_ARTIFACTS.get(item["path"].name, {}).get("artifact_id"),
-                "workflow_job_id": RUN40_ARTIFACTS.get(item["path"].name, {}).get("job_id"),
+                "workflow_run_id": source_run_id,
+                "artifact_id": provenance.get("artifact_id") if provenance else None,
+                "workflow_job_id": provenance.get("job_id") if provenance else None,
                 "prompt_sha256": row.get("prompt_sha256"),
                 "generation_status": row.get("generation_status"),
                 "generation_cap_reached": bool(row.get("generation_cap_reached")),
@@ -274,7 +318,6 @@ def build_review_packages(
     for reviewer_index in range(1, reviewer_count + 1):
         reviewer_id = f"reviewer-{reviewer_index:02d}"
         rng = random.SystemRandom()
-        candidate_names = list(candidates)
         shuffled_aliases = rng.sample(aliases, len(candidate_names))
         alias_by_candidate = dict(zip(candidate_names, shuffled_aliases))
         shuffled = list(review_rows)
@@ -355,7 +398,8 @@ def build_review_packages(
     summary = {
         "schema_version": "vectolith-blind-review-build/1.0",
         "workflow_run_id": workflow_run_id,
-        "candidate_artifact_count": len(candidates),
+        "candidate_artifact_count": len(artifacts),
+        "unique_candidate_count": len(candidate_names),
         "suite_case_count": len(suites),
         "response_count": len(review_rows),
         "gradeable_response_count": sum(1 for x in private_records.values() if x["gradeable"]),
