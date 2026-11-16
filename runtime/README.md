@@ -28,6 +28,19 @@ See [the executable pipeline guide](../docs/executable-multi-teacher-pipeline.md
 
 These components do not select a production teacher or student foundation automatically. Exact model revisions, licenses, provider terms, training-output permissions, held-out evaluation suites, hardware and budget must be reviewed before a run. CI tests do not call providers or start training.
 
+## Infrastructure contribution registry
+
+The runtime includes metadata-only provider and contribution records, independent qualification blockers, and a deterministic in-memory mock compute adapter. The mock adapter exercises preflight, submit, status and cancellation without provisioning resources or contacting a provider. Provider credentials are not part of these records.
+
+```python
+from vectolith_runtime import InfrastructureRegistry, MockComputeAdapter
+
+registry = InfrastructureRegistry()
+adapter = MockComputeAdapter()  # deterministic; no real compute
+```
+
+Versioned JSON Schemas are in `../schemas/`. See [the contribution-system specification](../docs/teacher-infrastructure-contributions.md). This is an initial reference implementation; it does not provide remote execution, provider account access, billing, or production persistence.
+
 ## Durable registry
 
 SQLite persists model manifests across process restarts. Use a filesystem path for durability; `:memory:` is intended for tests.

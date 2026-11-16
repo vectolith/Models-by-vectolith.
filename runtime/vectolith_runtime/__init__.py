@@ -18,6 +18,12 @@ from .engine import (
 )
 from .loading import LoadedModel, ModelLoader, ModelLoaderRegistry, ModelRuntime
 from .persistence import SQLiteModelRegistry
+from .infrastructure import (
+    INFRASTRUCTURE_CONTRACT_VERSION, AccessMode, ComputeAdapter, ComputeJob,
+    ComputeRequest, ContributionClass, InfrastructureContribution,
+    InfrastructureProvider, InfrastructureRegistry, MockComputeAdapter,
+    ProviderState, QualificationState, qualification_blockers,
+)
 from .registry import (
     CORE_PRIME_TARGET_CAPABILITIES, IDENTITY_CONTRACT_VERSION, FamilyIdentity, ModelLifecycle, ModelManifest, ModelRegistry,
 )
@@ -27,7 +33,10 @@ __all__ = [
     "ApprovalRequired", "PermissionDenied", "TaskRecord", "TaskStore",
     "ToolRegistry", "VectolithRuntime", "IDENTITY_CONTRACT_VERSION",
     "FamilyIdentity", "ModelLifecycle", "ModelManifest", "ModelRegistry",
-    "SQLiteModelRegistry", "LoadedModel", "ModelLoader", "ModelLoaderRegistry", "ModelRuntime",
+    "SQLiteModelRegistry", "INFRASTRUCTURE_CONTRACT_VERSION", "AccessMode", "ComputeAdapter",
+    "ComputeJob", "ComputeRequest", "ContributionClass", "InfrastructureContribution",
+    "InfrastructureProvider", "InfrastructureRegistry", "MockComputeAdapter",
+    "ProviderState", "QualificationState", "qualification_blockers", "LoadedModel", "ModelLoader", "ModelLoaderRegistry", "ModelRuntime",
     "CORE_PRIME_TARGET_CAPABILITIES",
     "IndependenceEvidence", "TeacherContribution", "TeacherPanel", "validate_panels",
     "OpenAICompatibleTeacher", "QualifiedTeacher", "TeacherAssignmentPanel",
