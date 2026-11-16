@@ -192,6 +192,7 @@ def build_review_packages(
                 "benchmark_case_id": case_id,
                 "role": "core_prime",
                 "category": row["category"],
+                "rubric": list(suites[case_id]["rubric"]),
                 "gradeable": gradeable,
                 "source_artifact": item["path"].name,
                 "source_artifact_sha256": item["hashes"]["archive_sha256"],
