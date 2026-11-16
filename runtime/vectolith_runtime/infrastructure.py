@@ -185,6 +185,7 @@ class InfrastructureRegistry:
                 x for x in items
                 if x.qualification_status == QualificationState.APPROVED
                 and self._provider_approved(x.provider_id)
+                and not qualification_blockers(self._providers[x.provider_id], x)
             )
         return tuple(sorted(items, key=lambda x: x.contribution_id))
 
