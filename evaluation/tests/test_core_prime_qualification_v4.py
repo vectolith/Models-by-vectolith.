@@ -31,7 +31,12 @@ class CorePrimeQualificationV4Tests(unittest.TestCase):
         self.assertEqual(set(counts), EXPECTED_CATEGORIES)
         self.assertEqual(len(cases), 4 * len(EXPECTED_CATEGORIES))
         self.assertTrue(all(count == 4 for count in counts.values()))
-        self.assertTrue(all(case.get("rubric") and len(case["rubric"]) >= 3 for case in cases))
+        self.assertTrue(all(case.get("rubric") and len(case["rubric"]) == 3 for case in cases))
+        for category, category_cases in (
+            (category, [case for case in cases if case.get("category") == category])
+            for category in EXPECTED_CATEGORIES
+        ):
+            self.assertEqual(len({tuple(case["rubric"]) for case in category_cases}), 1)
         self.assertTrue(all(len(case["messages"]) >= 2 for case in cases))
         ids = [case["id"] for case in cases]
         self.assertEqual(len(ids), len(set(ids)))
