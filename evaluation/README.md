@@ -161,3 +161,6 @@ python evaluation/prepare_blinded_human_review.py unblind --help
 \`\`\`
 
 The builder verifies immutable artifact ZIPs, JSON/JSONL parity, provenance, exact suite coverage, and original rubric integrity. It writes separate reviewer ZIPs and a restricted private identity key that must never be shared with reviewers. The unblinding step requires at least two distinct evaluator IDs and complete grade coverage. Human grade summaries report pairwise weighted agreement but never make a teacher qualification decision. See [Core Prime blinded human-review operations](../docs/core-prime-blinded-human-review.md).
+
+
+Additional verified follow-up artifacts from Core Prime runs 42 and 43 are recorded in [run 42/43 evidence](core-prime-multi-teacher-runs-42-43-evidence-2026-11-16.md). The blinded review builder supports repeated inference runs for the same candidate without overwriting or collapsing their provenance.
