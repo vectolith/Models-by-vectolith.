@@ -3,6 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from vectolith_runtime import TrainingAdapter
 from vectolith_runtime.adapters.nemotron_cli import NemotronCLIAdapter, NemotronStepRequest
 
 
@@ -43,8 +44,14 @@ class NemotronCLIAdapterTests(unittest.TestCase):
                 working_directory=directory, runner=runner, command_exists=lambda _: True,
                 budget_ref_validator=lambda ref: ref == "budget:local-cpu",
             )
-            result = adapter.run_step(
-                NemotronStepRequest("sft/automodel", "tiny", "local_cpu", resource_budget_ref="budget:local-cpu"),
+            request = NemotronStepRequest(
+                "sft/automodel", "tiny", "local_cpu",
+                resource_budget_ref="budget:local-cpu",
+                overrides=("model.pretrained_model=org/model", "dataset.path=/data/accepted.jsonl"),
+            )
+            self.assertIsInstance(adapter, TrainingAdapter)
+            result = adapter.execute(
+                request,
                 approved=True,
                 approval_ref="change-control:42",
             )
@@ -53,7 +60,11 @@ class NemotronCLIAdapterTests(unittest.TestCase):
             )
             self.assertEqual(
                 runner.calls[1][0],
-                ["nemotron", "steps", "run", "sft/automodel", "-c", "tiny", "-r", "local_cpu"],
+                [
+                    "nemotron", "steps", "run", "sft/automodel", "-c", "tiny",
+                    "-r", "local_cpu", "model.pretrained_model=org/model",
+                    "dataset.path=/data/accepted.jsonl",
+                ],
             )
             self.assertFalse(runner.calls[1][1].get("shell", False))
             self.assertEqual(result.exit_code, 0)
@@ -89,6 +100,12 @@ class NemotronCLIAdapterTests(unittest.TestCase):
             self.assertEqual(
                 runner.calls[1][1]["env"]["NEMOTRON_ENV_FILE"], str(env_file)
             )
+
+    def test_dotlist_overrides_are_validated(self):
+        with self.assertRaises(ValueError):
+            NemotronStepRequest("sft/automodel", overrides=("bad override",))
+        with self.assertRaises(ValueError):
+            NemotronStepRequest("sft/automodel", overrides=("=empty-key",))
 
     def test_profile_requires_budget_evidence(self):
         with self.assertRaisesRegex(ValueError, "resource_budget_ref"):
