@@ -68,6 +68,10 @@ RUN42_43_ARTIFACTS = {
         "workflow_run_id": "43821046671", "artifact_id": 14245324681, "job_id": 133347523890,
         "sha256": "7130d8c7f4754e689f4652951a12f09e70df43f7c7e67ecc27dfb1a1fea192ca",
     },
+    "run43-prime-phi-4-mini-instruct.zip": {
+        "workflow_run_id": "43821046671", "artifact_id": 14261964529, "job_id": 133444059471,
+        "sha256": "584ac7979398db27234870b72e3c94c65ff79749828e78ba388db198c68df50f",
+    },
 }
 ARTIFACT_PROVENANCE = {**RUN40_ARTIFACTS, **RUN42_43_ARTIFACTS}
 BLIND_GRADE_SCHEMA = "vectolith-blind-human-grade/1.0"
