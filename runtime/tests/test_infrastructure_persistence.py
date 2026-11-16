@@ -16,7 +16,7 @@ class InfrastructureSerializationTests(unittest.TestCase):
         _,c=records(); self.assertEqual(contribution_from_record(contribution_to_record(c)),c)
     def test_schema_rejects_unknown_properties_and_missing_fields(self):
         p,_=records(); d=provider_to_record(p); d["secret_token"]="must-not-be-accepted"
-        with self.assertRaisesRegex(ValueError,"additional properties"): validate_infrastructure_record("provider",d)
+        with self.assertRaisesRegex(ValueError,"Additional properties"): validate_infrastructure_record("provider",d)
         with self.assertRaises(ValueError): validate_infrastructure_record("contribution",{"schema_version":"1.0"})
 
 class SQLiteInfrastructureRegistryTests(unittest.TestCase):
