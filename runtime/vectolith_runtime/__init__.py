@@ -18,6 +18,8 @@ from .engine import (
 )
 from .loading import LoadedModel, ModelLoader, ModelLoaderRegistry, ModelRuntime
 from .persistence import SQLiteModelRegistry
+from .infrastructure_persistence import SQLiteInfrastructureRegistry
+from .infrastructure_validation import validate_infrastructure_record
 from .infrastructure import (
     INFRASTRUCTURE_CONTRACT_VERSION, AccessMode, ComputeAdapter, ComputeJob,
     ComputeRequest, ContributionClass, InfrastructureContribution,
@@ -35,8 +37,8 @@ __all__ = [
     "FamilyIdentity", "ModelLifecycle", "ModelManifest", "ModelRegistry",
     "SQLiteModelRegistry", "INFRASTRUCTURE_CONTRACT_VERSION", "AccessMode", "ComputeAdapter",
     "ComputeJob", "ComputeRequest", "ContributionClass", "InfrastructureContribution",
-    "InfrastructureProvider", "InfrastructureRegistry", "MockComputeAdapter",
-    "ProviderState", "QualificationState", "qualification_blockers", "LoadedModel", "ModelLoader", "ModelLoaderRegistry", "ModelRuntime",
+    "InfrastructureProvider", "InfrastructureRegistry", "SQLiteInfrastructureRegistry", "MockComputeAdapter",
+    "ProviderState", "QualificationState", "qualification_blockers", "validate_infrastructure_record", "LoadedModel", "ModelLoader", "ModelLoaderRegistry", "ModelRuntime",
     "CORE_PRIME_TARGET_CAPABILITIES",
     "IndependenceEvidence", "TeacherContribution", "TeacherPanel", "validate_panels",
     "OpenAICompatibleTeacher", "QualifiedTeacher", "TeacherAssignmentPanel",
