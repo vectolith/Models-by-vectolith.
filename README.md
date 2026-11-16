@@ -36,6 +36,7 @@ A model-neutral registry publishes machine-readable capabilities and modality su
 - [Multi-teacher distillation and student independence](docs/multi-teacher-distillation-and-student-independence.md)
 - [Teacher candidate efficiency review](docs/teacher-candidate-efficiency-review.md)
 - [Training and promotion](docs/training-and-promotion.md)
+- [Training infrastructure specification](docs/training-infrastructure-specification.md)
 - [Release policy](docs/release-policy.md)
 
 ## Collective distillation
