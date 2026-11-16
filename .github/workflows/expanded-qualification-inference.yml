@@ -1,15 +1,13 @@
 name: Core Prime sequential multi-teacher inference evidence
 
 on:
-  pull_request:
-    paths:
-      - "evaluation/**"
-      - ".github/workflows/expanded-qualification-inference.yml"
-  push:
-    branches: [main]
-    paths:
-      - "evaluation/**"
-      - ".github/workflows/expanded-qualification-inference.yml"
+  workflow_dispatch:
+    inputs:
+      run_qualification:
+        description: "Explicitly authorize the complete sequential teacher qualification workflow"
+        required: true
+        type: boolean
+        default: false
 
 concurrency:
   group: core-prime-inference-${{ github.event.pull_request.number || github.ref }}
@@ -20,6 +18,7 @@ permissions:
 
 jobs:
   granite31:
+    if: ${{ inputs.run_qualification == true }}
     name: Granite 3.1 3B-A800M / Core Prime
     runs-on: ubuntu-latest
     timeout-minutes: 360
