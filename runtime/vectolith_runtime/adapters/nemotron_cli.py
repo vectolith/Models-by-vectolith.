@@ -92,6 +92,7 @@ class NemotronCLIAdapter:
         working_directory: str | Path,
         runner: CommandRunner = subprocess.run,
         command_exists: Callable[[str], bool] | None = None,
+        budget_ref_validator: Callable[[str], bool] | None = None,
     ) -> None:
         if not executable or not executable.strip():
             raise ValueError("executable must be a non-empty command")
@@ -101,6 +102,7 @@ class NemotronCLIAdapter:
         self._command_exists = command_exists or (
             lambda command: Path(command).is_file() or shutil.which(command) is not None
         )
+        self._budget_ref_validator = budget_ref_validator
 
     def preflight(self, request: NemotronStepRequest) -> tuple[str, ...]:
         blockers: list[str] = []
@@ -108,6 +110,11 @@ class NemotronCLIAdapter:
             blockers.append(f"Nemotron CLI executable not found: {self.executable}")
         if not self.working_directory.is_dir():
             blockers.append("Nemotron working directory does not exist")
+        if request.execution_profile is not None and (
+            self._budget_ref_validator is None
+            or not self._budget_ref_validator(request.resource_budget_ref or "")
+        ):
+            blockers.append("resource budget reference is not verified by the host")
         if request.environment_file is not None:
             env_file = Path(request.environment_file).expanduser()
             if not env_file.is_absolute():
