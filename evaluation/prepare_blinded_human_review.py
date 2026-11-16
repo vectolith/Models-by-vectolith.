@@ -15,7 +15,7 @@ from typing import Any
 BLIND_SCHEMA = "vectolith-blind-review/1.0"
 RUN40_ARTIFACTS = {
     "prime-teacher-granite-3.1-3b-a800m.zip": {
-        "workflow_run_id": "43796213917", "artifact_id: 14199574383, "job_id": 133093491281,
+        "workflow_run_id": "43796213917", "artifact_id": 14199574383, "job_id": 133093491281,
         "sha256": "3f7fc738edef49a7347c50c906a4c3fd2e8a71bde7815de47f65dc03464ebc68",
     },
     "prime-teacher-granite-4.2-3b.zip": {
