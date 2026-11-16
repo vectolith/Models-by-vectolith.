@@ -43,7 +43,7 @@ class NemotronCLIAdapterTests(unittest.TestCase):
                 working_directory=directory, runner=runner, command_exists=lambda _: True
             )
             result = adapter.run_step(
-                NemotronStepRequest("sft/automodel", "tiny", "local_cpu"),
+                NemotronStepRequest("sft/automodel", "tiny", "local_cpu", resource_budget_ref="budget:local-cpu"),
                 approved=True,
                 approval_ref="change-control:42",
             )
@@ -57,6 +57,7 @@ class NemotronCLIAdapterTests(unittest.TestCase):
             self.assertFalse(runner.calls[1][1].get("shell", False))
             self.assertEqual(result.exit_code, 0)
             self.assertEqual(result.execution_profile, "local_cpu")
+            self.assertEqual(result.approval_ref, "change-control:42")
 
     def test_environment_profile_is_passed_by_environment_variable(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -75,9 +76,13 @@ class NemotronCLIAdapterTests(unittest.TestCase):
                 runner.calls[1][1]["env"]["NEMOTRON_ENV_FILE"], str(env_file)
             )
 
+    def test_profile_requires_budget_evidence(self):
+        with self.assertRaisesRegex(ValueError, "resource_budget_ref"):
+            NemotronStepRequest("sft/automodel", execution_profile="remote_gpu")
+
     def test_rejects_invalid_step_and_missing_environment_file(self):
         with self.assertRaises(ValueError):
-            NemotronStepRequest("../../unsafe")
+            NemotronStepRequest("sft/../../unsafe")
         with tempfile.TemporaryDirectory() as directory:
             adapter = NemotronCLIAdapter(
                 working_directory=directory, runner=FakeRunner(), command_exists=lambda _: True
