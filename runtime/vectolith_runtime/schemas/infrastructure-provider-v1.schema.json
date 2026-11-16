@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vectolith.dev/schemas/infrastructure-provider-v1.json",
+  "title": "Vectolith infrastructure provider",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "provider_id",
+    "display_name",
+    "provider_category",
+    "relationship_state"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "provider_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "provider_category": {
+      "type": "string",
+      "minLength": 1
+    },
+    "official_domains": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "hostname"
+      },
+      "uniqueItems": true
+    },
+    "relationship_state": {
+      "enum": [
+        "discovered",
+        "reviewed",
+        "approved",
+        "suspended",
+        "retired"
+      ]
+    },
+    "legal_review_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "security_review_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "operational_contact_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}
