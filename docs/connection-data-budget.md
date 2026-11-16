@@ -1,50 +1,47 @@
-# VELNOR data-connection download budget
+# VELNOR model-download and execution safeguards
 
-**Status:** Active operating constraint for the current evaluation phase  
-**Effective date:** 2026-11-16
+**Status:** Operational policy for evaluation and development
 
-## User-authorized connection budget
+## Default behavior
 
-The remaining data balance after the 25 GB already used is **41.86 GB**. The operating ceiling for VELNOR-related downloads is **20.93 GB total**, with **20.93 GB held back as a protected reserve** for ordinary connectivity and unplanned usage.
+1. Model-weight downloads are disabled by default. Continue repository work, metadata inspection, source and license review, compatibility preparation, and evaluation design without fetching full checkpoints.
+2. Every model artifact must be tied to an immutable repository revision.
+3. Before a download, identify the exact files, format, quantization, tokenizer, configuration assets, and expected transfer size. Do not add alternative formats or duplicate weight layouts to the same transfer estimate.
+4. Avoid repository-wide snapshots when a smaller, verified file manifest is sufficient.
+5. No automatic or background model downloads. A workflow that fetches weights must be explicitly selected for a specific, approved run.
+6. Prefer metadata-only inspection first. Select one candidate at a time and record the reason the artifact is needed.
+7. Stop safely if the file inventory changes, unexpected shards appear, transfer accounting is unavailable, or the execution environment cannot be verified.
+8. Keep download execution separate from evaluation orchestration. Documentation changes and static tests must not accidentally launch model-loading or snapshot-download jobs.
 
-This is a hard ceiling, not a target. Do not spend the reserve.
+## Per-run manifest
 
-## Download controls
+Before any model download, record:
 
-1. **No model-weight downloads by default.** Continue repository work, metadata inspection, source/license checks, manifest generation, compatibility preparation, and evaluation design without fetching full checkpoints.
-2. **No download may start unless its expected transfer size is known** from a pinned repository revision and selected file layout. Do not use repository-wide totals when they include duplicate formats, alternative quantizations, or parallel weight layouts.
-3. **Count actual network transfer, not just nominal file size.** Include model shards, tokenizer/config files, dependencies, retries, partial transfers, and any other assets downloaded for the run.
-4. **Cumulative transfer must remain at or below 20.93 GB.** Before each transfer, reserve enough headroom for overhead and retries. If the projected cumulative transfer could exceed 20.93 GB, do not start it.
-5. **No automatic or background model downloads.** Any workflow or script that fetches model weights must be explicitly selected for the approved run. Do not launch broad teacher-panel jobs or full-snapshot jobs under this budget.
-6. **Prefer the smallest useful artifact.** Use metadata-only requests first; if a real inference test is later approved, select one small, relevant model and a single quantized checkpoint where supported. Verify the exact file list and total before downloading.
-7. **Stop safely.** If transfer accounting is unavailable, unexpected shards appear, retries grow, or the remaining budget cannot be established, stop before downloading further data.
-8. **No budget increase by inference.** The separate bonus-data balance is not included in this 25 GB authorization. Do not assume bonus data is eligible for model downloads or increase the ceiling based on it.
+- candidate ID and source repository;
+- immutable revision;
+- exact selected files and format/quantization;
+- expected transfer size and required auxiliary assets;
+- execution environment and available storage/memory;
+- purpose and evaluation suite;
+- explicit approval for that specific run.
 
-## Approval gate for any model download
+If any required field is unknown, keep the download blocked.
 
-Before a download, record all of the following in the run manifest:
+## Execution and workflow safeguards
 
-- candidate ID, source repository, and immutable revision;
-- exact files and selected format/quantization;
-- expected transfer size, including required tokenizer/config assets;
-- cumulative transfer already used under this budget;
-- projected total after the run and protected reserve;
-- execution location (local device, mobile connection, or hosted runner);
-- explicit approval for that specific download.
+- Distinguish local execution from hosted CI execution; each has separate network, compute, storage, and policy implications.
+- Hosted runners are not assumed to have sufficient memory, storage, or throughput for a candidate merely because a workflow can start.
+- Do not launch broad multi-teacher or chained inference workflows as a side effect of routine repository changes.
+- Weight-fetching workflows must use deliberate manual dispatch or an equivalent explicit run gate, validate the selected candidate and immutable revision, and fail closed when required inputs are missing.
+- Record actual inference results separately from estimates, metadata audits, and dry runs.
 
-If any field is unknown, the download remains blocked.
+## Current development scope
 
-## Execution-location distinction
+Permitted without model-weight downloads:
 
-GitHub-hosted Actions jobs download assets using the hosted runner's network, not the user's phone/mobile-data connection. They may still consume CI time and hosted-runner resources. Local downloads use the user's connection and must obey the 20.93 GB ceiling. Never describe a hosted-runner transfer as mobile-data usage, or assume a local transfer is free.
+- repository documentation and code changes;
+- source, license, revision, and file-inventory checks;
+- compatibility and evaluation preparation;
+- static tests that do not invoke model loading or snapshot downloads.
 
-The repository currently contains inference workflows that fetch model checkpoints when triggered by matching evaluation changes. Avoid triggering those workflows while performing documentation-only or metadata-only work. Any future workflow change that can initiate weight downloads must preserve an explicit, controlled run gate.
-
-## Current permitted work
-
-- GitHub documentation and code changes that do not trigger model downloads;
-- Hugging Face repository metadata, pinned revision, license, and file-inventory checks;
-- compatibility and evaluation preparation that does not fetch weights;
-- static tests that do not invoke model-loading or snapshot-download paths.
-
-**Current model-weight download authorization: 0 GB.** The 20.93 GB ceiling is available only for a later, individually approved, measured download; it is not blanket permission to consume the full amount.
+A candidate is not qualified until its required legal, compatibility, runtime, and role-specific evaluation gates have been verified with reproducible evidence.
