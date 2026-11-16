@@ -249,8 +249,8 @@ class MockComputeAdapter:
         blockers = list(qualification_blockers(provider, contribution))
         if contribution.contribution_class != ContributionClass.COMPUTE:
             blockers.append("contribution is not compute infrastructure")
-        if not self._supported.issubset(contribution.capabilities):
-            blockers.append("mock adapter requires cpu, memory and gpu.mock capabilities")
+        if not {"cpu", "memory"}.issubset(contribution.capabilities):
+            blockers.append("mock adapter requires cpu and memory capabilities")
         if contribution.adapter_id != self.adapter_id:
             blockers.append("contribution is not bound to this adapter")
         if request.gpu_count and "gpu.mock" not in contribution.capabilities:
