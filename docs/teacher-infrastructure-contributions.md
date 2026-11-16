@@ -161,7 +161,7 @@ NeMo/Nemotron is a candidate reference and optional training/execution adapter, 
 
 ## 9. Initial implementation sequence
 
-**Initial reference milestone status:** versioned provider and contribution JSON Schemas, in-memory metadata registry, fail-closed qualification blocker checks, adapter protocol, and deterministic mock compute lifecycle are implemented in `runtime/vectolith_runtime/infrastructure.py`. CPU-only unit tests cover registry, qualification and mock submit/status/cancel. These components do not provision resources or contact providers. SQLite persistence, schema-validator integration, production adapters and remote execution remain future work.
+**Implementation status:** versioned provider and contribution JSON Schemas, in-memory and SQLite metadata registries, fail-closed qualification blocker checks, compute adapter protocol, and deterministic mock compute lifecycle are implemented. The optional Nemotron Steps CLI bridge is an integration spike: it uses the documented CLI, has explicit approval and budget-reference gates, and does not add a NeMo Python dependency. CPU-only tests use a fake command runner; they do not invoke Nemotron or start training. Production remote-job tracking, artifact lineage, provider provisioning and serving adapters remain future work.
 
 
 
@@ -170,11 +170,11 @@ NeMo/Nemotron is a candidate reference and optional training/execution adapter, 
 3. Implement qualification state transitions and fail-closed validators.
 4. Define provider-neutral compute, training and serving adapter protocols.
 5. Add deterministic local/mock adapters and contract tests for success, timeout, cancellation, partial failure and artifact export.
-6. Add a NeMo adapter spike behind an optional extra only after the contract tests exist; compare it with at least one non-NeMo path before adopting it.
+6. Add and test the optional Nemotron Steps CLI bridge behind the provider-neutral boundary; compare its integration and lifecycle guarantees with the existing non-NeMo Vectolith SFT path before adoption.
 7. Add cost/quota preflight and explicit approval before any remote execution.
 8. Add provenance links from every training run to the exact approved contributions it used.
 
-The first milestone must be CPU-only and network-free. It must not download model weights, provision cloud resources, invoke teacher APIs or start training.
+The registry and adapter contract tests must remain CPU-only and network-free. The CLI bridge can invoke a real run only through an explicit operator action after preflight and budget approval; tests must never download model weights, provision cloud resources, invoke teacher APIs or start training.
 
 ## 10. Acceptance criteria
 
