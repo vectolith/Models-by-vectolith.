@@ -54,7 +54,7 @@ jobs:
   granite42:
     name: Granite 4.2 3B / Core Prime
     needs: granite31
-    if: ${{ always() && needs.granite31.result != 'cancelled' }}
+    if: ${{ inputs.run_qualification == true && needs.granite31.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
@@ -89,7 +89,7 @@ jobs:
   minicpm5:
     name: MiniCPM5 2B / Core Prime
     needs: granite42
-    if: ${{ always() && needs.granite42.result != 'cancelled' }}
+    if: ${{ inputs.run_qualification == true && needs.granite42.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
@@ -124,7 +124,7 @@ jobs:
   smollm3:
     name: SmolLM3-3B / snapshot + Core Prime
     needs: minicpm5
-    if: ${{ always() && needs.minicpm5.result != 'cancelled' }}
+    if: ${{ inputs.run_qualification == true && needs.minicpm5.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
@@ -162,7 +162,7 @@ jobs:
   lfm25:
     name: LFM2.5-2.6B / snapshot + Core Prime
     needs: smollm3
-    if: ${{ always() && needs.smollm3.result != 'cancelled' }}
+    if: ${{ inputs.run_qualification == true && needs.smollm3.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
@@ -200,7 +200,7 @@ jobs:
   phi4mini:
     name: Phi-4-mini-instruct / snapshot + Core Prime
     needs: lfm25
-    if: ${{ always() && needs.lfm25.result != 'cancelled' }}
+    if: ${{ inputs.run_qualification == true && needs.lfm25.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
