@@ -34,6 +34,16 @@ class InfrastructureRegistryTests(unittest.TestCase):
         self.assertEqual(registry.get_contribution("compute-a"), contribution)
         self.assertEqual(registry.list_contributions(approved_only=True), (contribution,))
 
+    def test_approved_listing_requires_complete_provider_evidence(self):
+        _, contribution = approved_records()
+        incomplete_provider = InfrastructureProvider(
+            "provider-a", "Provider A", "cloud",
+            relationship_state=ProviderState.APPROVED,
+        )
+        registry = InfrastructureRegistry()
+        registry.register_provider(incomplete_provider)
+        registry.register_contribution(contribution)
+        self.assertEqual(registry.list_contributions(approved_only=True), ())
     def test_unknown_provider_and_duplicate_ids_fail_closed(self):
         registry = InfrastructureRegistry()
         _, contribution = approved_records()
