@@ -161,6 +161,10 @@ NeMo/Nemotron is a candidate reference and optional training/execution adapter, 
 
 ## 9. Initial implementation sequence
 
+**Initial reference milestone status:** versioned provider and contribution JSON Schemas, in-memory metadata registry, fail-closed qualification blocker checks, adapter protocol, and deterministic mock compute lifecycle are implemented in `runtime/vectolith_runtime/infrastructure.py`. CPU-only unit tests cover registry, qualification and mock submit/status/cancel. These components do not provision resources or contact providers. SQLite persistence, schema-validator integration, production adapters and remote execution remain future work.
+
+
+
 1. Add versioned provider and contribution schemas with valid/invalid fixtures.
 2. Add a registry interface and SQLite persistence that stores metadata only, never secrets.
 3. Implement qualification state transitions and fail-closed validators.
