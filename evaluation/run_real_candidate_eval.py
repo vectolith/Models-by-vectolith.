@@ -102,7 +102,8 @@ def main() -> int:
       "generation_seconds":generation_s,"total_seconds":round(time.perf_counter()-total,3),
       "torch_version":torch.__version__,"transformers_version":transformers.__version__,
       "decoding":{"do_sample":False,"max_new_tokens":a.max_new_tokens,"chat_template":True,"enable_thinking":False},
-      "case_count":len(results),"error_count":failures,"successful_case_count":len(results)-failures,\n      "completion_status_counts":summarize_completion(results),"token_cap_truncated_count":sum(1 for row in results if row.get("completion_status")=="token_cap_truncated"),"raw_results_file":str(raw_output),"max_rss_kib":resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+      "case_count":len(results),"error_count":failures,"successful_case_count":len(results)-failures,
+      "completion_status_counts":summarize_completion(results),"token_cap_truncated_count":sum(1 for row in results if row.get("completion_status")=="token_cap_truncated"),"raw_results_file":str(raw_output),"max_rss_kib":resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
       "license_review":"pending_human_legal_review","training_output_permission":"not_verified",
       "teacher_qualification":"not_qualified","training_started":False,"grading":"human_review_required","results":results}
     a.output.parent.mkdir(parents=True,exist_ok=True)
