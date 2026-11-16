@@ -149,3 +149,8 @@ A passing unit test validates registry guardrails only. Actual loader compatibil
 ## Verified Core Prime multi-teacher run 40 evidence
 
 The 2026-11-16 run 40 evidence record contains the five successful real-response artifacts, the SmolLM3 snapshot-gate failure, exact immutable revisions, per-case provenance checks, suite counts, token-cap counts, hardware observations and SHA-256 digests. These artifacts are execution evidence only; no model is qualified and no generated output is authorized for training. See [Core Prime multi-teacher run 40 evidence](core-prime-multi-teacher-run-40-evidence-2026-11-16.md).
+
+
+## Controlled completion-budget study
+
+The original run 40 artifacts remain immutable at the 256-token baseline. A manual-only CPU study can rerun the same five pinned Core Prime candidates and four public suites at 512, 768, or 1024 new tokens, sequentially on one runner. It records explicit EOS completion, token-cap truncation, early stop without EOS, empty output, and error counts. It does not rank candidates or make qualification decisions. The workflow requires an explicit confirmation input and has not been dispatched. See [Core Prime controlled completion-budget study](../docs/core-prime-completion-budget-study.md).
