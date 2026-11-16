@@ -141,9 +141,13 @@ class TeacherQualificationGateTests(unittest.TestCase):
         self.assertEqual(passed["teacher_selection"], "not_performed")
         self.assertFalse(passed["training_started"])
 
+    def test_cohort_cannot_lower_the_four_teacher_requirement(self):
+        with self.assertRaisesRegex(ValueError, "at least four"):
+            evaluate_cohort([valid_manifest()], required_teachers=3)
+
     def test_duplicate_candidate_entries_block_the_cohort(self):
         manifest = valid_manifest()
-        result = evaluate_cohort([manifest, copy.deepcopy(manifest)], required_teachers=1)
+        result = evaluate_cohort([manifest, copy.deepcopy(manifest)], required_teachers=4)
         self.assertEqual(result["cohort_gate"], "blocked")
         self.assertTrue(result["duplicate_candidate_ids"])
 
