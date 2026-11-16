@@ -43,6 +43,20 @@ adapter = MockComputeAdapter()  # deterministic; no real compute
 
 Versioned JSON Schemas are in `../schemas/`. See [the contribution-system specification](../docs/teacher-infrastructure-contributions.md). This is an initial reference implementation; it does not provide remote execution, provider account access, billing, or production persistence.
 
+
+## Optional Nemotron Steps adapter
+
+An optional CLI bridge is available at `vectolith_runtime.adapters.NemotronCLIAdapter`. It uses the documented `nemotron steps show` and `nemotron steps run` interface without importing the Nemotron Python stack or adding it as a runtime dependency.
+
+- Install and pin the Nemotron repository/toolchain separately; the adapter does not install it.
+- Use a local profile for development. Attached profile execution requires a recorded resource-budget reference.
+- Every run requires an explicit approval flag and approval reference.
+- The adapter uses argument arrays (no shell), bounded timeouts, step inspection before execution, and captures command output.
+- Detached submissions are intentionally unsupported until Vectolith implements remote job polling, cancellation, and artifact lineage.
+- No actual NeMo/Nemotron training run is launched by tests or imports.
+
+The existing Vectolith SFT path remains the non-NeMo comparison baseline. The adapter is an integration spike, not a decision to make Nemotron a required backend.
+
 ## Durable registry
 
 SQLite persists model manifests across process restarts. Use a filesystem path for durability; `:memory:` is intended for tests.

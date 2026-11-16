@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 from threading import RLock
-from typing import Protocol, runtime_checkable
+from typing import Protocol, TypeVar, runtime_checkable
 
 
 INFRASTRUCTURE_CONTRACT_VERSION = "1.0"
@@ -218,6 +218,27 @@ class ComputeJob:
     backend: str
     resources: tuple[tuple[str, int], ...]
     detail: str = ""
+
+
+TrainingRequestT = TypeVar("TrainingRequestT", contravariant=True)
+TrainingResultT = TypeVar("TrainingResultT", covariant=True)
+
+
+@runtime_checkable
+class TrainingAdapter(Protocol[TrainingRequestT, TrainingResultT]):
+    """Provider-neutral contract for explicit, bounded training execution."""
+
+    adapter_id: str
+
+    def preflight(self, request: TrainingRequestT) -> tuple[str, ...]: ...
+
+    def execute(
+        self,
+        request: TrainingRequestT,
+        *,
+        approved: bool = False,
+        approval_ref: str | None = None,
+    ) -> TrainingResultT: ...
 
 
 @runtime_checkable
