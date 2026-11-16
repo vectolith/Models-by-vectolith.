@@ -113,9 +113,10 @@ def validate_grades(
 
 def inter_rater_agreement(observations: list[dict[str, Any]]) -> dict[str, Any]:
     """Compute pairwise quadratic-weighted Cohen kappa and exact agreement by case."""
-    ratings: dict[str, dict[str, float]] = defaultdict(dict)
+    ratings: dict[tuple[str, str, str], dict[str, float]] = defaultdict(dict)
     for item in observations:
-        ratings[item["case_id"]][item["evaluator_id"]] = float(item["score"])
+        evidence_identity = (item["case_id"], item["run_id"], item["evidence_started_at"])
+        ratings[evidence_identity][item["evaluator_id"]] = float(item["score"])
     evaluator_ids = sorted({evaluator for values in ratings.values() for evaluator in values})
     kappas = []
     exact_matches = 0
@@ -172,7 +173,7 @@ def build_report(
             buckets[(role, candidate, revision, category, criterion)].append({
                 "score": item["score"], "evaluator_id": grade["evaluator_id"],
                 "evaluator_version": grade["evaluator_version"], "case_id": grade["key"][0],
-                "run_id": grade["run_id"],
+                "run_id": grade["run_id"], "evidence_started_at": grade["key"][5],
             })
 
     rows = []
