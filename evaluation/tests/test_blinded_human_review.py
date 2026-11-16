@@ -103,6 +103,40 @@ class BlindedHumanReviewTests(unittest.TestCase):
                 self.assertIn("Answer response", raw)
                 self.assertEqual(len(raw.splitlines()), 4)
 
+    def test_accepts_multiple_runs_for_the_same_candidate_without_overwriting(self):
+        first = self.artifacts[0]
+        with zipfile.ZipFile(first) as archive:
+            record = json.loads(archive.read("evaluations/result.json"))
+        second_run_id = "run-secret-alpha-second"
+        for row in record["results"]:
+            row["run_id"] = second_run_id
+            row["started_at"] = row["started_at"].replace("2026-11-16", "2026-11-17")
+        record["run_id"] = second_run_id
+        second = self.root / "source-alpha-second.zip"
+        with zipfile.ZipFile(second, "w") as archive:
+            archive.writestr("evaluations/result.json", json.dumps(record))
+            archive.writestr(
+                "evaluations/result.jsonl",
+                "\n".join(json.dumps(x) for x in record["results"]) + "\n",
+            )
+        output = self.root / "repeat-review"
+        summary = build_review_packages(
+            [first, second], [self.suite], output,
+            reviewer_count=2, expected_artifacts=2, expected_cases=2,
+            workflow_run_id="multi-run",
+        )
+        self.assertEqual(summary["response_count"], 4)
+        self.assertEqual(summary["candidate_artifact_count"], 2)
+        self.assertEqual(summary["unique_candidate_count"], 1)
+        key = json.loads(
+            (output / "private" / "identity-key.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(len(key["records"]), 4)
+        self.assertEqual(
+            {row["run_id"] for row in key["records"].values()},
+            {"run-secret-0", second_run_id},
+        )
+
     def test_unblinds_only_complete_distinct_reviewer_submissions(self):
         output = self.root / "review"
         build_review_packages(
