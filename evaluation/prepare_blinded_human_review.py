@@ -13,6 +13,28 @@ from pathlib import Path
 from typing import Any
 
 BLIND_SCHEMA = "vectolith-blind-review/1.0"
+RUN40_ARTIFACTS = {
+    "prime-teacher-granite-3.1-3b-a800m.zip": {
+        "artifact_id": 14199574383, "job_id": 133093491281,
+        "sha256": "3f7fc738edef49a7347c50c906a4c3fd2e8a71bde7815de47f65dc03464ebc68",
+    },
+    "prime-teacher-granite-4.2-3b.zip": {
+        "artifact_id": 14213985732, "job_id": 133109238158,
+        "sha256": "f5b4a223cdd77c89c32b5c8ccf759f7a7c8d41b8e488395d2b51ebcb1f335834",
+    },
+    "prime-teacher-minicpm5-2b.zip": {
+        "artifact_id": 14223103259, "job_id": 133213797403,
+        "sha256": "3e16583a0f6746b8b4f324b7468f8364283d02dd2c5064531de2f5fd1af990ff",
+    },
+    "prime-teacher-lfm2.5-2.6b.zip": {
+        "artifact_id": 14238638626, "job_id": 133281032019,
+        "sha256": "a52addbe9aabdde9cbee0543d203cd100e3bf25a84fe4ccda2acd2cc5b9a9d11",
+    },
+    "prime-teacher-phi-4-mini-instruct.zip": {
+        "artifact_id": 14260316025, "job_id": 133404486950,
+        "sha256": "ffb3ce18c6c966b4a2914dc3b9393cedc95585f89b41f2ce7067c677131b34d8",
+    },
+}
 BLIND_GRADE_SCHEMA = "vectolith-blind-human-grade/1.0"
 GRADE_SCHEMA = "vectolith-human-grading/1.0"
 SCORE_ANCHORS = {
@@ -110,6 +132,7 @@ def build_review_packages(
     reviewer_count: int = 2,
     expected_artifacts: int = 5,
     expected_cases: int = 180,
+    workflow_run_id: str = "43796213917",
 ) -> dict[str, Any]:
     if reviewer_count < 2:
         raise ValueError("at least two independent reviewer packages are required")
@@ -121,6 +144,9 @@ def build_review_packages(
     source_register = []
     for path in evidence_paths:
         record, rows, hashes = load_evidence_archive(path)
+        pinned = RUN40_ARTIFACTS.get(path.name)
+        if pinned and hashes["archive_sha256"] != pinned["sha256"]:
+            raise ValueError(f"{path}: archive SHA-256 does not match the published run 40 digest")
         candidate = record.get("candidate_id")
         revision = record.get("immutable_revision")
         run_id = record.get("run_id")
@@ -160,6 +186,9 @@ def build_review_packages(
             "model_revision": revision,
             "run_id": run_id,
             "artifact_file": path.name,
+            "workflow_run_id": workflow_run_id,
+            "artifact_id": pinned["artifact_id"] if pinned else None,
+            "workflow_job_id": pinned["job_id"] if pinned else None,
             **hashes,
         })
         all_rows.extend(rows)
@@ -196,6 +225,9 @@ def build_review_packages(
                 "gradeable": gradeable,
                 "source_artifact": item["path"].name,
                 "source_artifact_sha256": item["hashes"]["archive_sha256"],
+                "workflow_run_id": workflow_run_id,
+                "artifact_id": RUN40_ARTIFACTS.get(item["path"].name, {}).get("artifact_id"),
+                "workflow_job_id": RUN40_ARTIFACTS.get(item["path"].name, {}).get("job_id"),
                 "prompt_sha256": row.get("prompt_sha256"),
                 "generation_status": row.get("generation_status"),
                 "generation_cap_reached": bool(row.get("generation_cap_reached")),
@@ -216,6 +248,7 @@ def build_review_packages(
                     "generated_tokens": row.get("generated_tokens"),
                     "max_new_tokens": row.get("max_new_tokens"),
                     "error_present": bool(error),
+                    "error_class": str(error).split(":", 1)[0] if error else None,
                     "gradeable": gradeable,
                 },
             })
@@ -319,6 +352,7 @@ def build_review_packages(
 
     summary = {
         "schema_version": "vectolith-blind-review-build/1.0",
+        "workflow_run_id": workflow_run_id,
         "candidate_artifact_count": len(candidates),
         "suite_case_count": len(suites),
         "response_count": len(review_rows),
@@ -433,6 +467,7 @@ def main() -> int:
     build.add_argument("--reviewers", type=int, default=2)
     build.add_argument("--expected-artifacts", type=int, default=5)
     build.add_argument("--expected-cases", type=int, default=180)
+    build.add_argument("--workflow-run-id", default="43796213917")
     unblind = sub.add_parser("unblind", help="validate complete independent grades and restore evidence identity")
     unblind.add_argument("--identity-key", type=Path, required=True)
     unblind.add_argument("--grades", action="append", type=Path, required=True)
@@ -441,7 +476,7 @@ def main() -> int:
     if args.command == "build":
         result = build_review_packages(
             args.evidence, args.suite, args.output_dir, args.reviewers,
-            args.expected_artifacts, args.expected_cases,
+            args.expected_artifacts, args.expected_cases, args.workflow_run_id,
         )
         print(json.dumps(result, indent=2))
         return 0
