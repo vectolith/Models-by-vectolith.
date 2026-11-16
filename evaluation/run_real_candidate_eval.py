@@ -7,7 +7,8 @@ from pathlib import Path
 import torch, transformers
 from huggingface_hub import snapshot_download
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from run_real_checkpoint_suite import prompt_hash, render_prompt
+from generation import render_prompt
+from run_real_checkpoint_suite import prompt_hash
 from run_eval import load_cases
 
 def main() -> int:
