@@ -1,78 +1,199 @@
-name: Core Prime shortlisted candidates evaluation
+name: Teacher shortlist qualification intake
 
 on:
   pull_request:
     paths:
       - "evaluation/**"
       - ".github/workflows/core-prime-additional-teachers.yml"
+  push:
+    branches: [qualification-gate-shortlist-pr]
+    paths:
+      - "evaluation/**"
+      - ".github/workflows/core-prime-additional-teachers.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: core-prime-shortlist-${{ github.event.pull_request.number || github.ref }}
+  group: teacher-shortlist-intake-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
-  shortlisted:
-    name: ${{ matrix.name }} / Core Prime evaluation
+  intake:
+    name: ${{ matrix.candidate_id }} / ${{ matrix.role }}
     runs-on: ubuntu-latest
     timeout-minutes: 360
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: Granite 3.1 3B-A800M
-            candidate_id: granite-3.1-3b-a800m
+          # Core Prime qualification batch.
+          - candidate_id: granite-3.1-3b-a800m
             repo: ibm-granite/granite-3.1-3b-a800m-instruct
+            family: IBM Granite
             revision: a02780686e08a03fe0d2679a293b5c74a90efa89
-            family: "IBM Granite"
-            suites:
-              - evaluation/fixtures/prime_benchmark_v1.jsonl
-              - evaluation/fixtures/prime_qualification_v2.jsonl
-              - evaluation/fixtures/prime_qualification_v3.jsonl
-              - evaluation/fixtures/prime_qualification_v4.jsonl
-          - name: Granite 4.2 3B
-            candidate_id: granite-4.2-3b
+            transformers: 4.57.1
+            hub: 0.36.0
+            role: core_prime
+            smoke_suite: evaluation/fixtures/prime_smoke.jsonl
+            suites: --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl
+          - candidate_id: granite-4.2-3b
             repo: ibm-granite/granite-4.2-3b
+            family: IBM Granite
             revision: 4e9c275e232f10211ec88644d106a1f6a1b60e06
-            family: "IBM Granite"
-            suites:
-              - evaluation/fixtures/prime_benchmark_v1.jsonl
-              - evaluation/fixtures/prime_qualification_v2.jsonl
-              - evaluation/fixtures/prime_qualification_v3.jsonl
-              - evaluation/fixtures/prime_qualification_v4.jsonl
+            transformers: 5.0.0
+            hub: 1.3.0
+            role: core_prime
+            smoke_suite: evaluation/fixtures/prime_smoke.jsonl
+            suites: --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl
+          - candidate_id: minicpm5-2b
+            repo: openbmb/MiniCPM5-2B
+            family: OpenBMB MiniCPM
+            revision: 42433e90dad95123ab87729fd7011e7110629556
+            transformers: 4.57.1
+            hub: 0.36.0
+            role: core_prime
+            smoke_suite: evaluation/fixtures/prime_smoke.jsonl
+            suites: --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl
+          - candidate_id: qwen3.5-4b
+            repo: Qwen/Qwen3.5-4B
+            family: Qwen
+            revision: resolve
+            transformers: 5.0.0
+            hub: 1.3.0
+            role: core_prime
+            smoke_suite: evaluation/fixtures/prime_smoke.jsonl
+            suites: --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl
+          - candidate_id: gemma-4-e4b-it
+            repo: google/gemma-4-E4B-it
+            family: Google Gemma
+            revision: resolve
+            transformers: 5.0.0
+            hub: 1.3.0
+            role: core_prime
+            smoke_suite: evaluation/fixtures/prime_smoke.jsonl
+            suites: --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl
+          - candidate_id: ministral-3b-instruct
+            repo: ministral/Ministral-3b-instruct
+            family: Mistral
+            revision: resolve
+            transformers: 4.57.1
+            hub: 0.36.0
+            role: core_prime
+            smoke_suite: evaluation/fixtures/prime_smoke.jsonl
+            suites: --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl
+          # Core Prima qualification batch.
+          - candidate_id: granite-3.1-3b-a800m
+            repo: ibm-granite/granite-3.1-3b-a800m-instruct
+            family: IBM Granite
+            revision: a02780686e08a03fe0d2679a293b5c74a90efa89
+            transformers: 4.57.1
+            hub: 0.36.0
+            role: core_prima
+            smoke_suite: evaluation/fixtures/prima_smoke.jsonl
+            suites: --suite evaluation/fixtures/prima_benchmark_v1.jsonl --suite evaluation/fixtures/prima_qualification_v2.jsonl --suite evaluation/fixtures/prima_qualification_v3.jsonl
+          - candidate_id: granite-4.2-3b
+            repo: ibm-granite/granite-4.2-3b
+            family: IBM Granite
+            revision: 4e9c275e232f10211ec88644d106a1f6a1b60e06
+            transformers: 5.0.0
+            hub: 1.3.0
+            role: core_prima
+            smoke_suite: evaluation/fixtures/prima_smoke.jsonl
+            suites: --suite evaluation/fixtures/prima_benchmark_v1.jsonl --suite evaluation/fixtures/prima_qualification_v2.jsonl --suite evaluation/fixtures/prima_qualification_v3.jsonl
+          - candidate_id: minicpm5-2b
+            repo: openbmb/MiniCPM5-2B
+            family: OpenBMB MiniCPM
+            revision: 42433e90dad95123ab87729fd7011e7110629556
+            transformers: 4.57.1
+            hub: 0.36.0
+            role: core_prima
+            smoke_suite: evaluation/fixtures/prima_smoke.jsonl
+            suites: --suite evaluation/fixtures/prima_benchmark_v1.jsonl --suite evaluation/fixtures/prima_qualification_v2.jsonl --suite evaluation/fixtures/prima_qualification_v3.jsonl
+          - candidate_id: qwen2.5-coder-7b-instruct
+            repo: Qwen/Qwen2.5-Coder-7B-Instruct
+            family: Qwen
+            revision: resolve
+            transformers: 4.57.1
+            hub: 0.36.0
+            role: core_prima
+            smoke_suite: evaluation/fixtures/prima_smoke.jsonl
+            suites: --suite evaluation/fixtures/prima_benchmark_v1.jsonl --suite evaluation/fixtures/prima_qualification_v2.jsonl --suite evaluation/fixtures/prima_qualification_v3.jsonl
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install pinned CPU inference dependencies
+      - name: Install candidate-compatible pinned CPU stack
         run: |
           python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
-          python -m pip install transformers==4.57.1 accelerate==1.10.1 safetensors==0.6.2 huggingface_hub==0.36.0
-      - name: Record runner resources
+          python -m pip install "transformers==${{ matrix.transformers }}" accelerate==1.10.1 safetensors==0.6.2 "huggingface_hub==${{ matrix.hub }}"
+      - name: Resolve and record immutable revision
+        id: revision
+        env:
+          MODEL_REPO: ${{ matrix.repo }}
+          PINNED_REVISION: ${{ matrix.revision }}
         run: |
-          mkdir -p artifacts/compute artifacts/evaluations
-          python evaluation/probe_compute.py --output artifacts/compute/${{ matrix.candidate_id }}-runner.json
-      - name: Run pinned Prime v1-v4 evaluation
+          python - <<'PY'
+          import os
+          from huggingface_hub import HfApi
+
+          repo = os.environ["MODEL_REPO"]
+          requested = os.environ["PINNED_REVISION"]
+          info = HfApi().model_info(repo, revision="main" if requested == "resolve" else requested)
+          revision = (info.sha or "").lower()
+          if len(revision) != 40 or any(ch not in "0123456789abcdef" for ch in revision):
+              raise SystemExit(f"No immutable commit SHA returned for {repo}")
+          if info.gated or info.private or info.disabled:
+              raise SystemExit(f"Candidate is not publicly accessible: gated={info.gated}, private={info.private}, disabled={info.disabled}")
+          if requested != "resolve" and revision != requested:
+              raise SystemExit(f"Pinned revision mismatch for {repo}: expected {requested}, got {revision}")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"sha={revision}\n")
+          print(f"Resolved {repo}@{revision}")
+          PY
+      - name: Capture license and model-card evidence at the pinned revision
         run: |
-          set -o pipefail
+          mkdir -p artifacts/snapshots artifacts/compute artifacts/evaluations
+          python evaluation/discover_hf_candidates.py \
+            --repo "${{ matrix.repo }}" \
+            --output "artifacts/snapshots/${{ matrix.candidate_id }}-${{ matrix.role }}.jsonl"
+      - name: Record actual runner resources
+        run: python evaluation/probe_compute.py --output "artifacts/compute/${{ matrix.candidate_id }}-${{ matrix.role }}-runner.json"
+      - name: Smoke test pinned model before full suites
+        run: |
           python evaluation/run_real_candidate_eval.py \
             --repo "${{ matrix.repo }}" \
-            --revision "${{ matrix.revision }}" \
+            --revision "${{ steps.revision.outputs.sha }}" \
             --family "${{ matrix.family }}" \
-            --candidate-id "${{ matrix.candidate_id }}" \
-            --suite ${{ join(matrix.suites, ' --suite ') }} \
-            --output "artifacts/evaluations/${{ matrix.candidate_id }}-core_prime.json"
-      - name: Preserve raw evaluation and resource evidence
+            --candidate-id "${{ matrix.candidate_id }}-${{ matrix.role }}-smoke" \
+            --role "${{ matrix.role }}" \
+            --suite "${{ matrix.smoke_suite }}" \
+            --max-new-tokens 64 \
+            --output "artifacts/evaluations/${{ matrix.candidate_id }}-${{ matrix.role }}-smoke.json"
+      - name: Run full role suites after smoke passes
+        run: |
+          python evaluation/run_real_candidate_eval.py \
+            --repo "${{ matrix.repo }}" \
+            --revision "${{ steps.revision.outputs.sha }}" \
+            --family "${{ matrix.family }}" \
+            --candidate-id "${{ matrix.candidate_id }}-${{ matrix.role }}" \
+            --role "${{ matrix.role }}" \
+            ${{ matrix.suites }} \
+            --max-new-tokens 256 \
+            --output "artifacts/evaluations/${{ matrix.candidate_id }}-${{ matrix.role }}-full.json"
+      - name: Preserve all candidate outcomes and raw evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: core-prime-${{ matrix.candidate_id }}-evaluation
+          name: teacher-intake-${{ matrix.candidate_id }}-${{ matrix.role }}
           path: |
-            artifacts/compute/${{ matrix.candidate_id }}-runner.json
-            artifacts/evaluations/${{ matrix.candidate_id }}-core_prime.json
-            artifacts/evaluations/${{ matrix.candidate_id }}-core_prime.jsonl
+            artifacts/snapshots/${{ matrix.candidate_id }}-${{ matrix.role }}.jsonl
+            artifacts/compute/${{ matrix.candidate_id }}-${{ matrix.role }}-runner.json
+            artifacts/evaluations/${{ matrix.candidate_id }}-${{ matrix.role }}-smoke.json
+            artifacts/evaluations/${{ matrix.candidate_id }}-${{ matrix.role }}-smoke.jsonl
+            artifacts/evaluations/${{ matrix.candidate_id }}-${{ matrix.role }}-full.json
+            artifacts/evaluations/${{ matrix.candidate_id }}-${{ matrix.role }}-full.jsonl
           if-no-files-found: warn
           retention-days: 90
