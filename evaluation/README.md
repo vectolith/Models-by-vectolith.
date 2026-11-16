@@ -149,3 +149,15 @@ A passing unit test validates registry guardrails only. Actual loader compatibil
 ## Verified Core Prime multi-teacher run 40 evidence
 
 The 2026-11-16 run 40 evidence record contains the five successful real-response artifacts, the SmolLM3 snapshot-gate failure, exact immutable revisions, per-case provenance checks, suite counts, token-cap counts, hardware observations and SHA-256 digests. These artifacts are execution evidence only; no model is qualified and no generated output is authorized for training. See [Core Prime multi-teacher run 40 evidence](core-prime-multi-teacher-run-40-evidence-2026-11-16.md).
+
+
+## Blinded Core Prime human review
+
+The run 40 five-artifact evidence set contains 900 raw responses across the three existing additive teachers and two discovery-only candidates, including 56 v4 prompts per candidate. Build reviewer-specific, identity-separated packages and validate/unblind complete independent submissions with:
+
+\`\`\`bash
+python evaluation/prepare_blinded_human_review.py build --help
+python evaluation/prepare_blinded_human_review.py unblind --help
+\`\`\`
+
+The builder verifies immutable artifact ZIPs, JSON/JSONL parity, provenance, exact suite coverage, and original rubric integrity. It writes separate reviewer ZIPs and a restricted private identity key that must never be shared with reviewers. The unblinding step requires at least two distinct evaluator IDs and complete grade coverage. Human grade summaries report pairwise weighted agreement but never make a teacher qualification decision. See [Core Prime blinded human-review operations](../docs/core-prime-blinded-human-review.md).
