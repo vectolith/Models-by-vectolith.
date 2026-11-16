@@ -13,7 +13,7 @@ These are pre-existing GitHub Actions runs discovered during the live repository
   - Head SHA: \`fbe20c9095cbf01b12a7c35b4eae94bed1f5b1ba\`
   - As last inspected, overall workflow remained \`in_progress\` because Phi-4 job 133444059471 remained \`in_progress\`.
 
-For both runs, Granite 3.1, Granite 4.2, MiniCPM5, and LFM2.5 jobs completed successfully with real 180-case response artifacts. The SmolLM3 snapshot job failed because the downloaded snapshot had no LICENSE file. Its inference step was skipped. Its upload step reported that no files were found, so no SmolLM3 artifact was produced. The two Phi-4 jobs were still in progress; no Phi-4 output is claimed for either run.
+In both runs, Granite 3.1, Granite 4.2, MiniCPM5, and LFM2.5 jobs completed successfully with real 180-case response artifacts. The SmolLM3 snapshot job failed because the downloaded snapshot had no LICENSE file. Its inference step was skipped. Its upload step reported that no files were found, so no SmolLM3 artifact was produced. Run 42 Phi-4 job 133549417510 remains in_progress and has no artifact. Run 43 Phi-4 job 133444059471 completed successfully and produced a verified 180-case artifact.
 
 These branches predate the PR #39 snapshot-manifest correction. The failed SmolLM3 attempt in these runs did not preserve a snapshot manifest. PR #39 adds that behavior and tests it; do not attribute the later fix to these older run artifacts.
 
@@ -31,6 +31,7 @@ Every successful artifact was downloaded and inspected. Its JSON result array ma
 | 43 | Granite 4.2 3B | 133178581513 | 14223262221 | 180 | 0 | 103 |
 | 43 | MiniCPM5 2B | 133277594971 | 14231498894 | 180 | 0 | 52 |
 | 43 | LFM2.5-2.6B | 133347523890 | 14245324681 | 180 | 0 | 162 |
+| 43 | Phi-4-mini-instruct | 133444059471 | 14261964529 | 180 | 0 | 69 |
 
 The three existing teachers remain additive. LFM2.5 remains discovery-only. These are additional run-specific response sets; none replaces the run 40 response set and none has been graded or ranked.
 
@@ -72,12 +73,13 @@ Artifact links:
 - Run 43 Granite 4.2: https://github.com/vectolith/Models-by-vectolith./actions/runs/43821046671/artifacts/14223262221
 - Run 43 MiniCPM5: https://github.com/vectolith/Models-by-vectolith./actions/runs/43821046671/artifacts/14231498894
 - Run 43 LFM2.5: https://github.com/vectolith/Models-by-vectolith./actions/runs/43821046671/artifacts/14245324681
+- Run 43 Phi-4-mini: https://github.com/vectolith/Models-by-vectolith./actions/runs/43821046671/artifacts/14261964529
 
 ## Candidate and training disposition
 
 - Granite 3.1, Granite 4.2 and MiniCPM5 remain the three existing additive Core Prime teachers.
 - LFM2.5 remains discovery-only despite repeated successful inference. Its 90%–90.6% cap-hit rate remains a major completeness concern; legal review and separate written training-output permission remain outstanding.
-- Phi-4 has no new completed artifact from run 42 or 43 as of this record; its jobs remain in progress.
+- Phi-4 run 42 remains in progress without an artifact. Phi-4 run 43 completed successfully and produced 180 responses; it remains discovery-only and unqualified.
 - SmolLM3 remains blocked by the missing LICENSE file. No response artifact exists from either run.
 - Qwen3.5-2B and Gemma 4 E2B IT remain discovery-only. Nemotron 3 Nano 4B remains deferred.
 - No human grades were created. No candidate was qualified, ranked, or selected. No response was overwritten or discarded.
@@ -91,3 +93,7 @@ Both LFM2.5 artifacts include the 11-file immutable snapshot inventory. The LICE
 - Run 42 manifest SHA-256: \`61f3b506ee8482260bab96d6a46814b52a21c23e66d0d1bb758eebb7c0582b71\`
 - Run 43 manifest SHA-256: \`7af841740157d4aa89c3f19f14d99913174c279999e8b32d1786969a846a12c9\`
 - LICENSE SHA-256 in both: \`4d28ca14dedc0b3d0fcc2b3339f0e79931faa33874f3d24f522183a8fc70068c\`
+
+
+- Run 43 Phi-4 snapshot manifest SHA-256: \`837c68404e8ccce17fbe7d1c88c23d58731021805663ecea2ba78f06bcd0a1c9\`; 21 files, 7,694,054,130 bytes.
+- Run 43 Phi-4 LICENSE SHA-256: \`fa8235e5b48faca34e3ca98cf4f694ef08bd216d28b58071a1f85b1d50cb814d\`.
