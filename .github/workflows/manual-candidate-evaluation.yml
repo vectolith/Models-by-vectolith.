@@ -1,0 +1,130 @@
+name: Manual candidate evaluation (evaluation-only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_id:
+        description: Short unique ID for artifacts
+        required: true
+        type: string
+      model_repo:
+        description: Hugging Face model repository (e.g. ibm-granite/granite-4.2-3b)
+        required: true
+        type: string
+      revision:
+        description: Exact immutable 40-character Hugging Face commit SHA
+        required: true
+        type: string
+      family:
+        description: Model family label
+        required: true
+        type: string
+      role:
+        description: Evaluation role
+        required: true
+        type: choice
+        options:
+          - core_prime
+          - core_prima
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate:
+    name: ${{ inputs.candidate_id }} / ${{ inputs.role }} evaluation only
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pinned CPU evaluation stack
+        run: |
+          python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==5.0.0 accelerate==1.10.1 safetensors==0.6.2 huggingface_hub==1.3.0
+      - name: Validate immutable revision and record access status
+        env:
+          MODEL_REPO: ${{ inputs.model_repo }}
+          MODEL_REVISION: ${{ inputs.revision }}
+        run: |
+          python - <<'PY'
+          import os, re
+          from huggingface_hub import HfApi
+          repo, revision = os.environ["MODEL_REPO"], os.environ["MODEL_REVISION"].lower()
+          if not re.fullmatch(r"[0-9a-f]{40}", revision):
+              raise SystemExit("revision must be a full immutable 40-character commit SHA")
+          info = HfApi().model_info(repo, revision=revision)
+          if (info.sha or "").lower() != revision:
+              raise SystemExit("Hub did not resolve the requested immutable revision")
+          if info.private or info.disabled:
+              raise SystemExit("Model is private or disabled; workflow will not bypass access controls")
+          print(f"Selected model: {repo}@{revision}; gated={bool(info.gated)}")
+          PY
+      - name: Snapshot selected model and capture evidence without gate failure
+        run: |
+          mkdir -p artifacts/snapshots artifacts/compute artifacts/evaluations
+          python evaluation/snapshot_hf_revision.py \
+            --repo "${{ inputs.model_repo }}" \
+            --revision "${{ inputs.revision }}" \
+            --cache-dir "${{ runner.temp }}/hf-cache" \
+            --output "artifacts/snapshots/${{ inputs.candidate_id }}-${{ inputs.role }}.json"
+      - name: Record actual runner resources
+        run: python evaluation/probe_compute.py --output "artifacts/compute/${{ inputs.candidate_id }}-${{ inputs.role }}-runner.json"
+      - name: Run short smoke suite
+        run: |
+          if [ "${{ inputs.role }}" = "core_prime" ]; then SUITE=evaluation/fixtures/prime_smoke.jsonl; else SUITE=evaluation/fixtures/prima_smoke.jsonl; fi
+          python evaluation/run_real_candidate_eval.py \
+            --repo "${{ inputs.model_repo }}" --revision "${{ inputs.revision }}" \
+            --family "${{ inputs.family }}" --candidate-id "${{ inputs.candidate_id }}-${{ inputs.role }}" \
+            --role "${{ inputs.role }}" --suite "$SUITE" --max-new-tokens 64 \
+            --cache-dir "${{ runner.temp }}/hf-cache" \
+            --output "artifacts/evaluations/${{ inputs.candidate_id }}-${{ inputs.role }}-smoke.json"
+      - name: Run selected role's public qualification suites
+        run: |
+          if [ "${{ inputs.role }}" = "core_prime" ]; then
+            SUITES=(evaluation/fixtures/prime_benchmark_v1.jsonl evaluation/fixtures/prime_qualification_v2.jsonl evaluation/fixtures/prime_qualification_v3.jsonl evaluation/fixtures/prime_qualification_v4.jsonl)
+          else
+            SUITES=(evaluation/fixtures/prima_benchmark_v1.jsonl evaluation/fixtures/prima_qualification_v2.jsonl evaluation/fixtures/prima_qualification_v3.jsonl)
+          fi
+          ARGS=()
+          for suite in "${SUITES[@]}"; do ARGS+=(--suite "$suite"); done
+          python evaluation/run_real_candidate_eval.py \
+            --repo "${{ inputs.model_repo }}" --revision "${{ inputs.revision }}" \
+            --family "${{ inputs.family }}" --candidate-id "${{ inputs.candidate_id }}-${{ inputs.role }}" \
+            --role "${{ inputs.role }}" "${ARGS[@]}" --max-new-tokens 256 \
+            --cache-dir "${{ runner.temp }}/hf-cache" \
+            --output "artifacts/evaluations/${{ inputs.candidate_id }}-${{ inputs.role }}-full.json"
+      - name: Record outcome as evaluation-only, not teacher qualification
+        if: always()
+        env:
+          CANDIDATE_ID: ${{ inputs.candidate_id }}
+          MODEL_REPO: ${{ inputs.model_repo }}
+          MODEL_REVISION: ${{ inputs.revision }}
+          ROLE: ${{ inputs.role }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          root=Path("artifacts/qualification"); root.mkdir(parents=True,exist_ok=True)
+          candidate=os.environ["CANDIDATE_ID"]; role=os.environ["ROLE"]
+          outcome={"schema_version":"vectolith-evaluation-outcome/1.0","generated_at":datetime.now(timezone.utc).isoformat(),"candidate_id":candidate,"repo_id":os.environ["MODEL_REPO"],"immutable_revision":os.environ["MODEL_REVISION"],"role":role,"evaluation_status":"completed_or_failed_check_artifacts","teacher_qualification":"not_evaluated","license_review":"not_evaluated","training_output_permission":"not_evaluated","training_started":False,"note":"This is an evaluation-only run. It does not qualify or appoint a teacher."}
+          (root/f"{candidate}-{role}-outcome.json").write_text(json.dumps(outcome,indent=2)+"\n",encoding="utf-8")
+          PY
+      - name: Preserve all evaluation-only evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-only-${{ inputs.candidate_id }}-${{ inputs.role }}
+          path: |
+            artifacts/snapshots/${{ inputs.candidate_id }}-${{ inputs.role }}.json
+            artifacts/compute/${{ inputs.candidate_id }}-${{ inputs.role }}-runner.json
+            artifacts/evaluations/${{ inputs.candidate_id }}-${{ inputs.role }}-smoke.json
+            artifacts/evaluations/${{ inputs.candidate_id }}-${{ inputs.role }}-smoke.jsonl
+            artifacts/evaluations/${{ inputs.candidate_id }}-${{ inputs.role }}-full.json
+            artifacts/evaluations/${{ inputs.candidate_id }}-${{ inputs.role }}-full.jsonl
+            artifacts/qualification/${{ inputs.candidate_id }}-${{ inputs.role }}-outcome.json
+          if-no-files-found: warn
+          retention-days: 90

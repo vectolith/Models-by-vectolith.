@@ -1,1 +1,7 @@
-The dedicated teacher shortlist intake workflow runs a short smoke suite first, then the full public role-specific suites only when smoke succeeds. It covers the proposed Prime batch (Granite 3.1 3B-A800M, Granite 4.2 3B, MiniCPM5 2B, Qwen3.5 4B, Gemma 4 E4B-it, Ministral 3B Instruct) and Prima batch (Granite 3.1, Granite 4.2 3B, MiniCPM5 2B, Qwen2.5-Coder-7B-Instruct). Every run resolves or verifies a full immutable revision, captures model-card/license snapshot metadata, records actual runner resources, and uploads raw outputs. A successful CI run is evaluation evidence only: independent grading, license/legal review, verified training-output permission, verified no-cost compute, contribution review and ablation are still required before teacher appointment. Model evaluations use `--role` so Prime and Prima evidence is correctly attributed.
+### Evaluation-only model comparison
+
+Use the manually dispatched `.github/workflows/manual-candidate-evaluation.yml` workflow to choose a Hugging Face repo, exact immutable commit SHA, model-family label, and Prime or Prima role. This workflow does not enforce license, qualification, or teacher-gate checks. It records the selected model and its evaluation results as a plain capability comparison.
+
+The snapshot script preserves Hub metadata without failing when a model has no LICENSE file, and the outcome artifact is labeled `teacher_qualification: not_evaluated` and `license_review: not_evaluated`.
+
+This is the intended no-gate evaluation path for the founder-level comparison of candidate foundations.
