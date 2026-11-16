@@ -161,7 +161,7 @@ NeMo/Nemotron is a candidate reference and optional training/execution adapter, 
 
 ## 9. Initial implementation sequence
 
-**Implementation status:** versioned provider and contribution JSON Schemas, in-memory metadata registry, fail-closed qualification blocker checks, compute adapter protocol, and deterministic mock compute lifecycle are implemented. The runtime stores metadata only and does not provision resources or contact providers. SQLite persistence, integrated schema validation, production adapters and remote execution remain future work.
+**Implementation status:** versioned provider and contribution JSON Schemas, in-memory and SQLite metadata registries, packaged schema validation, fail-closed qualification blocker checks, compute adapter protocol, and deterministic mock compute lifecycle are implemented. The runtime stores metadata only and does not provision resources or contact providers. Production remote adapters, provider provisioning and multi-tenant control-plane features remain future work.
 
 
 
