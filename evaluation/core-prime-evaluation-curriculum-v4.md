@@ -4,7 +4,7 @@ Status: public development suite authored; validation and real inference are pen
 
 ## Scope
 
-This extension adds 2471 cases across 19 competencies specifically needed to validate Core Prime's unified generalist and software-engineering scope. It supplements, rather than replaces, benchmark v1 and qualification v2/v3.
+This extension adds 56 cases across 14 competencies specifically needed to validate Core Prime's unified generalist and software-engineering scope. It supplements, rather than replaces, benchmark v1 and qualification v2/v3.
 
 | Competency | Cases |
 |---|---:|
