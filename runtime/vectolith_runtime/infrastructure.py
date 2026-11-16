@@ -227,7 +227,10 @@ class ComputeAdapter(Protocol):
         provider: InfrastructureProvider,
     ) -> tuple[str, ...]: ...
 
-    def submit(self, request: ComputeRequest) -> ComputeJob: ...
+    def submit(
+        self, request: ComputeRequest, contribution: InfrastructureContribution,
+        provider: InfrastructureProvider,
+    ) -> ComputeJob: ...
     def status(self, job_id: str) -> ComputeJob: ...
     def cancel(self, job_id: str) -> ComputeJob: ...
 
@@ -236,8 +239,6 @@ class MockComputeAdapter:
     """Deterministic, in-memory adapter for tests; it never allocates real resources."""
 
     adapter_id = "vectolith.mock-compute"
-    _supported = frozenset({"cpu", "memory", "gpu.mock"})
-
     def __init__(self) -> None:
         self._jobs: dict[str, ComputeJob] = {}
         self._lock = RLock()
@@ -257,7 +258,15 @@ class MockComputeAdapter:
             blockers.append("requested GPU capability is unavailable")
         return tuple(blockers)
 
-    def submit(self, request: ComputeRequest) -> ComputeJob:
+    def submit(
+        self, request: ComputeRequest, contribution: InfrastructureContribution,
+        provider: InfrastructureProvider,
+    ) -> ComputeJob:
+        blockers = self.preflight(request, contribution, provider)
+        if blockers:
+            raise PermissionError("infrastructure contribution blocked: " + "; ".join(blockers))
+        if request.contribution_id != contribution.contribution_id:
+            raise ValueError("request contribution_id does not match supplied contribution")
         with self._lock:
             if request.job_id in self._jobs:
                 raise ValueError(f"job already exists: {request.job_id}")
