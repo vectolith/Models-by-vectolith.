@@ -144,3 +144,8 @@ python -m unittest evaluation.tests.test_additional_teacher_snapshots -v
 ```
 
 A passing unit test validates registry guardrails only. Actual loader compatibility, model generation, revision pinning and file hashes are established only by the real workflow artifacts.
+
+
+## Verified Core Prime multi-teacher run 40 evidence
+
+The 2026-11-16 run 40 evidence record contains the five successful real-response artifacts, the SmolLM3 snapshot-gate failure, exact immutable revisions, per-case provenance checks, suite counts, token-cap counts, hardware observations and SHA-256 digests. These artifacts are execution evidence only; no model is qualified and no generated output is authorized for training. See [Core Prime multi-teacher run 40 evidence](core-prime-multi-teacher-run-40-evidence-2026-11-16.md).
