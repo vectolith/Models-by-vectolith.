@@ -64,14 +64,14 @@ def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
     require("snapshot", snapshot.get("immutable_revision") == revision, "revision_mismatch")
     require("snapshot", valid_sha(snapshot.get("manifest_sha256")), "manifest_digest_missing")
 
-    legal = gates.get("license_review", {})
+    legal = gate("license_review")
     require("license_review", legal.get("status") == "approved", "not_approved")
     require("license_review", valid_sha(legal.get("license_text_sha256")), "license_text_digest_missing")
     require("license_review", bool(legal.get("legal_reviewer_id")), "legal_reviewer_missing")
     require("license_review", valid_time(legal.get("reviewed_at")), "review_timestamp_invalid")
     require("license_review", bool(legal.get("evidence_uri")), "legal_evidence_missing")
 
-    loader = gates.get("loader_compatibility", {})
+    loader = gate("loader_compatibility")
     require("loader_compatibility", loader.get("status") == "passed", "not_passed")
     require("loader_compatibility", loader.get("tested_revision") == revision, "revision_mismatch")
     require("loader_compatibility", bool(loader.get("model_class")), "model_class_missing")
@@ -81,7 +81,7 @@ def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
     if remote_code.get("status") == "audited":
         require("loader_compatibility", valid_sha(remote_code.get("audit_sha256")), "remote_code_audit_missing")
 
-    inference = gates.get("real_inference", {})
+    inference = gate("real_inference")
     require("real_inference", inference.get("status") == "completed", "not_completed")
     require("real_inference", inference.get("tested_revision") == revision, "revision_mismatch")
     require("real_inference", bool(inference.get("workflow_run_id")), "workflow_run_id_missing")
@@ -91,7 +91,7 @@ def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
     require("real_inference", inference.get("error_count") == 0, "inference_errors_present")
     require("real_inference", valid_sha(inference.get("artifact_sha256")), "artifact_digest_missing")
 
-    resources = gates.get("resource_measurement", {})
+    resources = gate("resource_measurement")
     require("resource_measurement", resources.get("status") == "recorded", "not_recorded")
     require("resource_measurement", bool(resources.get("runner_type")), "runner_type_missing")
     require("resource_measurement", bool(resources.get("device")), "device_missing")
@@ -99,7 +99,7 @@ def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
     require("resource_measurement", isinstance(resources.get("mean_latency_seconds"), (int, float)) and not isinstance(resources.get("mean_latency_seconds"), bool) and resources.get("mean_latency_seconds", 0) > 0, "latency_missing")
     require("resource_measurement", valid_sha(resources.get("compute_record_sha256")), "compute_digest_missing")
 
-    human = gates.get("human_review", {})
+    human = gate("human_review")
     reviewer_ids = human.get("independent_reviewer_ids", [])
     require("human_review", human.get("status") == "passed", "not_passed")
     require("human_review", isinstance(reviewer_ids, list) and all(isinstance(x, str) and x.strip() for x in reviewer_ids) and len(set(reviewer_ids)) >= 2, "two_independent_reviewers_required")
@@ -110,7 +110,7 @@ def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
     require("human_review", valid_sha(human.get("grade_report_sha256")), "grade_report_digest_missing")
     require("human_review", valid_sha(human.get("adjudication_sha256")), "adjudication_digest_missing")
 
-    safety = gates.get("safety_review", {})
+    safety = gate("safety_review")
     require("safety_review", safety.get("status") == "passed", "not_passed")
     require("safety_review", bool(safety.get("reviewer_id")), "reviewer_missing")
     require("safety_review", valid_sha(safety.get("report_sha256")), "report_digest_missing")
@@ -121,13 +121,13 @@ def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
     require("holdout", holdout.get("leakage_audit_passed") is True, "leakage_audit_not_passed")
     require("holdout", valid_sha(holdout.get("audit_sha256")), "audit_digest_missing")
 
-    corpus = gates.get("corpus_integrity", {})
+    corpus = gate("corpus_integrity")
     require("corpus_integrity", corpus.get("status") == "passed", "not_passed")
     require("corpus_integrity", valid_sha(corpus.get("corpus_sha256")), "corpus_digest_missing")
     require("corpus_integrity", isinstance(corpus.get("duplicate_count"), int) and not isinstance(corpus.get("duplicate_count"), bool) and corpus.get("duplicate_count") == 0, "duplicates_present_or_unverified")
     require("corpus_integrity", corpus.get("provenance_verified") is True, "provenance_not_verified")
 
-    permission = gates.get("training_output_permission", {})
+    permission = gate("training_output_permission")
     require("training_output_permission", permission.get("status") == "granted", "not_granted")
     require("training_output_permission", valid_sha(permission.get("document_sha256")), "permission_document_missing")
     require("training_output_permission", bool(permission.get("authorized_by")), "authorizer_missing")
