@@ -76,7 +76,10 @@ def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
     require("loader_compatibility", loader.get("tested_revision") == revision, "revision_mismatch")
     require("loader_compatibility", bool(loader.get("model_class")), "model_class_missing")
     require("loader_compatibility", bool(loader.get("runtime_versions")), "runtime_versions_missing")
-    remote_code = loader.get("remote_code", {})
+    remote_code = loader.get("remote_code")
+    if not isinstance(remote_code, dict):
+        failures.append("loader_compatibility:remote_code_gate_missing")
+        remote_code = {}
     require("loader_compatibility", remote_code.get("status") in ("disabled", "audited"), "remote_code_not_cleared")
     if remote_code.get("status") == "audited":
         require("loader_compatibility", valid_sha(remote_code.get("audit_sha256")), "remote_code_audit_missing")
@@ -95,7 +98,7 @@ def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
     require("resource_measurement", resources.get("status") == "recorded", "not_recorded")
     require("resource_measurement", bool(resources.get("runner_type")), "runner_type_missing")
     require("resource_measurement", bool(resources.get("device")), "device_missing")
-    require("resource_measurement", isinstance(resources.get("peak_rss_bytes"), int) and resources.get("peak_rss_bytes", 0) > 0, "peak_rss_missing")
+    require("resource_measurement", isinstance(resources.get("peak_rss_bytes"), int) and not isinstance(resources.get("peak_rss_bytes"), bool) and resources.get("peak_rss_bytes", 0) > 0, "peak_rss_missing")
     require("resource_measurement", isinstance(resources.get("mean_latency_seconds"), (int, float)) and not isinstance(resources.get("mean_latency_seconds"), bool) and resources.get("mean_latency_seconds", 0) > 0, "latency_missing")
     require("resource_measurement", valid_sha(resources.get("compute_record_sha256")), "compute_digest_missing")
 
@@ -105,7 +108,7 @@ def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
     require("human_review", isinstance(reviewer_ids, list) and all(isinstance(x, str) and x.strip() for x in reviewer_ids) and len(set(reviewer_ids)) >= 2, "two_independent_reviewers_required")
     require("human_review", human.get("independence_attested") is True, "reviewer_independence_not_attested")
     require("human_review", human.get("adjudication_complete") is True, "adjudication_incomplete")
-    require("human_review", isinstance(human.get("expected_response_count"), int) and human.get("expected_response_count", 0) > 0, "expected_review_count_invalid")
+    require("human_review", isinstance(human.get("expected_response_count"), int) and not isinstance(human.get("expected_response_count"), bool) and human.get("expected_response_count", 0) > 0, "expected_review_count_invalid")
     require("human_review", human.get("graded_response_count") == human.get("expected_response_count"), "review_coverage_incomplete")
     require("human_review", valid_sha(human.get("grade_report_sha256")), "grade_report_digest_missing")
     require("human_review", valid_sha(human.get("adjudication_sha256")), "adjudication_digest_missing")
@@ -117,7 +120,7 @@ def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
 
     holdout = gate("holdout")
     require("holdout", holdout.get("status") == "passed", "not_passed")
-    require("holdout", isinstance(holdout.get("case_count"), int) and holdout.get("case_count", 0) > 0, "holdout_cases_missing")
+    require("holdout", isinstance(holdout.get("case_count"), int) and not isinstance(holdout.get("case_count"), bool) and holdout.get("case_count", 0) > 0, "holdout_cases_missing")
     require("holdout", holdout.get("leakage_audit_passed") is True, "leakage_audit_not_passed")
     require("holdout", valid_sha(holdout.get("audit_sha256")), "audit_digest_missing")
 
@@ -147,6 +150,8 @@ def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
 
 
 def evaluate_cohort(manifests: list[dict[str, Any]], required_teachers: int = 4) -> dict[str, Any]:
+    if required_teachers < 4:
+        raise ValueError("Core Prime cohort qualification requires at least four teachers")
     results = [evaluate_candidate(manifest) for manifest in manifests]
     candidate_ids = [row.get("candidate_id") for row in results]
     duplicates = len(candidate_ids) != len(set(candidate_ids))
