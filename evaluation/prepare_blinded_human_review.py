@@ -197,7 +197,7 @@ def build_review_packages(
         seen_execution_ids.add(execution_id)
         if len(revision) != 40 or any(c not in "0123456789abcdef" for c in revision.lower()):
             raise ValueError(f"{path}: model revision is not an immutable 40-character SHA")
-        if record.get("role") not in (None, "core_prime") and any(r.get("role") != "core_prime" for r in rows):
+        if record.get("role") not in (None, "core_prime") or any(r.get("role") != "core_prime" for r in rows):
             raise ValueError(f"{path}: evidence is not Core Prime")
         if len(rows) != expected_cases:
             raise ValueError(f"{path}: expected {expected_cases} responses, received {len(rows)}")
