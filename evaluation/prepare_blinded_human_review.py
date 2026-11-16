@@ -19,19 +19,19 @@ RUN40_ARTIFACTS = {
         "sha256": "3f7fc738edef49a7347c50c906a4c3fd2e8a71bde7815de47f65dc03464ebc68",
     },
     "prime-teacher-granite-4.2-3b.zip": {
-        "workflow_run_id": "43796213917", "artifact_id: 14213985732, "job_id": 133109238158,
+        "workflow_run_id": "43796213917", "artifact_id": 14213985732, "job_id": 133109238158,
         "sha256": "f5b4a223cdd77c89c32b5c8ccf759f7a7c8d41b8e488395d2b51ebcb1f335834",
     },
     "prime-teacher-minicpm5-2b.zip": {
-        "workflow_run_id": "43796213917", "artifact_id: 14223103259, "job_id": 133213797403,
+        "workflow_run_id": "43796213917", "artifact_id": 14223103259, "job_id": 133213797403,
         "sha256": "3e16583a0f6746b8b4f324b7468f8364283d02dd2c5064531de2f5fd1af990ff",
     },
     "prime-teacher-lfm2.5-2.6b.zip": {
-        "workflow_run_id": "43796213917", "artifact_id: 14238638626, "job_id": 133281032019,
+        "workflow_run_id": "43796213917", "artifact_id": 14238638626, "job_id": 133281032019,
         "sha256": "a52addbe9aabdde9cbee0543d203cd100e3bf25a84fe4ccda2acd2cc5b9a9d11",
     },
     "prime-teacher-phi-4-mini-instruct.zip": {
-        "workflow_run_id": "43796213917", "artifact_id: 14260316025, "job_id": 133404486950,
+        "workflow_run_id": "43796213917", "artifact_id": 14260316025, "job_id": 133404486950,
         "sha256": "ffb3ce18c6c966b4a2914dc3b9393cedc95585f89b41f2ce7067c677131b34d8",
     },
 }
