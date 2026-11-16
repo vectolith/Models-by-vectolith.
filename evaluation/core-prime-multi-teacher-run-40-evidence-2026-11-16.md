@@ -78,6 +78,18 @@ Additional manifest SHA-256 values: LFM2.5 snapshot manifest ffd64babd278da723b0
 
 The v4 fixture validator passed in the evaluation test suite. It validates 56 cases across 14 categories, four cases per category, non-empty rubrics, unique IDs and no collisions with the prior Prime suites. This validates fixture structure and coverage, not capability quality.
 
+## Follow-up correction validation
+
+Draft PR #39 received GitHub Actions run 43935195199 (workflow run number 118), completed successfully. Job 133537843283 passed all steps.
+
+- Runtime suite: 40 tests passed.
+- Evaluation suite: 45 tests passed; 3 live Hugging Face integration tests were skipped because VECTOLITH_RUN_LIVE_TESTS=1 was not enabled.
+- All four snapshot tests passed, including the new tests that verify a missing LICENSE file preserves the immutable manifest but still blocks inference, and that a present LICENSE file passes the snapshot gate.
+- Local snapshot test run: 4/4 passed.
+- Run link: https://github.com/vectolith/Models-by-vectolith./actions/runs/43935195199
+
+These checks validate the snapshot intake behavior and repository test suites. They do not constitute human grading, legal approval, training-output permission or teacher qualification.
+
 ## Candidate disposition and gates
 
 - Granite 3.1, Granite 4.2 and MiniCPM5 remain the three existing additive Prime contributors. Their raw responses are preserved; no winner selection was performed.
