@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Expand the candidate pool around the current provisional Granite 3.1 3B-A800M lead. These are **new evaluation candidates only**. No candidate below has been run in the Vectolith Prime/Prima public suites, independently graded, or qualified by this intake record.
+Expand the candidate pool around the current provisional Granite 3.1 3B-A800M lead. The four newly discovered candidates below have not yet been run in the Vectolith Prime/Prima public suites. Qwen2.5-7B-Instruct is also recorded as a **historical comparator** because it already has preserved Prime and Prima inference evidence; it is not a newly discovered candidate or an active-shortlist reinstatement. No candidate is qualified by this intake record.
 
 The comparison remains role-specific: Core Prime prioritizes general reasoning, factual reliability, instruction following, synthesis and multilingual competence; Core Prima prioritizes coding, debugging, mathematics, structured tool use and reliable task completion.
 
@@ -14,6 +14,12 @@ The comparison remains role-specific: Core Prime prioritizes general reasoning, 
 | minicpm5-2b | `openbmb/MiniCPM5-2B` | 2.52B dense, standard LlamaForCausalLM | Compact local model explicitly designed for coding agents, math, tool-calling and long-context workflows. Official model card declares Apache-2.0. | Prime + Prima |
 | ministral-3b-instruct | `ministral/Ministral-3b-instruct` | 3B dense causal LM | Similar parameter scale; general instruction model with standard Transformers AutoModelForCausalLM loading and Apache-2.0 model-card license tag. Primarily English, so multilingual capability must be measured rather than assumed. | Prime + Prima |
 | qwen3.5-4b | `Qwen/Qwen3.5-4B` | 4B-class multimodal model | Newer Qwen generation with a current Apache-2.0 Hub license tag; useful to test whether a modern generalist can beat the existing 3B lead. | Prime + Prima, subject to loader support |
+
+## Historical comparator retained in the expanded list
+
+| Candidate ID | Exact Hub repository | Immutable revision | Prior Vectolith evidence | Current disposition |
+|---|---|---|---|---|
+| qwen2.5-7b-instruct | `Qwen/Qwen2.5-7B-Instruct` | `a09a35458c702b33eeacc393d103063234e8bc28` | Preserved real inference runs: 124 Core Prime cases and 113 Core Prima cases. Mean latency was 107.86 s/case (Prime) and 155.45 s/case (Prima); peak RSS was 13.94 GiB and 13.96 GiB respectively. | Retain as a historical comparison/reference only. The 2026-11-16 disposition removed it from both active shortlists because the measured resource cost was high and the inspected evidence did not establish a sufficient quality advantage. Re-entry requires an explicit new evaluation decision; do not erase or replace prior results. |
 
 ## Evidence sources
 
@@ -42,7 +48,8 @@ Publisher benchmark claims are discovery context only; they are not Vectolith re
 - MiniCPM5-2B: official model card and deployment guide inspected; exact immutable revision snapshot and load test pending.
 - Ministral-3B-Instruct: official model card inspected; exact immutable revision snapshot and load test pending.
 - Qwen3.5-4B: official Hub page and Apache-2.0 tag inspected; exact immutable revision snapshot and loader compatibility test pending.
-- Full Vectolith Prime/Prima inference: not yet run for any of these four new candidates.
+- Full Vectolith Prime/Prima inference: not yet run for any of the four newly discovered candidates.
+- Qwen2.5-7B-Instruct: prior Prime and Prima inference is already preserved in the historical evidence set; this intake does not rerun it or reverse its active-shortlist disposition.
 - Human grading, legal review and teacher qualification: not performed by this intake.
 
 This file is a candidate intake register, not a result report or qualification decision.
