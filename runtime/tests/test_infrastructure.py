@@ -41,7 +41,6 @@ class InfrastructureRegistryTests(unittest.TestCase):
             registry.register_contribution(contribution)
         provider, _ = approved_records()
         registry.register_provider(provider)
-        registry.register_provider(provider, replace=False) if False else None
         with self.assertRaises(ValueError):
             registry.register_provider(provider)
         registry.register_contribution(contribution)
@@ -73,7 +72,7 @@ class InfrastructureRegistryTests(unittest.TestCase):
         adapter = MockComputeAdapter()
         request = ComputeRequest("job-1", "compute-a", cpu_cores=2, memory_gb=4)
         self.assertEqual(adapter.preflight(request, contribution, provider), ())
-        job = adapter.submit(request)
+        job = adapter.submit(request, contribution, provider)
         self.assertEqual(job.state, "queued")
         self.assertIn("no resources were provisioned", job.detail)
         self.assertEqual(adapter.status("job-1"), job)
@@ -87,6 +86,8 @@ class InfrastructureRegistryTests(unittest.TestCase):
         )
         self.assertTrue(blockers)
         self.assertIn("provider relationship is not approved", blockers)
+        with self.assertRaises(PermissionError):
+            MockComputeAdapter().submit(ComputeRequest("job-3", "compute-a"), contribution, unapproved)
 
     def test_invalid_resource_requests_are_rejected(self):
         with self.assertRaises(ValueError):
