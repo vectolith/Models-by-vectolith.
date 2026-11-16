@@ -82,7 +82,7 @@ class BlindedHumanReviewTests(unittest.TestCase):
         output = self.root / "review"
         summary = build_review_packages(
             self.artifacts, [self.suite], output,
-            reviewer_count=2, expected_artifacts=2, expected_cases=2,
+            reviewer_count=2, expected_artifacts=2, expected_cases=2, workflow_run_id="test-run",
         )
         self.assertEqual(summary["response_count"], 4)
         self.assertEqual(summary["gradeable_response_count"], 4)
@@ -106,7 +106,7 @@ class BlindedHumanReviewTests(unittest.TestCase):
         output = self.root / "review"
         build_review_packages(
             self.artifacts, [self.suite], output,
-            reviewer_count=2, expected_artifacts=2, expected_cases=2,
+            reviewer_count=2, expected_artifacts=2, expected_cases=2, workflow_run_id="test-run",
         )
         grade_paths = []
         for index in range(1, 3):
@@ -139,7 +139,7 @@ class BlindedHumanReviewTests(unittest.TestCase):
         output = self.root / "review"
         build_review_packages(
             self.artifacts, [self.suite], output,
-            reviewer_count=2, expected_artifacts=2, expected_cases=2,
+            reviewer_count=2, expected_artifacts=2, expected_cases=2, workflow_run_id="test-run",
         )
         grade_paths = []
         for index in range(1, 3):
@@ -166,7 +166,7 @@ class BlindedHumanReviewTests(unittest.TestCase):
         output = self.root / "review"
         build_review_packages(
             self.artifacts, [self.suite], output,
-            reviewer_count=2, expected_artifacts=2, expected_cases=2,
+            reviewer_count=2, expected_artifacts=2, expected_cases=2, workflow_run_id="test-run",
         )
         grade_paths = []
         for index in range(1, 3):
