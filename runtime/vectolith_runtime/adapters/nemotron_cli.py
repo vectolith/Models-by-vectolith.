@@ -14,7 +14,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Protocol, Sequence
 
-_IDENTIFIER = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_./-]*$")
+_STEP_IDENTIFIER = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_./-]*$")
+_NAME_IDENTIFIER = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_.-]*$")
+
+
+def _valid_step_id(value: str) -> bool:
+    return bool(_STEP_IDENTIFIER.fullmatch(value)) and all(
+        segment not in {"", ".", ".."} for segment in value.split("/")
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,18 +30,24 @@ class NemotronStepRequest:
     config: str = "tiny"
     execution_profile: str | None = None
     environment_file: str | None = None
+    resource_budget_ref: str | None = None
     timeout_seconds: int = 3600
 
     def __post_init__(self) -> None:
-        for label, value in (("step_id", self.step_id), ("config", self.config)):
-            if not _IDENTIFIER.fullmatch(value):
-                raise ValueError(f"invalid Nemotron {label}: {value!r}")
-        if self.execution_profile is not None and not _IDENTIFIER.fullmatch(self.execution_profile):
+        if not _valid_step_id(self.step_id):
+            raise ValueError(f"invalid Nemotron step_id: {self.step_id!r}")
+        if not _NAME_IDENTIFIER.fullmatch(self.config):
+            raise ValueError(f"invalid Nemotron config: {self.config!r}")
+        if self.execution_profile is not None and not _NAME_IDENTIFIER.fullmatch(self.execution_profile):
             raise ValueError("invalid Nemotron execution profile")
         if self.timeout_seconds < 1:
             raise ValueError("timeout_seconds must be positive")
         if self.environment_file is not None and not self.environment_file.strip():
             raise ValueError("environment_file must be a non-empty path")
+        if self.execution_profile is not None and not (
+            self.resource_budget_ref and self.resource_budget_ref.strip()
+        ):
+            raise ValueError("profile-based execution requires a verified resource_budget_ref")
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,6 +57,7 @@ class NemotronStepResult:
     stdout: str
     stderr: str
     execution_profile: str | None
+    approval_ref: str
 
 
 class CommandRunner(Protocol):
@@ -140,6 +154,7 @@ class NemotronCLIAdapter:
             completed.stdout or "",
             completed.stderr or "",
             request.execution_profile,
+            approval_ref,
         )
 
     def _invoke(
