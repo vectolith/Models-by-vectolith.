@@ -52,7 +52,14 @@ def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
         if not condition:
             failures.append(f"{name}:{reason}")
 
-    snapshot = gates.get("snapshot", {})
+    def gate(name: str) -> dict[str, Any]:
+        value = gates.get(name)
+        if not isinstance(value, dict):
+            failures.append(f"{name}:gate_object_missing")
+            return {}
+        return value
+
+    snapshot = gate("snapshot")
     require("snapshot", snapshot.get("status") == "verified", "not_verified")
     require("snapshot", snapshot.get("immutable_revision") == revision, "revision_mismatch")
     require("snapshot", valid_sha(snapshot.get("manifest_sha256")), "manifest_digest_missing")
@@ -79,7 +86,7 @@ def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
     require("real_inference", inference.get("tested_revision") == revision, "revision_mismatch")
     require("real_inference", bool(inference.get("workflow_run_id")), "workflow_run_id_missing")
     require("real_inference", bool(inference.get("internal_run_id")), "internal_run_id_missing")
-    require("real_inference", isinstance(inference.get("expected_response_count"), int) and inference.get("expected_response_count", 0) > 0, "expected_count_invalid")
+    require("real_inference", isinstance(inference.get("expected_response_count"), int) and not isinstance(inference.get("expected_response_count"), bool) and inference.get("expected_response_count", 0) > 0, "expected_count_invalid")
     require("real_inference", inference.get("response_count") == inference.get("expected_response_count"), "response_count_incomplete")
     require("real_inference", inference.get("error_count") == 0, "inference_errors_present")
     require("real_inference", valid_sha(inference.get("artifact_sha256")), "artifact_digest_missing")
@@ -89,13 +96,13 @@ def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
     require("resource_measurement", bool(resources.get("runner_type")), "runner_type_missing")
     require("resource_measurement", bool(resources.get("device")), "device_missing")
     require("resource_measurement", isinstance(resources.get("peak_rss_bytes"), int) and resources.get("peak_rss_bytes", 0) > 0, "peak_rss_missing")
-    require("resource_measurement", isinstance(resources.get("mean_latency_seconds"), (int, float)) and resources.get("mean_latency_seconds", 0) > 0, "latency_missing")
+    require("resource_measurement", isinstance(resources.get("mean_latency_seconds"), (int, float)) and not isinstance(resources.get("mean_latency_seconds"), bool) and resources.get("mean_latency_seconds", 0) > 0, "latency_missing")
     require("resource_measurement", valid_sha(resources.get("compute_record_sha256")), "compute_digest_missing")
 
     human = gates.get("human_review", {})
     reviewer_ids = human.get("independent_reviewer_ids", [])
     require("human_review", human.get("status") == "passed", "not_passed")
-    require("human_review", isinstance(reviewer_ids, list) and len(set(reviewer_ids)) >= 2, "two_independent_reviewers_required")
+    require("human_review", isinstance(reviewer_ids, list) and all(isinstance(x, str) and x.strip() for x in reviewer_ids) and len(set(reviewer_ids)) >= 2, "two_independent_reviewers_required")
     require("human_review", human.get("independence_attested") is True, "reviewer_independence_not_attested")
     require("human_review", human.get("adjudication_complete") is True, "adjudication_incomplete")
     require("human_review", isinstance(human.get("expected_response_count"), int) and human.get("expected_response_count", 0) > 0, "expected_review_count_invalid")
@@ -108,7 +115,7 @@ def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
     require("safety_review", bool(safety.get("reviewer_id")), "reviewer_missing")
     require("safety_review", valid_sha(safety.get("report_sha256")), "report_digest_missing")
 
-    holdout = gates.get("holdout", {})
+    holdout = gate("holdout")
     require("holdout", holdout.get("status") == "passed", "not_passed")
     require("holdout", isinstance(holdout.get("case_count"), int) and holdout.get("case_count", 0) > 0, "holdout_cases_missing")
     require("holdout", holdout.get("leakage_audit_passed") is True, "leakage_audit_not_passed")
@@ -117,7 +124,7 @@ def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
     corpus = gates.get("corpus_integrity", {})
     require("corpus_integrity", corpus.get("status") == "passed", "not_passed")
     require("corpus_integrity", valid_sha(corpus.get("corpus_sha256")), "corpus_digest_missing")
-    require("corpus_integrity", corpus.get("duplicate_count") == 0, "duplicates_present_or_unverified")
+    require("corpus_integrity", isinstance(corpus.get("duplicate_count"), int) and not isinstance(corpus.get("duplicate_count"), bool) and corpus.get("duplicate_count") == 0, "duplicates_present_or_unverified")
     require("corpus_integrity", corpus.get("provenance_verified") is True, "provenance_not_verified")
 
     permission = gates.get("training_output_permission", {})
