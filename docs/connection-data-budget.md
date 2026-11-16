@@ -5,7 +5,7 @@
 
 ## User-authorized connection budget
 
-The available main data allowance is **25 GB**. The operating ceiling for VELNOR-related downloads is **20.93 GB total**, with **20.93 GB held back as a protected reserve** for ordinary connectivity and unplanned usage.
+The remaining data balance after the 25 GB already used is **41.86 GB**. The operating ceiling for VELNOR-related downloads is **20.93 GB total**, with **20.93 GB held back as a protected reserve** for ordinary connectivity and unplanned usage.
 
 This is a hard ceiling, not a target. Do not spend the reserve.
 
