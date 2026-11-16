@@ -14,8 +14,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Protocol, Sequence
 
+from ..infrastructure import TrainingAdapter
+
 _STEP_IDENTIFIER = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_./-]*$")
 _NAME_IDENTIFIER = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_.-]*$")
+_OVERRIDE_KEY = re.compile(r"^[a-zA-Z0-9_.-]+$")
 
 
 def _valid_step_id(value: str) -> bool:
@@ -31,6 +34,7 @@ class NemotronStepRequest:
     execution_profile: str | None = None
     environment_file: str | None = None
     resource_budget_ref: str | None = None
+    overrides: tuple[str, ...] = ()
     timeout_seconds: int = 3600
 
     def __post_init__(self) -> None:
@@ -47,7 +51,11 @@ class NemotronStepRequest:
         if self.execution_profile is not None and not (
             self.resource_budget_ref and self.resource_budget_ref.strip()
         ):
-            raise ValueError("profile-based execution requires a verified resource_budget_ref")
+            raise ValueError("profile-based execution requires a resource_budget_ref")
+        for override in self.overrides:
+            key, separator, value = override.partition("=")
+            if not separator or not _OVERRIDE_KEY.fullmatch(key) or not value:
+                raise ValueError(f"invalid Nemotron dotlist override: {override!r}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,6 +66,7 @@ class NemotronStepResult:
     stderr: str
     execution_profile: str | None
     approval_ref: str
+    resource_budget_ref: str | None
 
 
 class CommandRunner(Protocol):
@@ -123,6 +132,16 @@ class NemotronCLIAdapter:
                 blockers.append("configured NEMOTRON_ENV_FILE does not exist")
         return tuple(blockers)
 
+    def execute(
+        self,
+        request: NemotronStepRequest,
+        *,
+        approved: bool = False,
+        approval_ref: str | None = None,
+    ) -> NemotronStepResult:
+        """Satisfy the provider-neutral TrainingAdapter contract."""
+        return self.run_step(request, approved=approved, approval_ref=approval_ref)
+
     def run_step(
         self,
         request: NemotronStepRequest,
@@ -154,6 +173,7 @@ class NemotronCLIAdapter:
         ]
         if request.execution_profile is not None:
             command.extend(["-r", request.execution_profile])
+        command.extend(request.overrides)
         completed = self._invoke(command, environment, request.timeout_seconds)
         return NemotronStepResult(
             tuple(command),
@@ -162,6 +182,7 @@ class NemotronCLIAdapter:
             completed.stderr or "",
             request.execution_profile,
             approval_ref,
+            request.resource_budget_ref,
         )
 
     def _invoke(
