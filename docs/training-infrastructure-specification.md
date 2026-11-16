@@ -147,7 +147,11 @@ For the active Core Prime track: foundation comparison and selection precede exp
 
 Core Prima remains paused and is excluded from active scheduling. If reactivated, it receives a separate role justification, foundation decision, curriculum, teacher panel, dataset, run lineage, evaluation and release gate.
 
-## 5. Nemotron / NeMo integration policy
+## 5. Teacher infrastructure contributions
+
+Teacher and provider infrastructure contributions are governed by the [Teacher Infrastructure Contribution System](teacher-infrastructure-contributions.md). Model-teacher qualification and infrastructure-contribution qualification are independent decisions. Providers may contribute compute, training frameworks, orchestration, data/evaluation systems, serving, observability or engineering references; no access, compute capacity, credits or service entitlement is presumed. All integrations must pass contribution-specific legal, security, compatibility, operations, cost and data-governance checks through replaceable Vectolith-owned adapters.
+
+## 6. Nemotron / NeMo integration policy
 
 Use NVIDIA NeMo/Nemotron as a reference and optional backend integration, not as a required dependency or the definition of Vectolith's architecture.
 
@@ -160,7 +164,7 @@ References:
 - [NeMo RL documentation](https://docs.nvidia.com/nemo/rl/latest/index.html)
 - [NeMo RL Nemotron guides](https://docs.nvidia.com/nemo/rl/latest/guides/models/nemotron/index.html)
 
-## 6. Implementation backlog and acceptance criteria
+## 7. Implementation backlog and acceptance criteria
 
 | Priority | Work | Acceptance criteria |
 |---|---|---|
@@ -175,7 +179,7 @@ References:
 
 P0 and P1 work must not launch expensive training. The first implementation milestone should validate contracts and mock orchestration on CPU. Real model runs are separate, explicitly approved experiments.
 
-## 7. Non-negotiable operational rules
+## 8. Non-negotiable operational rules
 
 - No credentials, private data, hidden holdouts, model weights or paid-provider assumptions in source control.
 - No training or provider call on import; all network and compute actions require explicit operator invocation.
