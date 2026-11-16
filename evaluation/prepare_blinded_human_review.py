@@ -138,6 +138,8 @@ def build_review_packages(
         raise ValueError("at least two independent reviewer packages are required")
     if len(evidence_paths) != expected_artifacts:
         raise ValueError(f"expected {expected_artifacts} evidence artifacts, received {len(evidence_paths)}")
+    if workflow_run_id == "43796213917" and {path.name for path in evidence_paths} != set(RUN40_ARTIFACTS):
+        raise ValueError("run 40 requires the exact five published source artifact files")
     suites = load_suites(suite_paths)
     candidates: dict[str, dict[str, Any]] = {}
     all_rows: list[dict[str, Any]] = []
