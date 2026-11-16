@@ -1,0 +1,57 @@
+name: Core Prime evaluated candidate inference evidence
+
+on:
+  pull_request:
+    paths:
+      - "evaluation/**"
+      - ".github/workflows/core-prime-additional-teachers.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: core-prime-evaluated-candidate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  granite31:
+    name: Granite 3.1 3B-A800M / pinned Core Prime evaluation
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pinned CPU inference dependencies
+        run: |
+          python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==4.57.1 accelerate==1.10.1 safetensors==0.6.2 huggingface_hub==0.36.0
+      - name: Record runner resources
+        run: |
+          mkdir -p artifacts/compute artifacts/evaluations
+          python evaluation/probe_compute.py --output artifacts/compute/granite-3.1-3b-a800m-runner.json
+      - name: Run pinned Prime v1-v4 evaluation
+        run: |
+          set -o pipefail
+          python evaluation/run_real_candidate_eval.py \
+            --repo ibm-granite/granite-3.1-3b-a800m-instruct \
+            --revision a02780686e08a03fe0d2679a293b5c74a90efa89 \
+            --family "IBM Granite" \
+            --candidate-id granite-3.1-3b-a800m \
+            --suite evaluation/fixtures/prime_benchmark_v1.jsonl \
+            --suite evaluation/fixtures/prime_qualification_v2.jsonl \
+            --suite evaluation/fixtures/prime_qualification_v3.jsonl \
+            --suite evaluation/fixtures/prime_qualification_v4.jsonl \
+            --output artifacts/evaluations/granite-3.1-3b-a800m-core_prime.json
+      - name: Preserve raw evaluation and resource evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-prime-granite-3.1-3b-a800m-evaluation
+          path: |
+            artifacts/compute/granite-3.1-3b-a800m-runner.json
+            artifacts/evaluations/granite-3.1-3b-a800m-core_prime.json
+            artifacts/evaluations/granite-3.1-3b-a800m-core_prime.jsonl
+          if-no-files-found: warn
+          retention-days: 90

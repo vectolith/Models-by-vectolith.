@@ -39,34 +39,6 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def license_evidence(files: list[dict], repo_id: str, revision: str, license_tag: str) -> dict:
-    """Describe what the immutable snapshot actually provides as license evidence.
-
-    A missing LICENSE file is recorded, not silently treated as a legal pass. These
-    artifacts are qualification evidence only: legal review and training-output
-    permission remain separate gates, and no training is started by this script.
-    """
-    license_files = [
-        item for item in files
-        if Path(item["path"]).name.upper().startswith("LICENSE")
-    ]
-    model_card_files = [
-        item for item in files
-        if Path(item["path"]).name.lower() in {"readme.md", "modelcard.md"}
-    ]
-    return {
-        "license_tag": license_tag,
-        "model_card_url": f"https://huggingface.co/{repo_id}/blob/{revision}/README.md",
-        "model_card_files": model_card_files,
-        "license_files": license_files,
-        "status": (
-            "license_file_present_pending_human_review"
-            if license_files
-            else "model_card_tag_only_pending_human_review"
-        ),
-    }
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--candidate-id", choices=EXPECTED, required=True)
@@ -113,8 +85,9 @@ def main() -> int:
             "size_bytes": path.stat().st_size,
             "sha256": sha256_file(path),
         })
-    evidence = license_evidence(files, expected["repo"], revision, observed_license)
-    license_files = evidence["license_files"]
+    license_files = [item for item in files if Path(item["path"]).name.upper().startswith("LICENSE")]
+    if not license_files:
+        raise RuntimeError("Snapshot contains no license file; refusing to treat model-card tag as complete license evidence")
 
     manifest = {
         "schema_version": "vectolith-teacher-snapshot/1.0",
@@ -128,7 +101,6 @@ def main() -> int:
         "architectures": config["architectures"],
         "license_tag": observed_license,
         "license_review": "pending_human_legal_review",
-        "license_evidence": evidence,
         "training_output_permission": "not_verified",
         "teacher_qualification": "not_qualified",
         "snapshot_path_revision": snapshot.name,
@@ -148,7 +120,6 @@ def main() -> int:
         "immutable_revision": revision,
         "file_count": len(files),
         "snapshot_size_bytes": manifest["snapshot_size_bytes"],
-        "license_evidence_status": evidence["status"],
         "manifest": str(args.output),
     }, sort_keys=True), flush=True)
     return 0
