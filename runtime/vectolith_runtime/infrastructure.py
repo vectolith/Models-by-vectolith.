@@ -5,7 +5,7 @@ or compute operations at import time.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import StrEnum
 from threading import RLock
 from typing import Protocol, runtime_checkable
@@ -190,8 +190,9 @@ class InfrastructureRegistry:
         return tuple(sorted(items, key=lambda x: x.contribution_id))
 
     def _provider_approved(self, provider_id: str) -> bool:
-        provider = self._providers.get(provider_id)
-        return bool(provider and provider.relationship_state == ProviderState.APPROVED)
+        with self._lock:
+            provider = self._providers.get(provider_id)
+            return bool(provider and provider.relationship_state == ProviderState.APPROVED)
 
 
 @dataclass(frozen=True, slots=True)
