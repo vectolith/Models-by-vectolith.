@@ -67,6 +67,6 @@ The snapshot tool continues to require an exact model-card license tag and a lic
 
 The workflow does not commit model weights to Git. Snapshot weights remain in the ephemeral runner cache; the uploaded manifest contains the immutable revision and complete file inventory with sizes and SHA-256 hashes. Phi-4 remains loaded with trust_remote_code disabled; no repository-supplied Python code is executed.
 
-All candidates remain unqualified. LFM2.5 is still discovery-only despite having real inference evidence: its 90% token-cap rate requires careful review, and its LFM Open License requires legal review. The model-weight license remains separate from permission to use generated outputs for student training. No candidate is authorized for training, no human grades are inferred, and no training is performed.
+The follow-up snapshot-manifest correction and evidence record passed GitHub Actions run 43935195199 (40 runtime tests; 45 evaluation tests; 3 live-Hugging-Face tests skipped). All candidates remain unqualified. LFM2.5 is still discovery-only despite having real inference evidence: its 90% token-cap rate requires careful review, and its LFM Open License requires legal review. The model-weight license remains separate from permission to use generated outputs for student training. No candidate is authorized for training, no human grades are inferred, and no training is performed.
 
 PR #33 has been merged on GitHub and cannot be updated in place. Follow-up evidence and the snapshot-manifest correction are in draft PR #39; no follow-up PR is merged.
