@@ -1,4 +1,4 @@
-name: Core Prime evaluated candidate inference evidence
+name: Core Prime shortlisted candidates evaluation
 
 on:
   pull_request:
@@ -10,14 +10,38 @@ permissions:
   contents: read
 
 concurrency:
-  group: core-prime-evaluated-candidate-${{ github.event.pull_request.number || github.ref }}
+  group: core-prime-shortlist-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
-  granite31:
-    name: Granite 3.1 3B-A800M / pinned Core Prime evaluation
+  shortlisted:
+    name: ${{ matrix.name }} / Core Prime evaluation
     runs-on: ubuntu-latest
     timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Granite 3.1 3B-A800M
+            candidate_id: granite-3.1-3b-a800m
+            repo: ibm-granite/granite-3.1-3b-a800m-instruct
+            revision: a02780686e08a03fe0d2679a293b5c74a90efa89
+            family: "IBM Granite"
+            suites:
+              - evaluation/fixtures/prime_benchmark_v1.jsonl
+              - evaluation/fixtures/prime_qualification_v2.jsonl
+              - evaluation/fixtures/prime_qualification_v3.jsonl
+              - evaluation/fixtures/prime_qualification_v4.jsonl
+          - name: Granite 4.2 3B
+            candidate_id: granite-4.2-3b
+            repo: ibm-granite/granite-4.2-3b
+            revision: 4e9c275e232f10211ec88644d106a1f6a1b60e06
+            family: "IBM Granite"
+            suites:
+              - evaluation/fixtures/prime_benchmark_v1.jsonl
+              - evaluation/fixtures/prime_qualification_v2.jsonl
+              - evaluation/fixtures/prime_qualification_v3.jsonl
+              - evaluation/fixtures/prime_qualification_v4.jsonl
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -30,28 +54,25 @@ jobs:
       - name: Record runner resources
         run: |
           mkdir -p artifacts/compute artifacts/evaluations
-          python evaluation/probe_compute.py --output artifacts/compute/granite-3.1-3b-a800m-runner.json
+          python evaluation/probe_compute.py --output artifacts/compute/${{ matrix.candidate_id }}-runner.json
       - name: Run pinned Prime v1-v4 evaluation
         run: |
           set -o pipefail
           python evaluation/run_real_candidate_eval.py \
-            --repo ibm-granite/granite-3.1-3b-a800m-instruct \
-            --revision a02780686e08a03fe0d2679a293b5c74a90efa89 \
-            --family "IBM Granite" \
-            --candidate-id granite-3.1-3b-a800m \
-            --suite evaluation/fixtures/prime_benchmark_v1.jsonl \
-            --suite evaluation/fixtures/prime_qualification_v2.jsonl \
-            --suite evaluation/fixtures/prime_qualification_v3.jsonl \
-            --suite evaluation/fixtures/prime_qualification_v4.jsonl \
-            --output artifacts/evaluations/granite-3.1-3b-a800m-core_prime.json
+            --repo "${{ matrix.repo }}" \
+            --revision "${{ matrix.revision }}" \
+            --family "${{ matrix.family }}" \
+            --candidate-id "${{ matrix.candidate_id }}" \
+            --suite ${{ join(matrix.suites, ' --suite ') }} \
+            --output "artifacts/evaluations/${{ matrix.candidate_id }}-core_prime.json"
       - name: Preserve raw evaluation and resource evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: core-prime-granite-3.1-3b-a800m-evaluation
+          name: core-prime-${{ matrix.candidate_id }}-evaluation
           path: |
-            artifacts/compute/granite-3.1-3b-a800m-runner.json
-            artifacts/evaluations/granite-3.1-3b-a800m-core_prime.json
-            artifacts/evaluations/granite-3.1-3b-a800m-core_prime.jsonl
+            artifacts/compute/${{ matrix.candidate_id }}-runner.json
+            artifacts/evaluations/${{ matrix.candidate_id }}-core_prime.json
+            artifacts/evaluations/${{ matrix.candidate_id }}-core_prime.jsonl
           if-no-files-found: warn
           retention-days: 90
