@@ -11,7 +11,7 @@ These are pre-existing GitHub Actions runs discovered during the live repository
 - Run 43: https://github.com/vectolith/Models-by-vectolith./actions/runs/43821046671
   - Source branch: \`audit-candidate-weight-memory-2026-11-16\`
   - Head SHA: \`fbe20c9095cbf01b12a7c35b4eae94bed1f5b1ba\`
-  - As last inspected, overall workflow remained \`in_progress\` because Phi-4 job 133444059471 remained \`in_progress\`.
+  - Workflow completed with overall failure because SmolLM3 failed its missing-LICENSE gate; Phi-4 job 133444059471 completed successfully and uploaded artifact 14261964529.
 
 In both runs, Granite 3.1, Granite 4.2, MiniCPM5, and LFM2.5 jobs completed successfully with real 180-case response artifacts. The SmolLM3 snapshot job failed because the downloaded snapshot had no LICENSE file. Its inference step was skipped. Its upload step reported that no files were found, so no SmolLM3 artifact was produced. Run 42 Phi-4 job 133549417510 remains in_progress and has no artifact. Run 43 Phi-4 job 133444059471 completed successfully and produced a verified 180-case artifact.
 
@@ -43,8 +43,9 @@ The three existing teachers remain additive. LFM2.5 remains discovery-only. Thes
 | Granite 4.2 | \`4e9c275e232f10211ec88644d106a1f6a1b60e06\` | 5.0.0 | AVX512 / AVX512 | 7824760 / 7799152 KiB | 67.34 / 65.69 s |
 | MiniCPM5 | \`42433e90dad95123ab87729fd7011e7110629556\` | 4.57.1 | AVX512 / AVX2 | 5515692 / 5480056 KiB | 35.62 / 42.99 s |
 | LFM2.5 | \`7141b56cd4650af95c7c7b86983443aed050c96a\` | 5.0.0 | AVX512 / AVX512 | 5944736 / 5939748 KiB | 115.48 / 50.25 s |
+| Phi-4-mini | \`cfbefacb99257ffa30c83adab238a50856ac3083\` | 4.57.1 | — / AVX512 | — / 8089804 KiB | — / 62.23 s |
 
-All eight jobs used four visible CPUs and CPU-only PyTorch 2.8.0. The hosted runner system RAM was approximately 15.3–15.6 GiB. CPU capability and hosted machine type varied, so latency and RSS figures are per-run observations, not a controlled ranking. All runs used greedy BF16 decoding, chat template enabled, thinking disabled, and a 256-new-token limit.
+All nine completed candidate jobs used four visible CPUs and CPU-only PyTorch 2.8.0. The hosted runner system RAM was approximately 15.3–15.6 GiB. CPU capability and hosted machine type varied, so latency and RSS figures are per-run observations, not a controlled ranking. All runs used greedy BF16 decoding, chat template enabled, thinking disabled, and a 256-new-token limit.
 
 Cap-hit counts are incomplete/truncated execution metadata, not correctness scores or human grades.
 
@@ -62,6 +63,7 @@ ZIP, JSON and JSONL digests were recomputed from downloaded artifacts. Artifact 
 | 43 Granite 4.2 | \`prime-teacher-granite-4.2-3b\` | \`a3781ef0dd5240eca4f223a44f69c39f641bb20d9adf6d2bb7f4efb3b44c2739\` | \`90026164949b4eb58cd2c082e20a205806eab3a1cc087fd994de55448120d5cd\` | \`06652a1b6afc7955bc5b14ded5283c5b9f20a93e602c16cca23ac49ccfece6fe\` |
 | 43 MiniCPM5 | \`prime-teacher-minicpm5-2b\` | \`109c2f235ab8edde59b2beeeedf778f6ae3babf309e70952c62febf09cf93acb\` | \`d14d818dcbb1938e0caa3d8507fee64e3b70d587921027e97102c149543470a9\` | \`a2053c0ecdbcfbb339c1c8aefbc4e7323421b2eeb34756750eee124978fbc0f6\` |
 | 43 LFM2.5 | \`prime-teacher-lfm2.5-2.6b\` | \`7130d8c7f4754e689f4652951a12f09e70df43f7c7e67ecc27dfb1a1fea192ca\` | \`3b9b6dd658baee431f72beb9090992449684d83e39b58a3187d046b043628355\` | \`ea8e5aa4292b0c953f03f087303723993027e5b449921b4c64a174a8d2fde0bf\` |
+| 43 Phi-4-mini | \`prime-teacher-phi-4-mini-instruct\` | \`584ac7979398db27234870b72e3c94c65ff79749828e78ba388db198c68df50f\` | \`0910b02c67b0bb11993a34f50ba075e6c1b44d0ce157211458d060cb366b80ff\` | \`b229dfae12981680547b5f3f28cb2f37a05299d81014a7553a3fcd6574dbdb69\` |
 
 Artifact links:
 
@@ -86,7 +88,7 @@ Artifact links:
 - Core Prima remains paused. No training has started.
 
 
-### LFM2.5 snapshot manifest digests
+### LFM2.5 and Phi-4 snapshot manifest digests
 
 Both LFM2.5 artifacts include the 11-file immutable snapshot inventory. The LICENSE file digest is unchanged across both snapshots. These are snapshot-presence/inventory facts only; legal review and training-output permission remain pending.
 
@@ -97,3 +99,6 @@ Both LFM2.5 artifacts include the 11-file immutable snapshot inventory. The LICE
 
 - Run 43 Phi-4 snapshot manifest SHA-256: \`837c68404e8ccce17fbe7d1c88c23d58731021805663ecea2ba78f06bcd0a1c9\`; 21 files, 7,694,054,130 bytes.
 - Run 43 Phi-4 LICENSE SHA-256: \`fa8235e5b48faca34e3ca98cf4f694ef08bd216d28b58071a1f85b1d50cb814d\`.
+
+- Run 43 Phi-4 manifest SHA-256: `837c68404e8ccce17fbe7d1c88c23d58731021805663ecea2ba78f06bcd0a1c9`; 21 files, 7,694,054,130 bytes.
+- Run 43 Phi-4 LICENSE SHA-256: `fa8235e5b48faca34e3ca98cf4f694ef08bd216d28b58071a1f85b1d50cb814d`.
