@@ -18,7 +18,7 @@ These flags identify generations that reached the configured token limit without
 
 ## Controlled comparison
 
-The manual workflow offers 512, 768, or 1024 new tokens. It runs the same five immutable revisions sequentially on one GitHub-hosted CPU runner, using the same four Prime suites, greedy decoding, BF16, chat template, and disabled thinking. The only planned inference-setting change is the output budget. Model-specific Transformers and Hugging Face Hub versions remain pinned to the previously verified loader combinations.
+The manual workflow offers 512, 768, or 1024 new tokens. It runs one candidate per matrix job on the same GitHub-hosted CPU runner class, using the same four Prime suites, greedy decoding, BF16, chat template, and disabled thinking. The only planned inference-setting change from run 40 is the output budget. Model-specific Transformers and Hugging Face Hub versions remain pinned to the previously verified loader combinations. Each job records its own CPU capability, available memory, RSS and runtime versions; hosted hardware can vary between jobs, so latency and resource comparisons across candidates must not be treated as controlled rankings.
 
 The five candidates are Granite 3.1, Granite 4.2, MiniCPM5, LFM2.5, and Phi-4. SmolLM3 is excluded because its missing LICENSE file remains a hard snapshot/license gate. No new candidate is added.
 
