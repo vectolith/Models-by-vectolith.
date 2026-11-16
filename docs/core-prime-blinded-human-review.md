@@ -67,7 +67,30 @@ python evaluation/prepare_blinded_human_review.py unblind \\
 
 The tool requires at least two distinct evaluator IDs, exactly one grade per gradeable blinded response per reviewer, every original rubric criterion, and scores in the 0–4 range. It rejects unknown, duplicate, incomplete, non-gradeable, or mismatched records. The original blinded submissions and private identity key remain unchanged. The output uses the existing \`vectolith-human-grading/1.0\` schema and can be consumed by \`summarize_human_grades.py\`.
 
-## 5. Summarize human grades and agreement
+
+
+## 5. Record disagreements and adjudicate separately
+
+After unblinding, generate a separate adjudication template for every case/criterion where reviewers disagree:
+
+\`\`\`bash
+python evaluation/prepare_human_adjudication.py prepare \\
+  --grades artifacts/human-review/run-40/unblinded-human-grades.jsonl \\
+  --output artifacts/human-review/run-40/adjudication-template.jsonl
+\`\`\`
+
+A qualified third adjudicator (not one of the original reviewers) reviews the original prompt, original rubric, response, and both reviewers' scores/rationales. Complete a separate copy of the template with adjudicator_id, decision_score (integer 0–4), rationale, ISO-8601 adjudicated_at, and status=adjudicated. Then validate it:
+
+\`\`\`bash
+python evaluation/prepare_human_adjudication.py validate \\
+  --grades artifacts/human-review/run-40/unblinded-human-grades.jsonl \\
+  --adjudications artifacts/human-review/run-40/completed-adjudications.jsonl \\
+  --output artifacts/human-review/run-40/validated-adjudications.jsonl
+\`\`\`
+
+The validator requires a distinct adjudicator, complete coverage of every disagreement, valid scores and rationale, and exact preservation of the original reviewer IDs, scores and notes. It never edits the source grades or the blank template. Keep the validated adjudication output separate from original grades; corrections require a new append-only record with a reason.
+
+## 6. Summarize human grades and agreement
 
 Combine the five original JSONL files without changing them:
 
