@@ -82,3 +82,12 @@ Artifact links:
 - Qwen3.5-2B and Gemma 4 E2B IT remain discovery-only. Nemotron 3 Nano 4B remains deferred.
 - No human grades were created. No candidate was qualified, ranked, or selected. No response was overwritten or discarded.
 - Core Prima remains paused. No training has started.
+
+
+### LFM2.5 snapshot manifest digests
+
+Both LFM2.5 artifacts include the 11-file immutable snapshot inventory. The LICENSE file digest is unchanged across both snapshots. These are snapshot-presence/inventory facts only; legal review and training-output permission remain pending.
+
+- Run 42 manifest SHA-256: \`61f3b506ee8482260bab96d6a46814b52a21c23e66d0d1bb758eebb7c0582b71\`
+- Run 43 manifest SHA-256: \`7af841740157d4aa89c3f19f14d99913174c279999e8b32d1786969a846a12c9\`
+- LICENSE SHA-256 in both: \`4d28ca14dedc0b3d0fcc2b3339f0e79931faa33874f3d24f522183a8fc70068c\`
