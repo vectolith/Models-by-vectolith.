@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import statistics
+from itertools import combinations
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -109,6 +110,50 @@ def validate_grades(
     return validated
 
 
+
+def inter_rater_agreement(observations: list[dict[str, Any]]) -> dict[str, Any]:
+    """Compute pairwise quadratic-weighted Cohen kappa and exact agreement by case."""
+    ratings: dict[str, dict[str, float]] = defaultdict(dict)
+    for item in observations:
+        ratings[item["case_id"]][item["evaluator_id"]] = float(item["score"])
+    evaluator_ids = sorted({evaluator for values in ratings.values() for evaluator in values})
+    kappas = []
+    exact_matches = 0
+    paired_count = 0
+    eligible_pairs = 0
+    for left_id, right_id in combinations(evaluator_ids, 2):
+        paired = [
+            (values[left_id], values[right_id])
+            for values in ratings.values()
+            if left_id in values and right_id in values
+        ]
+        if len(paired) < 2:
+            continue
+        eligible_pairs += 1
+        paired_count += len(paired)
+        exact_matches += sum(1 for left, right in paired if left == right)
+        observed_disagreement = sum(((left - right) ** 2) / 16 for left, right in paired) / len(paired)
+        left_counts = {score: sum(1 for left, _ in paired if left == score) / len(paired) for score in range(5)}
+        right_counts = {score: sum(1 for _, right in paired if right == score) / len(paired) for score in range(5)}
+        expected_disagreement = sum(
+            left_counts[left] * right_counts[right] * ((left - right) ** 2) / 16
+            for left in range(5) for right in range(5)
+        )
+        if expected_disagreement == 0:
+            kappa = 1.0 if observed_disagreement == 0 else None
+        else:
+            kappa = 1.0 - observed_disagreement / expected_disagreement
+        if kappa is not None:
+            kappas.append(kappa)
+    return {
+        "method": "mean_pairwise_quadratic_weighted_cohen_kappa",
+        "eligible_evaluator_pairs": eligible_pairs,
+        "paired_case_ratings": paired_count,
+        "mean_weighted_kappa": round(statistics.fmean(kappas), 4) if kappas else None,
+        "exact_agreement_rate": round(exact_matches / paired_count, 4) if paired_count else None,
+        "status": "computed" if kappas else "insufficient_paired_ratings",
+    }
+
 def build_report(
     evidence_rows: list[dict[str, Any]],
     grades: list[dict[str, Any]],
@@ -138,6 +183,7 @@ def build_report(
         evaluators = sorted({item["evaluator_id"] for item in observations})
         scores = [item["score"] for item in observations]
         mean = statistics.fmean(scores)
+        agreement = inter_rater_agreement(observations)
         if len(evaluators) < min_evaluators:
             status = "insufficient_independent_evaluators"
         elif len(case_ids) < min_cases:
@@ -152,6 +198,7 @@ def build_report(
             "grade_count": len(scores), "evaluator_count": len(evaluators),
             "mean_score_0_to_4": round(mean, 4),
             "population_stddev": round(statistics.pstdev(scores), 4) if len(scores) > 1 else 0.0,
+            "inter_rater_agreement": agreement,
             "status": status,
         })
     return {
