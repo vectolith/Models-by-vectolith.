@@ -62,6 +62,8 @@ class SQLiteInfrastructureRegistry(InfrastructureRegistry):
         record=contribution_to_record(contribution); validate_infrastructure_record("contribution",record,schema_dir=self.schema_dir)
         raw=json.dumps(record,sort_keys=True,separators=(",",":"))
         with self._lock:
+            if contribution.provider_id not in self._providers:
+                raise KeyError(f"unknown provider: {contribution.provider_id}")
             exists=contribution.contribution_id in self._contributions
             if exists and not replace: raise ValueError(f"contribution already registered: {contribution.contribution_id}")
             previous=self._contributions.get(contribution.contribution_id)
