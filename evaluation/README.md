@@ -164,3 +164,6 @@ The builder verifies immutable artifact ZIPs, JSON/JSONL parity, provenance, exa
 
 
 Additional verified follow-up artifacts from Core Prime runs 42 and 43 are recorded in [run 42/43 evidence](core-prime-multi-teacher-runs-42-43-evidence-2026-11-16.md). The blinded review builder supports repeated inference runs for the same candidate without overwriting or collapsing their provenance.
+
+
+Human disagreement records are generated and validated separately with \`evaluation/prepare_human_adjudication.py\`; adjudication never overwrites the original reviewer grades. See the operations guide for the third-party adjudicator workflow.
