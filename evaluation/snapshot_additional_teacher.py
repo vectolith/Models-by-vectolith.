@@ -39,6 +39,60 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def build_manifest(
+    *,
+    candidate_id: str,
+    expected: dict,
+    requested_revision: str,
+    revision: str,
+    info,
+    snapshot: Path,
+    config: dict,
+    files: list[dict],
+) -> dict:
+    card = info.card_data.to_dict() if info.card_data else {}
+    license_files = [
+        item for item in files
+        if Path(item["path"]).name.upper().startswith("LICENSE")
+    ]
+    license_card_evidence = {
+        key: card[key]
+        for key in ("license", "license_name", "license_link", "license_url")
+        if card.get(key) not in (None, "")
+    }
+    license_file_status = "present" if license_files else "missing"
+    validation_status = (
+        "complete" if license_files else "blocked_missing_license_file"
+    )
+
+    return {
+        "schema_version": "vectolith-teacher-snapshot/1.1",
+        "captured_at": datetime.now(timezone.utc).isoformat(),
+        "candidate_id": candidate_id,
+        "repo_id": expected["repo"],
+        "requested_revision": requested_revision,
+        "immutable_revision": revision,
+        "last_modified": info.last_modified.isoformat() if info.last_modified else None,
+        "model_type": config["model_type"],
+        "architectures": config["architectures"],
+        "license_tag": str(card.get("license_name") or card.get("license") or "").lower(),
+        "model_card_license_evidence": license_card_evidence,
+        "license_file_status": license_file_status,
+        "license_files": license_files,
+        "snapshot_validation_status": validation_status,
+        "license_review": "pending_human_legal_review",
+        "training_output_permission": "not_verified",
+        "teacher_qualification": "not_qualified",
+        "snapshot_path_revision": snapshot.name,
+        "snapshot_size_bytes": sum(item["size_bytes"] for item in files),
+        "file_count": len(files),
+        "files": files,
+        "config": config,
+        "snapshot_is_immutable": True,
+        "training_started": False,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--candidate-id", choices=EXPECTED, required=True)
@@ -85,33 +139,17 @@ def main() -> int:
             "size_bytes": path.stat().st_size,
             "sha256": sha256_file(path),
         })
-    license_files = [item for item in files if Path(item["path"]).name.upper().startswith("LICENSE")]
-    if not license_files:
-        raise RuntimeError("Snapshot contains no license file; refusing to treat model-card tag as complete license evidence")
 
-    manifest = {
-        "schema_version": "vectolith-teacher-snapshot/1.0",
-        "captured_at": datetime.now(timezone.utc).isoformat(),
-        "candidate_id": args.candidate_id,
-        "repo_id": expected["repo"],
-        "requested_revision": args.revision,
-        "immutable_revision": revision,
-        "last_modified": info.last_modified.isoformat() if info.last_modified else None,
-        "model_type": config["model_type"],
-        "architectures": config["architectures"],
-        "license_tag": observed_license,
-        "license_review": "pending_human_legal_review",
-        "training_output_permission": "not_verified",
-        "teacher_qualification": "not_qualified",
-        "snapshot_path_revision": snapshot.name,
-        "snapshot_size_bytes": sum(item["size_bytes"] for item in files),
-        "file_count": len(files),
-        "files": files,
-        "license_files": license_files,
-        "config": config,
-        "snapshot_is_immutable": True,
-        "training_started": False,
-    }
+    manifest = build_manifest(
+        candidate_id=args.candidate_id,
+        expected=expected,
+        requested_revision=args.revision,
+        revision=revision,
+        info=info,
+        snapshot=snapshot,
+        config=config,
+        files=files,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(json.dumps({
@@ -120,8 +158,19 @@ def main() -> int:
         "immutable_revision": revision,
         "file_count": len(files),
         "snapshot_size_bytes": manifest["snapshot_size_bytes"],
+        "license_file_status": manifest["license_file_status"],
+        "snapshot_validation_status": manifest["snapshot_validation_status"],
         "manifest": str(args.output),
     }, sort_keys=True), flush=True)
+
+    if not manifest["license_files"]:
+        print(
+            "Snapshot manifest preserved, but inference is blocked because the "
+            "snapshot contains no license file; model-card license metadata is "
+            "not treated as a substitute for the missing file.",
+            flush=True,
+        )
+        return 1
     return 0
 
 
