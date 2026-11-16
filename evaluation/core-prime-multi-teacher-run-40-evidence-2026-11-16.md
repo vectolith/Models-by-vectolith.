@@ -87,8 +87,8 @@ The v4 fixture validator passed in the evaluation test suite. It validates 56 ca
 - SmolLM3 remains blocked at the missing-license-file gate; this run did not produce a response artifact.
 - Phi-4 has real inference evidence but remains unqualified and unauthorized for training pending independent review and separate output permission.
 
-No human grades were created. No teacher was qualified. No student training started. Core Prima remains paused. The four-qualified-teacher, legal, training-output permission, independent grading, safety, holdout and corpus-integrity gates remain mandatory.
+No human grading records were attached to run 40. No teacher was qualified. No student training started. Core Prima remains paused. The four-qualified-teacher, legal, training-output permission, independent grading, safety, holdout and corpus-integrity gates remain mandatory.
 
 ## Repository and PR state
 
-PR #33 is now recorded by GitHub as closed and merged at 2026-11-16 03:11:17 UTC, merge commit fdf6b6a3066558901c7e69255dcfb906266789c0. This automation did not perform the merge. The original head branch is now 63 commits ahead and 4 commits behind the current main branch, so PR #33 cannot be updated in place. Follow-up evidence and the snapshot-manifest correction are prepared separately; no PR is merged by this work.
+PR #33 is now recorded by GitHub as closed and merged at 2026-11-16 03:11:17 UTC, merge commit fdf6b6a3066558901c7e69255dcfb906266789c0. This automation did not perform the merge. The original head branch is now 63 commits ahead and 4 commits behind the current main branch, so PR #33 cannot be updated in place. Follow-up evidence and the snapshot-manifest correction are in draft PR #39; no follow-up PR is merged.
