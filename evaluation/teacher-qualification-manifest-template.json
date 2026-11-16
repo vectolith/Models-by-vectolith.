@@ -1,0 +1,80 @@
+{
+  "schema_version": "vectolith-teacher-qualification-candidate/1.0",
+  "candidate_id": "",
+  "immutable_revision": "",
+  "gates": {
+    "snapshot": {
+      "status": "pending",
+      "immutable_revision": "",
+      "manifest_sha256": ""
+    },
+    "license_review": {
+      "status": "pending",
+      "license_text_sha256": "",
+      "legal_reviewer_id": "",
+      "reviewed_at": "",
+      "evidence_uri": ""
+    },
+    "loader_compatibility": {
+      "status": "pending",
+      "tested_revision": "",
+      "model_class": "",
+      "runtime_versions": {},
+      "remote_code": {
+        "status": "pending",
+        "audit_sha256": ""
+      }
+    },
+    "real_inference": {
+      "status": "pending",
+      "tested_revision": "",
+      "workflow_run_id": "",
+      "internal_run_id": "",
+      "expected_response_count": 0,
+      "response_count": 0,
+      "error_count": null,
+      "artifact_sha256": ""
+    },
+    "resource_measurement": {
+      "status": "pending",
+      "runner_type": "",
+      "device": "",
+      "peak_rss_bytes": null,
+      "mean_latency_seconds": null,
+      "compute_record_sha256": ""
+    },
+    "human_review": {
+      "status": "pending",
+      "independent_reviewer_ids": [],
+      "independence_attested": false,
+      "adjudication_complete": false,
+      "expected_response_count": 0,
+      "graded_response_count": 0,
+      "grade_report_sha256": "",
+      "adjudication_sha256": ""
+    },
+    "safety_review": {
+      "status": "pending",
+      "reviewer_id": "",
+      "report_sha256": ""
+    },
+    "holdout": {
+      "status": "pending",
+      "case_count": 0,
+      "leakage_audit_passed": false,
+      "audit_sha256": ""
+    },
+    "corpus_integrity": {
+      "status": "pending",
+      "corpus_sha256": "",
+      "duplicate_count": null,
+      "provenance_verified": false
+    },
+    "training_output_permission": {
+      "status": "pending",
+      "document_sha256": "",
+      "authorized_by": "",
+      "authorized_at": ""
+    }
+  }
+}
