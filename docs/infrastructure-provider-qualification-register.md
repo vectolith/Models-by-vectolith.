@@ -25,13 +25,16 @@ Official evidence:
 - [REST API v2 overview](https://www.runpod.io/blog/runpods-rest-api-v2-is-here-one-api-for-your-entire-gpu-stack) — API v2 is the current integration target and was described as public beta on 2026-08-25. It covers Pods, templates, volumes, GPU/data-center catalog and billing.
 - [REST API v1 deprecation notice](https://github.com/runpod/docs/blob/main/api-reference/overview.mdx) — v1 was scheduled for retirement on 2026-11-15, which has passed as of this register's assessment date. Do not build new integrations on v1.
 - [RunPod API MCP setup](https://github.com/runpod/docs/blob/main/get-started/mcp-servers.mdx) — official hosted MCP at https://mcp.runpod.io/ supports Sign in with RunPod OAuth, or API-key authentication. OAuth approval must be initiated by the account holder.
+- [RunPod API v2 Pod management](https://github.com/runpod/docs/blob/main/pods/manage-pods.mdx) — documents the v2 create/list/action/terminate flow. Pod creation uses nested fields such as `gpu: {id, count}`, `image`, `disk` and `mounts`; Pod status is asynchronous and must be polled.
 - [Terms of Service](https://www.runpod.io/legal/terms-of-service) — customer remains responsible for securing data, workloads and guest environments.
 
 Assessment:
 - Keep Secure Cloud as the candidate tier. Do not use Community Cloud for Vectolith training data until the third-party host, isolation, support and data-handling implications have been separately reviewed.
 - The public region list does not establish a Nigeria-based region or prove that a Nigerian customer can pass account/payment checks. The country-code option is a placement control, not evidence of Nigerian billing eligibility.
 - Published prices are indicative only. The final hourly rate, storage charges, taxes, network costs, GPU availability and payment acceptance must be checked in the authenticated account.
-- New automation must target REST API v2, not v1. v2 was still described as public beta in RunPod's August 2026 announcement; pin and validate against the live OpenAPI specification before production use.
+- New automation must target REST API v2, not v1. v1 has been retired. v2 was described as public beta in RunPod's August 2026 announcement; pin and validate against the live OpenAPI specification before production use. v2 uses nested create request bodies, paginated/wrapped list responses and standardized errors.
+- v2 Pod lifecycle: `POST /v2/pods`, poll `GET /v2/pods/{id}`, stop/start/restart with `POST /v2/pods/{id}/action`, and permanently remove with `DELETE /v2/pods/{id}`. Stop releases compute but can leave volume-storage charges; termination is the cleanup operation and deletes local Pod data, so artifacts must be exported first.
+- v2 removed spot/interruptible Pods and country-code placement. Do not use v1-only flags such as `countryCodes`, `interruptible`, or legacy stop-after/terminate-after controls in new integrations.
 - RunPod documents a hosted MCP with OAuth. That is the intended account-connection path if available in this ChatGPT environment; the account holder must still approve OAuth. An API key must never be pasted into chat or committed to GitHub.
 - No customer-data approval is granted by this assessment. Start only with synthetic/non-sensitive test data after the legal, security and data-handling review.
 
