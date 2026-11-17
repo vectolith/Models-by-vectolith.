@@ -60,7 +60,7 @@ Install optional dependencies:
 python -m pip install -e ".[training]"
 ~~~
 
-Call `train_student()` with the student's independently selected foundation model and immutable revision. It performs supervised fine-tuning with LoRA by default, uses the foundation tokenizer's chat template where available, and masks prompt tokens from the supervised loss. The accepted dataset must contain contributions from at least four distinct teachers.
+Call `train_student()` only after an approved foundation-selection manifest and at least four individually qualified teacher manifests exist. Pass `foundation_selection_manifest` and `teacher_qualification_manifest_dir` alongside the dataset. Training preflight revalidates the exact foundation ID/revision, all ten teacher gates, each dataset row's teacher identity/revision, and the row content digest before importing the training stack or loading model weights. It writes a digest-backed `training-preflight.json` and refuses non-empty output directories. Without the approved foundation decision and completed independent human/holdout/legal evidence, training is blocked.
 
 Prime and Prima must use separate foundations, curricula, datasets, training configurations, and held-out evaluations. Do not reuse one student's adapter as the other student's model.
 
