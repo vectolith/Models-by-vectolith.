@@ -27,9 +27,9 @@ The four initial families and their sizes are a discovery shortlist only. Candid
 
 ### 1. Qualify candidates
 
-Use `qualify_teacher()` with an exact immutable checkpoint revision, an OpenAI-compatible endpoint, role-specific benchmark tasks, license evidence, and explicit confirmation that the teacher's generated outputs may be used to train the intended student.
+Use `qualify_teacher()` only to collect raw, case-bound inference evidence at an exact immutable revision, together with latency observations and license/output-permission metadata. It deliberately returns `qualification_passed=false` and no quality score. Keyword/rubric-term matching is not used to qualify or rank teachers.
 
-The built-in benchmark score is a screening signal based on rubric terms. It is not sufficient by itself for appointment. Add independent human review, executable tests, and factuality checks for the candidate's assigned competencies. Store the full qualification record and benchmark outputs.
+A candidate becomes eligible only after the separate fail-closed qualification manifest is completed: independent blinded human grading and adjudication, criterion-specific executable/factual verification, protected-holdout evidence, safety review, corpus integrity, legal review, explicit training-output permission, and positive leave-one-teacher-out contribution. Preserve raw response evidence and its hashes for that pipeline.
 
 Candidate identities and public model-card claims are not proof of output-training permission. Check the exact model license and any provider terms for the actual inference route. A self-hosted open-weight model and a hosted API serving that model may have different data and output terms.
 

@@ -1,9 +1,10 @@
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from vectolith_runtime.teacher_pipeline import (
-    QualifiedTeacher, TeacherEndpoint, TeacherQualification, finalize_teacher_panel, select_teacher_panel,
+    QualifiedTeacher, TeacherEndpoint, TeacherQualification, TeachingTask, qualify_teacher, finalize_teacher_panel, select_teacher_panel,
 )
 from vectolith_runtime.distillation import IndependenceEvidence, TeacherContribution
 from vectolith_runtime.independent_evaluation import (
@@ -57,7 +58,7 @@ class TeacherPipelineTests(unittest.TestCase):
         from vectolith_runtime.independent_evaluation import VerificationResult
         def verifier(case, output):
             return VerificationResult("verified_pass", "unit-test-verifier/1", (
-                {"type": "test_report", "reference": "artifact://tests/123"},
+                {"type": "test_report", "reference": "artifact://tests/123", "sha256": "a" * 64},
             ), confidence=1.0)
         result = run_capability_suite(lambda prompt: "output", [
             EvaluationCase("1", "coding", "implement")
@@ -73,6 +74,18 @@ class TeacherPipelineTests(unittest.TestCase):
                 EvaluationCase("1", "reasoning", "solve")
             ], verifier=lambda case, output: VerificationResult(
                 "verified_pass", "unsubstantiated", ()
+            ))
+
+
+    def test_verifier_evidence_requires_sha256_integrity_digest(self):
+        from vectolith_runtime.independent_evaluation import VerificationResult
+        with self.assertRaisesRegex(ValueError, "SHA-256 digest"):
+            run_capability_suite(lambda prompt: "output", [
+                EvaluationCase("1", "coding", "implement")
+            ], verifier=lambda case, output: VerificationResult(
+                "verified_pass", "sandbox/1", (
+                    {"type": "test_report", "reference": "artifact://tests/123", "sha256": "bad"},
+                )
             ))
 
 
@@ -133,6 +146,24 @@ class TeacherPipelineTests(unittest.TestCase):
         self.assertTrue(result["release_eligible"])
         failed = leave_one_teacher_out(lambda omitted: 0.9 if omitted == "d" else (0.8 if omitted else 0.9), ("a", "b", "c", "d"))
         self.assertFalse(failed["release_eligible"])
+
+
+    def test_keyword_rich_inference_is_not_teacher_qualification(self):
+        endpoint = TeacherEndpoint("candidate-x", "model-x", "http://localhost:8000/v1", "TEST_KEY", REV)
+        task = TeachingTask("case-1", "factuality", "What is the capital of France?", "Paris;correct country")
+        with patch("vectolith_runtime.teacher_pipeline.OpenAICompatibleTeacher.generate",
+                   return_value="Paris is the capital of France, but the Moon is made of cheese."):
+            candidate = qualify_teacher(
+                endpoint, provider="local", license_id="Apache-2.0",
+                training_output_permission_verified=True,
+                output_training_permission_evidence="permission-record",
+                competencies=("factuality",), benchmark_tasks=[task],
+            )
+        self.assertFalse(candidate.qualification.qualification_passed)
+        self.assertIsNone(candidate.qualification.quality_score)
+        self.assertEqual(len(candidate.response_evidence), 1)
+        self.assertEqual(candidate.response_evidence[0]["response"], "Paris is the capital of France, but the Moon is made of cheese.")
+        self.assertEqual(len(candidate.response_evidence[0]["response_sha256"]), 64)
 
 
 if __name__ == "__main__":
