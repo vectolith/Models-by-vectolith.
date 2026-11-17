@@ -60,6 +60,15 @@ def valid_manifest(candidate_id="candidate-a"):
                 "graded_response_count": 180,
                 "grade_report_sha256": sha,
                 "adjudication_sha256": sha,
+                "agreement": {
+                    "status": "accepted",
+                    "metric": "quadratic_weighted_cohen_kappa",
+                    "value": 0.8,
+                    "minimum_required": 0.6,
+                    "report_sha256": sha,
+                    "policy_sha256": sha,
+                    "reviewer_independence_sha256": sha,
+                },
             },
             "safety_review": {
                 "status": "passed",
@@ -116,6 +125,16 @@ class TeacherQualificationGateTests(unittest.TestCase):
         result = evaluate_candidate(manifest)
         self.assertTrue(any(x.startswith("license_review:") for x in result["failed_gates"]))
         self.assertTrue(any(x.startswith("training_output_permission:") for x in result["failed_gates"]))
+
+    def test_low_or_unsubstantiated_inter_rater_agreement_blocks_qualification(self):
+        manifest = valid_manifest()
+        manifest["gates"]["human_review"]["agreement"]["value"] = 0.2
+        result = evaluate_candidate(manifest)
+        self.assertTrue(any("agreement_below_policy_threshold" in x for x in result["failed_gates"]))
+        manifest = valid_manifest()
+        manifest["gates"]["human_review"]["agreement"]["report_sha256"] = "invalid"
+        result = evaluate_candidate(manifest)
+        self.assertTrue(any("agreement_report_digest_missing" in x for x in result["failed_gates"]))
 
     def test_revision_mismatch_and_incomplete_human_review_block_qualification(self):
         manifest = valid_manifest()
