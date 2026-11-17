@@ -194,6 +194,7 @@ class TrainingPreflightTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,"unscored"):
                 validate_training_preflight(dataset_path=dataset,foundation_model="publisher/model",
                     foundation_revision=REV,foundation_selection_path=selection,teacher_manifest_dir=root/"teachers",
-                    holdout_deployment_manifest_path=deployment_path,holdout_evaluation_results_dir=results_dir)
+                    holdout_deployment_manifest_path=deployment_path,holdout_evaluation_results_dir=results_dir,
+                    training_execution_manifest_path=execution_path,training_code_revision=CODE_REV,training_config=TRAIN_CONFIG)
 
 if __name__=="__main__": unittest.main()
