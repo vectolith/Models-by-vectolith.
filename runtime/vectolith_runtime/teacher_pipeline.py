@@ -99,8 +99,12 @@ class TeacherAssignmentPanel:
                 raise ValueError(f"{q.teacher_id}: endpoint identity or immutable revision mismatch")
             if not re.fullmatch(r"[0-9a-f]{40}", q.immutable_revision):
                 raise ValueError(f"{q.teacher_id}: teacher revision must be an immutable commit SHA")
-            if not 0 < q.quality_score <= 1 or q.p50_latency_ms <= 0 or q.cost_per_million_tokens_usd < 0:
-                raise ValueError(f"{q.teacher_id}: invalid teacher quality or efficiency metrics")
+            if q.qualification_passed and (q.quality_score is None or not 0 < q.quality_score <= 1):
+                raise ValueError(f"{q.teacher_id}: a qualified teacher requires an independently established quality score")
+            if q.quality_score is not None and not 0 < q.quality_score <= 1:
+                raise ValueError(f"{q.teacher_id}: invalid quality score")
+            if q.p50_latency_ms <= 0 or q.cost_per_million_tokens_usd < 0:
+                raise ValueError(f"{q.teacher_id}: invalid efficiency metrics")
             if not q.license_id.strip() or not q.output_training_permission_evidence.strip():
                 raise ValueError(f"{q.teacher_id}: license and training-output permission evidence are required")
 
@@ -114,7 +118,7 @@ class TeacherQualification:
     training_output_permission_verified: bool
     output_training_permission_evidence: str
     assigned_competencies: tuple[str, ...]
-    quality_score: float
+    quality_score: float | None
     p50_latency_ms: float
     cost_per_million_tokens_usd: float
     qualification_suite: str
@@ -125,6 +129,8 @@ class TeacherQualification:
 class QualifiedTeacher:
     qualification: TeacherQualification
     endpoint: TeacherEndpoint
+    # Raw, case-bound outputs are retained for blinded human/executable review.
+    response_evidence: tuple[dict[str, Any], ...] = ()
 
 
 def qualify_teacher(
@@ -140,15 +146,15 @@ def qualify_teacher(
     cost_per_million_tokens_usd: float = 0.0,
     qualification_suite: str = "vectolith-teacher-qualification-v1",
 ) -> QualifiedTeacher:
-    """Run a local/hosted endpoint against a deterministic qualification suite.
+    """Collect immutable-revision inference evidence; never self-qualify a teacher.
 
-    The suite uses rubric keywords as a baseline signal, not a substitute for
-    human/executable correctness review. License and output-training permission
-    are explicit attestations supplied by the operator and must be backed by
-    retained evidence.
+    The legacy minimum_quality argument is retained for API compatibility but
+    is intentionally unused. Keyword/rubric-term matching is not a correctness
+    measure. The returned candidate remains unqualified until independent,
+    criterion-specific human/executable review and all qualification gates pass.
     """
     if not benchmark_tasks:
-        raise ValueError("teacher qualification requires benchmark tasks")
+        raise ValueError("teacher evidence collection requires benchmark tasks")
     if cost_per_million_tokens_usd < 0:
         raise ValueError("teacher token cost must be non-negative")
     if not re.fullmatch(r"[0-9a-f]{40}", endpoint.immutable_revision):
@@ -156,27 +162,29 @@ def qualify_teacher(
     if not license_id.strip() or not output_training_permission_evidence.strip():
         raise ValueError("license and training-output permission evidence are required")
     client = OpenAICompatibleTeacher(endpoint)
-    scores: list[float] = []
     latencies: list[float] = []
+    response_evidence: list[dict[str, Any]] = []
     for task in benchmark_tasks:
         started = time.monotonic()
         answer = client.generate([
-            {"role": "system", "content": "Answer the benchmark task accurately and follow the rubric. Do not fabricate sources or claim unperformed actions."},
+            {"role": "system", "content": "Answer the benchmark task accurately. Do not fabricate sources or claim unperformed actions."},
             {"role": "user", "content": f"Competency: {task.competency}\nRubric: {task.rubric}\nTask: {task.prompt}"},
         ], max_tokens=2048)
-        latencies.append((time.monotonic() - started) * 1000)
-        required = [part.strip().casefold() for part in task.rubric.split(";") if part.strip()]
-        matched = sum(term in answer.casefold() for term in required)
-        scores.append((matched / len(required)) if required else (1.0 if answer.strip() else 0.0))
+        latency_ms = (time.monotonic() - started) * 1000
+        latencies.append(latency_ms)
+        response_evidence.append({
+            "task_id": task.task_id,
+            "competency": task.competency,
+            "prompt": task.prompt,
+            "rubric": task.rubric,
+            "teacher_id": endpoint.teacher_id,
+            "teacher_revision": endpoint.immutable_revision,
+            "response": answer,
+            "response_sha256": hashlib.sha256(answer.encode("utf-8")).hexdigest(),
+            "latency_ms": round(latency_ms, 2),
+        })
     ordered = sorted(latencies)
     p50 = ordered[len(ordered) // 2]
-    quality = sum(scores) / len(scores)
-    passed = (
-        quality >= minimum_quality
-        and training_output_permission_verified
-        and bool(competencies)
-        and bool(endpoint.immutable_revision)
-    )
     qualification = TeacherQualification(
         teacher_id=endpoint.teacher_id,
         provider=provider,
@@ -185,13 +193,13 @@ def qualify_teacher(
         training_output_permission_verified=training_output_permission_verified,
         output_training_permission_evidence=output_training_permission_evidence,
         assigned_competencies=competencies,
-        quality_score=quality,
+        quality_score=None,
         p50_latency_ms=p50,
         cost_per_million_tokens_usd=cost_per_million_tokens_usd,
         qualification_suite=qualification_suite,
-        qualification_passed=passed,
+        qualification_passed=False,
     )
-    return QualifiedTeacher(qualification, endpoint)
+    return QualifiedTeacher(qualification, endpoint, tuple(response_evidence))
 
 
 def select_teacher_panel(
@@ -209,6 +217,7 @@ def select_teacher_panel(
         if item.qualification.qualification_passed
         and item.qualification.output_training_permission_evidence.strip()
         and item.qualification.training_output_permission_verified
+        and item.qualification.quality_score is not None
         and item.qualification.quality_score >= minimum_quality
         and item.endpoint.immutable_revision == item.qualification.immutable_revision
         and item.endpoint.teacher_id == item.qualification.teacher_id
