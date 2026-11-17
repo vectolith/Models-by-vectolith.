@@ -30,7 +30,7 @@ Official evidence:
 
 Assessment:
 - Keep Secure Cloud as the candidate tier. Do not use Community Cloud for Vectolith training data until the third-party host, isolation, support and data-handling implications have been separately reviewed.
-- The public region list does not establish a Nigeria-based region or prove that a Nigerian customer can pass account/payment checks. The country-code option is a placement control, not evidence of Nigerian billing eligibility.
+- The public region list does not establish a Nigeria-based region or prove that a Nigerian customer can pass account/payment checks. In v2, placement is constrained through explicit data-center IDs discovered from the catalog; that is not evidence of Nigerian billing eligibility.
 - Published prices are indicative only. The final hourly rate, storage charges, taxes, network costs, GPU availability and payment acceptance must be checked in the authenticated account.
 - New automation must target REST API v2, not v1. v1 has been retired. v2 was described as public beta in RunPod's August 2026 announcement; pin and validate against the live OpenAPI specification before production use. v2 uses nested create request bodies, paginated/wrapped list responses and standardized errors.
 - v2 Pod lifecycle: `POST /v2/pods`, poll `GET /v2/pods/{id}`, stop/start/restart with `POST /v2/pods/{id}/action`, and permanently remove with `DELETE /v2/pods/{id}`. Stop releases compute but can leave volume-storage charges; termination is the cleanup operation and deletes local Pod data, so artifacts must be exported first.
