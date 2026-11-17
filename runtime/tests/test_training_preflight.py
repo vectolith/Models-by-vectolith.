@@ -3,7 +3,7 @@ import hashlib, json, tempfile, unittest
 from pathlib import Path
 from vectolith_runtime.protected_holdout import DEPLOYMENT_SCHEMA, RESULT_SCHEMA, canonical_digest
 from vectolith_runtime.training_preflight import (
-    validate_foundation_selection, validate_teacher_manifest, validate_training_preflight,
+    validate_foundation_selection, validate_teacher_manifest, validate_training_preflight, validate_training_execution_manifest,
 )
 
 SHA="a"*64
@@ -196,5 +196,25 @@ class TrainingPreflightTests(unittest.TestCase):
                     foundation_revision=REV,foundation_selection_path=selection,teacher_manifest_dir=root/"teachers",
                     holdout_deployment_manifest_path=deployment_path,holdout_evaluation_results_dir=results_dir,
                     training_execution_manifest_path=execution_path,training_code_revision=CODE_REV,training_config=TRAIN_CONFIG)
+
+
+    def test_training_execution_approval_binds_exact_config_and_capacity(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            dataset=root/"dataset.jsonl"
+            dataset.write_text('{"accepted":true}\n')
+            approval_path=write_execution_approval(root,dataset)
+            manifest=json.loads(approval_path.read_text())
+            kwargs={"foundation_model":"publisher/model","foundation_revision":REV,
+                "dataset_sha256":hashlib.sha256(dataset.read_bytes()).hexdigest(),
+                "training_code_revision":CODE_REV,"training_config":TRAIN_CONFIG}
+            self.assertEqual(validate_training_execution_manifest(manifest,**kwargs),[])
+            manifest["capacity"]["estimated_peak_vram_bytes"]=1001
+            errors=validate_training_execution_manifest(manifest,**kwargs)
+            self.assertIn("training resource estimate exceeds measured capacity",errors)
+            manifest["capacity"]["estimated_peak_vram_bytes"]=800
+            manifest["approved_configuration"]["learning_rate"]=1e-4
+            errors=validate_training_execution_manifest(manifest,**kwargs)
+            self.assertIn("training configuration differs from approved configuration",errors)
 
 if __name__=="__main__": unittest.main()
