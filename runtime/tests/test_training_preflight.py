@@ -150,8 +150,8 @@ class TrainingPreflightTests(unittest.TestCase):
                 prompt=f"p{i}"; response=f"r{i}"
                 rows.append({"accepted":True,"teacher_id":f"teacher-{i}","teacher_revision":REV,
                     "prompt":prompt,"response":response,
-                    "content_sha256":hashlib.sha256((prompt+"\\0"+response).encode()).hexdigest()})
-            dataset=root/"data.jsonl"; dataset.write_text("\\n".join(json.dumps(x) for x in rows)+"\\n")
+                    "content_sha256":hashlib.sha256((prompt+"\0"+response).encode()).hexdigest()})
+            dataset=root/"data.jsonl"; dataset.write_text("\n".join(json.dumps(x) for x in rows)+"\n")
             with self.assertRaisesRegex(ValueError,"unscored"):
                 validate_training_preflight(dataset_path=dataset,foundation_model="publisher/model",
                     foundation_revision=REV,foundation_selection_path=selection,teacher_manifest_dir=root/"teachers",
