@@ -19,18 +19,23 @@ No provider API has been called, no account has been connected, and no instance 
 ### 1. RunPod Secure Cloud
 
 Official evidence:
-- [GPU pricing](https://www.runpod.io/pricing) — updated 2026-11-12; describes Pods, Serverless and Clusters. The published table includes L40S at $1.09/GPU-hour and H100 PCIe at $2.89/GPU-hour. Pricing depends on GPU, cloud tier, region and storage; confirm the exact quote in the console before approving a run.
-- [Cloud GPU overview](https://www.runpod.io/product/cloud-gpus) — describes 30+ regions across the US, Europe, Asia and Australia and per-second GPU billing.
-- [RunPod CLI Pod reference](https://docs.runpod.io/runpodctl/reference/runpodctl-remove-pods) — exposes Secure/Community cloud selection, datacenter selection, country-code filtering, stop-after and terminate-after controls.
-- [Terms of Service](https://www.runpod.io/legal/terms-of-service) — payment processing may involve Stripe and Crypto.com; card authorization can be declined. The terms describe a shared-responsibility model in which customers are responsible for securing their data, workloads and guest environments.
+- [GPU pricing](https://www.runpod.io/pricing) — updated 2026-11-12. Secure Cloud list prices include L40S at $1.09/GPU-hour and H100 PCIe at $2.89/GPU-hour. Actual quote depends on SKU, region, inventory and storage; re-check in the console immediately before deployment.
+- [Cloud GPU overview](https://www.runpod.io/product/cloud-gpus) — describes 31 global regions across the US, Europe, Asia and Australia and per-second billing.
+- [Billing overview](https://github.com/runpod/docs/blob/main/accounts-billing/billing.mdx) — says RunPod accepts Visa, Mastercard, American Express and other Stripe-supported cards; prepaid cards require at least $100 per transaction; cryptocurrency is accepted through integrated processors subject to any required KYC; business invoicing is available for transactions above $5,000. It documents a default $80/hour account spend limit.
+- [REST API v2 overview](https://www.runpod.io/blog/runpods-rest-api-v2-is-here-one-api-for-your-entire-gpu-stack) — API v2 is the current integration target and was described as public beta on 2026-08-25. It covers Pods, templates, volumes, GPU/data-center catalog and billing.
+- [REST API v1 deprecation notice](https://github.com/runpod/docs/blob/main/api-reference/overview.mdx) — v1 was scheduled for retirement on 2026-11-15, which has passed as of this register's assessment date. Do not build new integrations on v1.
+- [RunPod API MCP setup](https://github.com/runpod/docs/blob/main/get-started/mcp-servers.mdx) — official hosted MCP at https://mcp.runpod.io/ supports Sign in with RunPod OAuth, or API-key authentication. OAuth approval must be initiated by the account holder.
+- [Terms of Service](https://www.runpod.io/legal/terms-of-service) — customer remains responsible for securing data, workloads and guest environments.
 
 Assessment:
 - Keep Secure Cloud as the candidate tier. Do not use Community Cloud for Vectolith training data until the third-party host, isolation, support and data-handling implications have been separately reviewed.
 - The public region list does not establish a Nigeria-based region or prove that a Nigerian customer can pass account/payment checks. The country-code option is a placement control, not evidence of Nigerian billing eligibility.
 - Published prices are indicative only. The final hourly rate, storage charges, taxes, network costs, GPU availability and payment acceptance must be checked in the authenticated account.
+- New automation must target REST API v2, not v1. v2 was still described as public beta in RunPod's August 2026 announcement; pin and validate against the live OpenAPI specification before production use.
+- RunPod documents a hosted MCP with OAuth. That is the intended account-connection path if available in this ChatGPT environment; the account holder must still approve OAuth. An API key must never be pasted into chat or committed to GitHub.
 - No customer-data approval is granted by this assessment. Start only with synthetic/non-sensitive test data after the legal, security and data-handling review.
 
-**Qualification state: discovered, not approved.** Next evidence required: successful account onboarding and billing from the user's actual country, an available Secure Cloud datacenter and exact GPU SKU, current quote/quota, data-processing/retention terms, support path, and a controlled test instance with a verified cleanup and cost report.
+**Qualification state: discovered, not approved.** Next evidence required: successful account onboarding and billing from the actual account holder's country, an available Secure Cloud datacenter and exact GPU SKU, current quote/quota, data-processing/retention terms, support path, and a controlled test instance with a verified cleanup and cost report. The official hosted MCP OAuth path is documented, but no RunPod connector is currently exposed in this ChatGPT session.
 
 ### 2. Lambda Cloud
 
