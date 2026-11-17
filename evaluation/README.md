@@ -177,3 +177,8 @@ Use `teacher_qualification_gates.py` to validate candidate evidence against ten 
 ## Controlled completion-budget study
 
 The manual-only Core Prime completion study evaluates the same immutable candidates at 512, 768, or 1024 generated tokens while preserving per-response completion state (EOS, token-cap truncation, stopped-without-EOS, empty output, or error). It records one candidate per job, separate hardware observations, workflow provenance, raw outputs and hashes. It does not grade quality, rank candidates, or authorize training. Dispatch requires the workflow's explicit `confirm_study=true` input. See [completion-budget study protocol](../docs/core-prime-completion-budget-study.md).
+
+
+## Criterion-specific verification and protected holdout operations
+
+See [criterion verification and protected holdout operations](../docs/criterion-verification-and-protected-holdout.md) for the exact-answer, decimal, signed sandbox-attestation, and source-backed factuality verifier interfaces, plus the required external custody and evaluator isolation evidence. These verifiers do not replace blinded human grading for open-ended reasoning, and a deployment manifest does not provision a private holdout.
