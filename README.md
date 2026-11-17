@@ -40,6 +40,7 @@ A model-neutral registry publishes machine-readable capabilities and modality su
 - [Teacher infrastructure contribution system](docs/teacher-infrastructure-contributions.md)
 - [Infrastructure provider qualification register](docs/infrastructure-provider-qualification-register.md)
 - [Release policy](docs/release-policy.md)
+- [Repository-wide engineering remediation plan](docs/engineering-remediation-plan.md)
 
 ## Collective distillation
 
