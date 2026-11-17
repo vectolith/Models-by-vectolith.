@@ -36,3 +36,22 @@ jobs:
         run: python -m unittest discover -s runtime/tests -v
       - name: Run foundation evaluation tests
         run: python -m unittest discover -s evaluation/tests -v
+
+      - name: Export public review inputs for one-time local preparation
+        if: github.event_name == 'pull_request'
+        run: |
+          mkdir -p /tmp/vectolith-review-inputs/evaluation/fixtures
+          cp evaluation/fixtures/prime_benchmark_v1.jsonl /tmp/vectolith-review-inputs/evaluation/fixtures/
+          cp evaluation/fixtures/prime_qualification_v2.jsonl /tmp/vectolith-review-inputs/evaluation/fixtures/
+          cp evaluation/fixtures/prime_qualification_v3.jsonl /tmp/vectolith-review-inputs/evaluation/fixtures/
+          cp evaluation/fixtures/prime_qualification_v4.jsonl /tmp/vectolith-review-inputs/evaluation/fixtures/
+          cp evaluation/prepare_blinded_human_review.py /tmp/vectolith-review-inputs/evaluation/
+          cd /tmp/vectolith-review-inputs
+          zip -qr /tmp/vectolith-public-review-inputs.zip evaluation
+      - name: Upload one-time public review inputs
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: one-time-public-review-inputs
+          path: /tmp/vectolith-public-review-inputs.zip
+          retention-days: 1
