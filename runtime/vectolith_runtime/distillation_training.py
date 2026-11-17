@@ -51,6 +51,8 @@ def train_student(
         ) from exc
 
     output_path = Path(output_dir)
+    if output_path.exists() and any(output_path.iterdir()):
+        raise FileExistsError(f"refusing to train into a non-empty output directory: {output_path}")
     output_path.mkdir(parents=True, exist_ok=True)
     preflight_path = output_path / "training-preflight.json"
     if preflight_path.exists():
