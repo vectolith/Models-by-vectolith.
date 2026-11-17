@@ -51,7 +51,16 @@
       "expected_response_count": 0,
       "graded_response_count": 0,
       "grade_report_sha256": "",
-      "adjudication_sha256": ""
+      "adjudication_sha256": "",
+      "agreement": {
+        "status": "pending",
+        "metric": "",
+        "value": null,
+        "minimum_required": null,
+        "report_sha256": "",
+        "policy_sha256": "",
+        "reviewer_independence_sha256": ""
+      }
     },
     "safety_review": {
       "status": "pending",
