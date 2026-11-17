@@ -8,6 +8,10 @@ from vectolith_runtime.training_preflight import (
 
 SHA="a"*64
 REV="b"*40
+CODE_REV="d"*40
+TRAIN_CONFIG={"max_seq_length":4096,"epochs":1.0,"learning_rate":2e-5,
+    "per_device_batch_size":1,"gradient_accumulation_steps":8,
+    "validation_fraction":0.1,"seed":42,"use_lora":True}
 
 def teacher_manifest(name, deployment_sha=SHA, result_sha=SHA):
     return {
@@ -76,6 +80,38 @@ def write_holdout_evidence(root, teacher_ids):
         result_hashes[teacher_id] = hashlib.sha256(path.read_bytes()).hexdigest()
     return deployment_path, results_dir, deployment_sha, result_hashes
 
+
+def write_execution_approval(root, dataset_path):
+    manifest = {
+        "schema_version": "vectolith-training-execution-approval/1.0",
+        "status": "approved", "run_id": "core-prime-test-run-001",
+        "student_model_id": "core-prime", "foundation_model": "publisher/model",
+        "foundation_revision": REV,
+        "dataset_sha256": hashlib.sha256(dataset_path.read_bytes()).hexdigest(),
+        "training_code_revision": CODE_REV,
+        "approved_by": "training-approver", "approved_at": "2026-11-17T00:00:00Z",
+        "approval_reference": "approval://core-prime/test-run-001",
+        "approval_document_sha256": SHA,
+        "approved_configuration": TRAIN_CONFIG,
+        "budget": {"currency": "USD", "maximum_cost_usd": 0.0,
+            "maximum_runtime_seconds": 3600, "pricing_evidence_sha256": SHA,
+            "budget_reference": "budget://core-prime/test-run-001"},
+        "compute": {"provider": "test-provider", "account_or_project": "test-project",
+            "region": "local", "runner_type": "isolated-test-runner",
+            "accelerator_type": "test-gpu", "accelerator_count": 1,
+            "runtime_image": "vectolith/core-prime-trainer:test",
+            "runtime_image_sha256": SHA,
+            "software_versions": {"python": "3.11", "torch": "2.8",
+                "transformers": "4.55", "datasets": "3.0", "peft": "0.13", "accelerate": "1.0"}},
+        "capacity": {"available_vram_bytes": 1000, "available_ram_bytes": 10000,
+            "available_storage_bytes": 100000, "estimated_peak_vram_bytes": 800,
+            "estimated_peak_ram_bytes": 8000, "estimated_storage_bytes": 50000,
+            "resource_probe_sha256": SHA},
+    }
+    path = root / "training-execution-approval.json"
+    path.write_text(json.dumps(manifest))
+    return path
+
 class TrainingPreflightTests(unittest.TestCase):
     def test_teacher_requires_all_ten_gates(self):
         manifest=teacher_manifest("teacher-a")
@@ -104,8 +140,9 @@ class TrainingPreflightTests(unittest.TestCase):
                     "prompt":prompt,"response":response,
                     "content_sha256":hashlib.sha256((prompt+"\0"+response).encode()).hexdigest()})
             dataset=root/"data.jsonl"; dataset.write_text("\n".join(json.dumps(x) for x in rows)+"\n")
+            execution_path=write_execution_approval(root,dataset)
             validated, report=validate_training_preflight(dataset_path=dataset,foundation_model="publisher/model",
-                foundation_revision=REV,foundation_selection_path=selection,teacher_manifest_dir=root/"teachers",holdout_deployment_manifest_path=deployment_path,holdout_evaluation_results_dir=results_dir)
+                foundation_revision=REV,foundation_selection_path=selection,teacher_manifest_dir=root/"teachers",holdout_deployment_manifest_path=deployment_path,holdout_evaluation_results_dir=results_dir,training_execution_manifest_path=execution_path,training_code_revision=CODE_REV,training_config=TRAIN_CONFIG)
             self.assertEqual(len(validated),4)
             self.assertEqual(report["status"],"passed")
             self.assertEqual(len(report["teacher_manifest_sha256"]),4)
@@ -124,10 +161,11 @@ class TrainingPreflightTests(unittest.TestCase):
                 rows.append({"accepted":True,"teacher_id":f"teacher-{i}","teacher_revision":"c"*40,
                     "prompt":prompt,"response":response,"content_sha256":hashlib.sha256((prompt+"\0"+response).encode()).hexdigest()})
             dataset=root/"data.jsonl"; dataset.write_text("\n".join(json.dumps(x) for x in rows))
+            execution_path=write_execution_approval(root,dataset)
             with self.assertRaisesRegex(ValueError,"revision does not match"):
                 validate_training_preflight(dataset_path=dataset,foundation_model="publisher/model",
                     foundation_revision=REV,foundation_selection_path=selection,teacher_manifest_dir=root/"teachers",
-                    holdout_deployment_manifest_path=deployment_path,holdout_evaluation_results_dir=results_dir)
+                    holdout_deployment_manifest_path=deployment_path,holdout_evaluation_results_dir=results_dir,training_execution_manifest_path=execution_path,training_code_revision=CODE_REV,training_config=TRAIN_CONFIG)
 
     def test_training_preflight_rejects_unscored_holdout_cases_even_with_updated_digest(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -152,6 +190,7 @@ class TrainingPreflightTests(unittest.TestCase):
                     "prompt":prompt,"response":response,
                     "content_sha256":hashlib.sha256((prompt+"\0"+response).encode()).hexdigest()})
             dataset=root/"data.jsonl"; dataset.write_text("\n".join(json.dumps(x) for x in rows)+"\n")
+            execution_path=write_execution_approval(root,dataset)
             with self.assertRaisesRegex(ValueError,"unscored"):
                 validate_training_preflight(dataset_path=dataset,foundation_model="publisher/model",
                     foundation_revision=REV,foundation_selection_path=selection,teacher_manifest_dir=root/"teachers",
