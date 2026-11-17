@@ -89,7 +89,10 @@ class AdditionalTeacherSnapshotTests(unittest.TestCase):
             self.assertEqual(manifest["teacher_qualification"], "not_qualified")
             self.assertFalse(manifest["training_started"])
             self.assertGreater(manifest["file_count"], 0)
-            self.assertEqual([item["path"] for item in manifest["files"]], ["config.json", "weights.safetensors"])
+            self.assertEqual(
+                [item["path"] for item in manifest["files"]],
+                ["config.json", "weights.safetensors"],
+            )
             self.assertTrue(all(len(item["sha256"]) == 64 for item in manifest["files"]))
 
     def test_manifest_contains_complete_sorted_file_inventory_and_exact_hashes(self):
@@ -109,13 +112,19 @@ class AdditionalTeacherSnapshotTests(unittest.TestCase):
             for item in manifest["files"]:
                 file_path = snapshot / item["path"]
                 self.assertEqual(item["size_bytes"], file_path.stat().st_size)
-                self.assertEqual(item["sha256"], hashlib.sha256(file_path.read_bytes()).hexdigest())
+                self.assertEqual(
+                    item["sha256"],
+                    hashlib.sha256(file_path.read_bytes()).hexdigest(),
+                )
             self.assertEqual(
                 manifest["snapshot_size_bytes"],
                 sum(item["size_bytes"] for item in manifest["files"]),
             )
             license_entry = next(item for item in manifest["files"] if item["path"] == "LICENSE")
-            self.assertEqual(manifest["license_files"], [license_entry])
+            self.assertEqual(
+                manifest["license_files"],
+                [license_entry],
+            )
             self.assertEqual(manifest["snapshot_path_revision"], REVISION)
 
     def test_license_file_presence_completes_snapshot_gate(self):

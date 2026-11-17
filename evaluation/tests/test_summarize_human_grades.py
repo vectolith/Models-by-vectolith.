@@ -51,6 +51,28 @@ class HumanGradeSummaryTests(unittest.TestCase):
         self.assertEqual(correct["mean_score_0_to_4"], 4.0)
         self.assertEqual(correct["status"], "rubric_threshold_met")
 
+    def test_reports_weighted_inter_rater_agreement(self):
+        report = build_report(self.evidence, self.grades)
+        correct = next(row for row in report["criterion_results"] if row["criterion"] == "correct reasoning")
+        agreement = correct["inter_rater_agreement"]
+        self.assertEqual(agreement["status"], "computed")
+        self.assertEqual(agreement["mean_weighted_kappa"], 1.0)
+        self.assertEqual(agreement["exact_agreement_rate"], 1.0)
+
+    def test_reports_disagreement_without_converting_it_to_a_qualification(self):
+        grades = [dict(row) for row in self.grades]
+        for row in grades:
+            if row["evaluator_id"] == "reviewer-2":
+                row["rubric_scores"] = [
+                    {"criterion": "correct reasoning", "score": 0, "notes": "Disagree."},
+                    {"criterion": "clear explanation", "score": 0, "notes": "Disagree."},
+                ]
+        report = build_report(self.evidence, grades)
+        correct = next(row for row in report["criterion_results"] if row["criterion"] == "correct reasoning")
+        self.assertEqual(correct["inter_rater_agreement"]["mean_weighted_kappa"], 0.0)
+        self.assertEqual(correct["inter_rater_agreement"]["exact_agreement_rate"], 0.0)
+        self.assertEqual(report["qualification_decision"], "not_made")
+
     def test_insufficient_independent_evaluators_is_not_pass(self):
         report = build_report(self.evidence, self.grades[::2], min_evaluators=2)
         self.assertTrue(all(row["status"] == "insufficient_independent_evaluators" for row in report["criterion_results"]))
