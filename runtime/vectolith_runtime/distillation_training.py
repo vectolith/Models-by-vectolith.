@@ -9,6 +9,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from .training_preflight import validate_training_preflight
+
 
 def train_student(
     *,
@@ -16,6 +18,8 @@ def train_student(
     foundation_revision: str,
     dataset_path: str,
     output_dir: str,
+    foundation_selection_manifest: str,
+    teacher_qualification_manifest_dir: str,
     max_seq_length: int = 4096,
     epochs: float = 1.0,
     learning_rate: float = 2e-5,
@@ -24,6 +28,16 @@ def train_student(
     use_lora: bool = True,
 ) -> dict[str, Any]:
     """Run supervised fine-tuning on accepted teacher examples."""
+    rows, preflight = validate_training_preflight(
+        dataset_path=dataset_path,
+        foundation_model=foundation_model,
+        foundation_revision=foundation_revision,
+        foundation_selection_path=foundation_selection_manifest,
+        teacher_manifest_dir=teacher_qualification_manifest_dir,
+    )
+    teacher_ids = {row["teacher_id"] for row in rows}
+    counts = {teacher_id: sum(row["teacher_id"] == teacher_id for row in rows) for teacher_id in teacher_ids}
+
     try:
         from datasets import Dataset
         from transformers import (
@@ -36,23 +50,12 @@ def train_student(
             "training dependencies missing; install vectolith-runtime[training]"
         ) from exc
 
-    source = Path(dataset_path)
-    if not source.is_file():
-        raise FileNotFoundError(source)
-    rows = []
-    for line in source.read_text(encoding="utf-8").splitlines():
-        row = json.loads(line)
-        if row.get("accepted") is not True or not row.get("teacher_id") or not row.get("response"):
-            raise ValueError("training dataset contains an unaccepted or provenance-free row")
-        rows.append(row)
-    if not rows:
-        raise ValueError("training dataset is empty")
-    teacher_ids = {row["teacher_id"] for row in rows}
-    if len(teacher_ids) < 4:
-        raise ValueError("student training requires accepted examples from at least four distinct teachers")
-    counts = {teacher_id: sum(row["teacher_id"] == teacher_id for row in rows) for teacher_id in teacher_ids}
-    if any(count == 0 for count in counts.values()):
-        raise ValueError("every selected teacher must contribute accepted examples")
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    preflight_path = output_path / "training-preflight.json"
+    if preflight_path.exists():
+        raise FileExistsError(f"refusing to overwrite existing training preflight: {preflight_path}")
+    preflight_path.write_text(json.dumps(preflight, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
     tokenizer = AutoTokenizer.from_pretrained(foundation_model, revision=foundation_revision)
     if tokenizer.pad_token is None:
@@ -137,4 +140,6 @@ def train_student(
         "accepted_examples_by_teacher": counts,
         "accepted_tokens_by_teacher": token_counts,
         "training_method": "LoRA-SFT" if use_lora else "full-parameter-SFT",
+        "training_preflight": preflight,
+        "training_preflight_manifest": str(preflight_path),
     }
