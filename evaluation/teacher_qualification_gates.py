@@ -112,6 +112,20 @@ def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
     require("human_review", human.get("graded_response_count") == human.get("expected_response_count"), "review_coverage_incomplete")
     require("human_review", valid_sha(human.get("grade_report_sha256")), "grade_report_digest_missing")
     require("human_review", valid_sha(human.get("adjudication_sha256")), "adjudication_digest_missing")
+    agreement = human.get("agreement")
+    if not isinstance(agreement, dict):
+        failures.append("human_review:agreement_record_missing")
+        agreement = {}
+    require("human_review", agreement.get("status") == "accepted", "agreement_not_accepted")
+    require("human_review", agreement.get("metric") in ("quadratic_weighted_cohen_kappa", "krippendorff_alpha"), "agreement_metric_invalid")
+    value, threshold = agreement.get("value"), agreement.get("minimum_required")
+    require("human_review", isinstance(value, (int, float)) and not isinstance(value, bool) and -1 <= value <= 1, "agreement_value_invalid")
+    require("human_review", isinstance(threshold, (int, float)) and not isinstance(threshold, bool) and 0 <= threshold <= 1, "agreement_threshold_invalid")
+    if isinstance(value, (int, float)) and isinstance(threshold, (int, float)):
+        require("human_review", value >= threshold, "agreement_below_policy_threshold")
+    require("human_review", valid_sha(agreement.get("report_sha256")), "agreement_report_digest_missing")
+    require("human_review", valid_sha(agreement.get("policy_sha256")), "agreement_policy_digest_missing")
+    require("human_review", valid_sha(agreement.get("reviewer_independence_sha256")), "reviewer_independence_digest_missing")
 
     safety = gate("safety_review")
     require("safety_review", safety.get("status") == "passed", "not_passed")
