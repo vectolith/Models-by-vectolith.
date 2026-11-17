@@ -133,3 +133,67 @@ def validate_training_preflight(*, dataset_path: str|Path, foundation_model: str
     teacher_ids={row["teacher_id"] for row in rows}
     if len(teacher_ids)<4: raise ValueError("student training requires at least four distinct qualified teachers")
     return rows,{"schema_version":"vectolith-training-preflight/1.0","status":"passed","foundation_model":foundation_model,"foundation_revision":foundation_revision,"foundation_selection_sha256":hashlib.sha256(selection_path.read_bytes()).hexdigest(),"protected_holdout_deployment_sha256":holdout_deployment_sha256,"dataset_sha256":hashlib.sha256(dataset.read_bytes()).hexdigest(),"training_rows":len(rows),"qualified_teacher_ids":sorted(teacher_ids),"teacher_manifest_sha256":{key:manifest_hashes[key] for key in sorted(teacher_ids)}}
+
+
+EXECUTION_SCHEMA = "vectolith-training-execution-approval/1.0"
+
+def validate_training_execution_manifest(
+    manifest: dict[str,Any], *, foundation_model: str, foundation_revision: str,
+    dataset_sha256: str, training_code_revision: str, training_config: dict[str,Any],
+) -> list[str]:
+    """Validate run-specific compute, budget, and configuration approval."""
+    errors=[]
+    if not isinstance(manifest,dict) or manifest.get("schema_version")!=EXECUTION_SCHEMA:
+        return ["unsupported_or_missing_training_execution_schema"]
+    if manifest.get("status")!="approved": errors.append("training execution is not approved")
+    bindings={
+        "student_model_id":"core-prime",
+        "foundation_model":foundation_model,
+        "foundation_revision":foundation_revision,
+        "dataset_sha256":dataset_sha256,
+        "training_code_revision":training_code_revision,
+    }
+    for field,expected in bindings.items():
+        if manifest.get(field)!=expected: errors.append(f"training execution {field} mismatch")
+    if not manifest.get("run_id"): errors.append("training execution run_id missing")
+    if not manifest.get("approved_by") or not manifest.get("approval_reference") or not _time(manifest.get("approved_at")):
+        errors.append("training execution approval provenance missing")
+    if not _sha(manifest.get("approval_document_sha256")): errors.append("training execution approval document digest missing")
+    if manifest.get("approved_configuration")!=training_config:
+        errors.append("training configuration differs from approved configuration")
+    budget=manifest.get("budget")
+    if not isinstance(budget,dict): budget={}
+    cost=budget.get("maximum_cost_usd")
+    runtime=budget.get("maximum_runtime_seconds")
+    if (isinstance(cost,bool) or not isinstance(cost,(int,float)) or cost<0 or
+        isinstance(runtime,bool) or not isinstance(runtime,int) or runtime<=0):
+        errors.append("training budget cap is missing or invalid")
+    if budget.get("currency")!="USD" or not _sha(budget.get("pricing_evidence_sha256")) or not budget.get("budget_reference"):
+        errors.append("training budget evidence is incomplete")
+    compute=manifest.get("compute")
+    if not isinstance(compute,dict): compute={}
+    for field in ("provider","account_or_project","region","runner_type","accelerator_type","runtime_image"):
+        if not isinstance(compute.get(field),str) or not compute[field].strip():
+            errors.append(f"training compute field missing:{field}")
+    devices=compute.get("accelerator_count")
+    if isinstance(devices,bool) or not isinstance(devices,int) or devices<1:
+        errors.append("training accelerator count invalid")
+    versions=compute.get("software_versions")
+    required_versions={"python","torch","transformers","datasets","peft","accelerate"}
+    if not isinstance(versions,dict) or not required_versions.issubset(versions) or any(not versions.get(k) for k in required_versions):
+        errors.append("training software versions incomplete")
+    if not _sha(compute.get("runtime_image_sha256")): errors.append("training runtime image digest missing")
+    capacity=manifest.get("capacity")
+    if not isinstance(capacity,dict): capacity={}
+    resource_fields=("available_vram_bytes","available_ram_bytes","available_storage_bytes",
+                     "estimated_peak_vram_bytes","estimated_peak_ram_bytes","estimated_storage_bytes")
+    values={field:capacity.get(field) for field in resource_fields}
+    if any(isinstance(v,bool) or not isinstance(v,int) or v<0 for v in values.values()):
+        errors.append("training capacity measurements are invalid")
+    elif (values["available_ram_bytes"]<=0 or values["available_storage_bytes"]<=0 or
+          values["estimated_peak_vram_bytes"]>values["available_vram_bytes"] or
+          values["estimated_peak_ram_bytes"]>values["available_ram_bytes"] or
+          values["estimated_storage_bytes"]>values["available_storage_bytes"]):
+        errors.append("training resource estimate exceeds measured capacity")
+    if not _sha(capacity.get("resource_probe_sha256")): errors.append("training resource probe digest missing")
+    return errors
