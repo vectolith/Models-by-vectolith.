@@ -22,7 +22,7 @@ def teacher_manifest(name, deployment_sha=SHA, result_sha=SHA):
             "human_review":{"status":"passed","independent_reviewer_ids":["r1","r2"],"independence_attested":True,"adjudication_complete":True,"expected_response_count":10,"graded_response_count":10,"grade_report_sha256":SHA,"adjudication_sha256":SHA,
                 "agreement":{"status":"accepted","metric":"quadratic_weighted_cohen_kappa","value":0.8,"minimum_required":0.6,"report_sha256":SHA,"policy_sha256":SHA,"reviewer_independence_sha256":SHA}},
             "safety_review":{"status":"passed","reviewer_id":"safety-1","report_sha256":SHA},
-            "holdout":{"status":"passed","case_count":20,"leakage_audit_passed":True,"audit_sha256":SHA,"deployment_manifest_sha256":deployment_sha,"evaluation_report_sha256":result_sha},
+            "holdout":{"status":"passed","case_count":100,"leakage_audit_passed":True,"audit_sha256":SHA,"deployment_manifest_sha256":deployment_sha,"evaluation_report_sha256":result_sha},
             "corpus_integrity":{"status":"passed","corpus_sha256":SHA,"duplicate_count":0,"provenance_verified":True},
             "training_output_permission":{"status":"granted","document_sha256":SHA,"authorized_by":"rights-holder","authorized_at":"2026-11-17T00:00:00Z"},
         }
@@ -32,7 +32,12 @@ def foundation_manifest():
     return {"schema_version":"vectolith-foundation-selection/1.0","decision_status":"approved",
         "selected_model_id":"publisher/model","immutable_revision":REV,
         "comparison_report_sha256":SHA,"approved_by":"approver","approved_at":"2026-11-17T00:00:00Z",
-        "evaluation_evidence":[{"kind":"protected-holdout-report","sha256":SHA}]}
+        "evaluation_evidence":[
+            {"kind":kind,"sha256":SHA,"model_id":"publisher/model","immutable_revision":REV}
+            for kind in ("candidate_metadata","license_review","training_output_permission",
+                "loader_compatibility","resource_measurement","capability_evaluation",
+                "protected_holdout","baseline_comparison")
+        ]}
 
 def write_holdout_evidence(root, teacher_ids):
     deployment = {
