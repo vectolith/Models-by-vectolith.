@@ -143,6 +143,8 @@ def train_student(
     output_dir: str,
     foundation_selection_manifest: str,
     teacher_qualification_manifest_dir: str,
+    holdout_deployment_manifest: str,
+    holdout_evaluation_results_dir: str,
     training_code_revision: str,
     max_seq_length: int = 4096,
     epochs: float = 1.0,
@@ -169,6 +171,8 @@ def train_student(
         foundation_revision=foundation_revision,
         foundation_selection_path=foundation_selection_manifest,
         teacher_manifest_dir=teacher_qualification_manifest_dir,
+        holdout_deployment_manifest_path=holdout_deployment_manifest,
+        holdout_evaluation_results_dir=holdout_evaluation_results_dir,
     )
     train_rows, validation_rows, split = split_dataset_by_prompt_group(
         rows, validation_fraction=validation_fraction, seed=seed
@@ -192,6 +196,7 @@ def train_student(
         "foundation_selection_manifest_sha256": preflight["foundation_selection_sha256"],
         "dataset_sha256": preflight["dataset_sha256"],
         "teacher_manifest_sha256": preflight["teacher_manifest_sha256"],
+        "protected_holdout_deployment_sha256": preflight["protected_holdout_deployment_sha256"],
         "teacher_ids": sorted(teacher_ids),
         "accepted_examples_by_teacher": counts,
         "training_split": split,
