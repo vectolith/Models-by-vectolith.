@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from evaluation.run_eval import RunConfig, load_cases, run_case
+from evaluation.holdout_authorization import verify_authorization, claim_and_audit_run
 
 MANIFEST_SCHEMA = "vectolith-private-holdout-manifest/1.0"
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -92,15 +93,40 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-tokens", type=int, default=2048)
     parser.add_argument("--timeout", type=float, default=180.0)
     parser.add_argument("--api-key-env", default="VECTOLITH_INFERENCE_API_KEY")
+    parser.add_argument("--authorization-token", type=Path, default=os.environ.get("VECTOLITH_HOLDOUT_AUTH_TOKEN"))
+    parser.add_argument("--authorization-secret-env", default="VECTOLITH_HOLDOUT_AUTH_SECRET")
+    parser.add_argument("--principal-id", default=os.environ.get("VECTOLITH_HOLDOUT_PRINCIPAL_ID"))
+    parser.add_argument("--audit-dir", type=Path, default=os.environ.get("VECTOLITH_HOLDOUT_AUDIT_DIR"))
     args = parser.parse_args(argv)
     if not args.suite or not args.manifest or not args.expected_sha256 or not args.expected_version:
         parser.error("private suite, manifest, expected SHA-256 and expected version must be supplied via flags or protected environment variables")
     if len(args.expected_sha256) != 64 or any(c not in "0123456789abcdef" for c in args.expected_sha256.lower()):
         parser.error("--expected-sha256 must be a 64-character hexadecimal digest")
     try:
+        if not args.authorization_token or not args.principal_id or not args.audit_dir:
+            raise ValueError("signed authorization token, principal ID and private audit directory are required")
+        secret = os.environ.get(args.authorization_secret_env)
+        if not secret:
+            raise ValueError(f"{args.authorization_secret_env} must be supplied by the protected secret store")
+        authorization = verify_authorization(
+            Path(args.authorization_token), secret,
+            expected={
+                "dataset_version": args.expected_version,
+                "dataset_sha256": args.expected_sha256.lower(),
+                "candidate_id": args.candidate_id,
+                "model_revision": args.revision,
+                "role": args.role,
+                "principal_id": args.principal_id,
+            },
+        )
         cases, holdout = load_private_holdout(
             args.suite, args.manifest, args.expected_sha256.lower(),
             args.expected_version, args.role,
+        )
+        claim_and_audit_run(
+            Path(args.audit_dir), authorization,
+            candidate_id=args.candidate_id, revision=args.revision,
+            dataset_version=holdout["dataset_version"], dataset_sha256=holdout["sha256"],
         )
         output = args.output.expanduser().resolve()
         if output == REPO_ROOT or REPO_ROOT in output.parents:
@@ -116,7 +142,10 @@ def main(argv: list[str] | None = None) -> int:
             max_tokens=args.max_tokens, timeout_seconds=args.timeout,
             api_key=os.environ.get(args.api_key_env),
         )
-        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+        # Never overwrite a prior run artifact; resist symlink following.
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
         fd = os.open(output, flags, 0o600)
         failures = 0
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
