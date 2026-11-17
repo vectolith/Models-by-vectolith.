@@ -95,3 +95,23 @@ The caller must run the independence test in an isolated process/container with 
 ## Current execution boundary
 
 The repository contains the endpoint adapter, qualification and panel selection, provenance-preserving corpus generation, optional LoRA SFT, capability/ablation helpers, and a fail-closed release decision. It does not yet appoint real teachers or launch a run. Exact teacher revisions, license/terms evidence, student foundation selection, evaluation datasets, verified compute availability and budget approval remain prerequisites. No provider calls, paid inference, model downloads or training jobs are started by CI.
+
+
+### Training-run safeguards added
+
+The SFT runner now requires the immutable training-code commit SHA and records it
+with the exact foundation revision, selection-manifest digest, dataset digest,
+teacher-manifest digests, seed, hyperparameters, and data-split provenance in
+`training-run-manifest.json`.
+
+Before loading weights, the runner creates a deterministic validation partition
+grouped by prompt digest. Every teacher response to the same prompt stays on the
+same side of the split, preventing one teacher's answer to a prompt from leaking
+into validation while another teacher's answer to that prompt remains in training.
+The split must retain every teacher in training and at least two distinct prompt
+groups in validation. Datasets too small to satisfy these conditions are rejected.
+
+The trainer evaluates at each epoch, retains the best checkpoint by validation
+loss, and records final validation metrics. Validation loss is only a training
+diagnostic; it does not replace the independent capability suite, protected
+holdout, or human review. Use a fresh, empty output directory for every run.
