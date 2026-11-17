@@ -17,7 +17,7 @@ def _time(value: Any) -> bool:
     try: datetime.fromisoformat(value.replace("Z","+00:00")); return True
     except ValueError: return False
 
-def validate_teacher_manifest(manifest: dict[str,Any], teacher_id: str, revision: str, *, holdout_deployment_sha256: str | None = None, holdout_evaluation_sha256: str | None = None) -> list[str]:
+def validate_teacher_manifest(manifest: dict[str,Any], teacher_id: str, revision: str, *, holdout_deployment_sha256: str | None = None, holdout_evaluation_sha256: str | None = None, holdout_case_count: int | None = None, holdout_audit_sha256: str | None = None) -> list[str]:
     errors=[]
     if manifest.get("schema_version")!=TEACHER_SCHEMA: errors.append("unsupported teacher manifest schema")
     if manifest.get("candidate_id")!=teacher_id: errors.append("teacher identity mismatch")
@@ -53,6 +53,8 @@ def validate_teacher_manifest(manifest: dict[str,Any], teacher_id: str, revision
     if (holdout.get("status")!="passed" or not isinstance(holdout.get("case_count"),int) or holdout.get("case_count",0)<=0 or holdout.get("leakage_audit_passed") is not True or not _sha(holdout.get("audit_sha256")) or not _sha(holdout.get("deployment_manifest_sha256")) or not _sha(holdout.get("evaluation_report_sha256"))): errors.append("protected holdout gate failed")
     if holdout_deployment_sha256 is not None and holdout.get("deployment_manifest_sha256") != holdout_deployment_sha256: errors.append("teacher holdout deployment digest mismatch")
     if holdout_evaluation_sha256 is not None and holdout.get("evaluation_report_sha256") != holdout_evaluation_sha256: errors.append("teacher holdout evaluation report digest mismatch")
+    if holdout_case_count is not None and holdout.get("case_count") != holdout_case_count: errors.append("teacher holdout case count mismatch")
+    if holdout_audit_sha256 is not None and holdout.get("audit_sha256") != holdout_audit_sha256: errors.append("teacher holdout audit digest mismatch")
     corpus=gate("corpus_integrity")
     if corpus.get("status")!="passed" or not _sha(corpus.get("corpus_sha256")) or corpus.get("duplicate_count")!=0 or corpus.get("provenance_verified") is not True: errors.append("corpus integrity gate failed")
     perm=gate("training_output_permission")
@@ -68,7 +70,18 @@ def validate_foundation_selection(manifest: dict[str,Any], model_id: str, revisi
     if not _sha(manifest.get("comparison_report_sha256")): errors.append("foundation comparison report digest missing")
     if not manifest.get("approved_by") or not _time(manifest.get("approved_at")): errors.append("foundation approval provenance missing")
     evidence=manifest.get("evaluation_evidence")
-    if not isinstance(evidence,list) or not evidence or any(not isinstance(x,dict) or not _sha(x.get("sha256")) or not x.get("kind") for x in evidence): errors.append("foundation evaluation evidence is incomplete")
+    required_kinds = {"candidate_metadata", "license_review", "training_output_permission",
+        "loader_compatibility", "resource_measurement", "capability_evaluation",
+        "protected_holdout", "baseline_comparison"}
+    if not isinstance(evidence,list) or not evidence or any(
+        not isinstance(x,dict) or not _sha(x.get("sha256")) or not x.get("kind")
+        or x.get("model_id") != model_id or x.get("immutable_revision") != revision
+        for x in evidence
+    ):
+        errors.append("foundation evaluation evidence is incomplete or not bound to the exact candidate revision")
+    elif not required_kinds.issubset({item["kind"] for item in evidence}):
+        errors.append("foundation evaluation evidence is missing required categories: " +
+            ", ".join(sorted(required_kinds - {item["kind"] for item in evidence})))
     return errors
 
 def validate_training_preflight(*, dataset_path: str|Path, foundation_model: str, foundation_revision: str, foundation_selection_path: str|Path, teacher_manifest_dir: str|Path, holdout_deployment_manifest_path: str|Path, holdout_evaluation_results_dir: str|Path) -> tuple[list[dict[str,Any]],dict[str,Any]]:
@@ -98,6 +111,8 @@ def validate_training_preflight(*, dataset_path: str|Path, foundation_model: str
             value,teacher_id,revision,
             holdout_deployment_sha256=holdout_deployment_sha256,
             holdout_evaluation_sha256=holdout_result_sha256,
+            holdout_case_count=holdout_deployment["case_count"],
+            holdout_audit_sha256=holdout_deployment["audit"]["leakage_audit_sha256"],
         )
         if errors: raise ValueError(f"{teacher_id}: qualification preflight failed: "+"; ".join(errors))
         manifests[teacher_id]=revision
