@@ -11,7 +11,7 @@ Every candidate requires a completed, revision-pinned manifest based on [the qua
 3. **Loader compatibility:** the same immutable revision was loaded successfully, with model class and runtime versions recorded. Remote code must be disabled or separately audited with a source digest.
 4. **Real inference:** completed run and internal run IDs, artifact digest, exact expected response coverage, zero inference errors, and matching revision.
 5. **Resource measurement:** runner/device, peak RSS, mean latency, and compute-record digest.
-6. **Independent human review:** at least two distinct reviewer IDs, explicit independence attestation, full response coverage, completed adjudication, grade-report digest, and adjudication digest.
+6. **Independent human review:** at least two distinct reviewer IDs, explicit independence attestation, full response coverage, completed adjudication, grade-report and adjudication digests, plus an accepted inter-rater agreement record. The record must identify the statistic, observed value, predeclared minimum threshold, agreement-report digest, threshold-policy digest, and reviewer-independence evidence digest. Agreement below the recorded threshold blocks qualification.
 7. **Safety review:** named reviewer and report digest, with an explicit pass.
 8. **Private holdout:** non-empty holdout evaluation, passed leakage audit, and audit digest.
 9. **Corpus integrity:** corpus digest, zero duplicate records, and verified provenance.

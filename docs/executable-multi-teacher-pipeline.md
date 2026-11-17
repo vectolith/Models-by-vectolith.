@@ -66,7 +66,7 @@ Prime and Prima must use separate foundations, curricula, datasets, training con
 
 ### 5. Evaluate independently and ablate
 
-`run_capability_suite()` executes a caller-supplied student inference function against a versioned evaluation suite. Replace simple keyword rubrics with role-appropriate executable checks and human-graded rubrics before release.
+`run_capability_suite()` executes a caller-supplied student inference function against a versioned evaluation suite. It never scores keyword overlap. Without a criterion-specific verifier carrying digest-backed evidence, every case remains unscored and requires independent human review; no pass rate is emitted. Use isolated sandbox reports for code, deterministic reference checks for objective mathematics, source-claim review for factual tasks, and blinded expert rubrics/adjudication for reasoning that lacks a formal oracle.
 
 `leave_one_teacher_out()` accepts a controlled retraining/evaluation callback. It compares the full-panel student against one retrained student per teacher with that teacher's examples removed. Every teacher must show a positive held-out score delta. This is computationally expensive and is not run automatically. `train_student()` returns accepted example counts and token counts measured with the student's tokenizer; pass these, the dataset shard ID and the ablation report to `finalize_teacher_panel()` to create the post-training contribution record.
 
