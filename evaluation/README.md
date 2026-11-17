@@ -172,3 +172,8 @@ Human disagreement records are generated and validated separately with \`evaluat
 ## Fail-closed teacher qualification
 
 Use `teacher_qualification_gates.py` to validate candidate evidence against ten independent gates and enforce the minimum four-teacher Core Prime cohort. Inference success is not qualification. Legal permission to use generated outputs for training is separate from the model-weight license. Human review requires two independent reviewers and completed adjudication; protected-holdout evidence, corpus integrity, safety, and resource evidence remain mandatory. The template is intentionally empty and no candidate is approved by default. See [Core Prime teacher qualification gates](../docs/core-prime-four-teacher-qualification.md).
+
+
+## Controlled completion-budget study
+
+The manual-only Core Prime completion study evaluates the same immutable candidates at 512, 768, or 1024 generated tokens while preserving per-response completion state (EOS, token-cap truncation, stopped-without-EOS, empty output, or error). It records one candidate per job, separate hardware observations, workflow provenance, raw outputs and hashes. It does not grade quality, rank candidates, or authorize training. Dispatch requires the workflow's explicit `confirm_study=true` input. See [completion-budget study protocol](../docs/core-prime-completion-budget-study.md).
