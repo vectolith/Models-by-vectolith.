@@ -145,6 +145,7 @@ def train_student(
     teacher_qualification_manifest_dir: str,
     holdout_deployment_manifest: str,
     holdout_evaluation_results_dir: str,
+    training_execution_manifest: str,
     training_code_revision: str,
     max_seq_length: int = 4096,
     epochs: float = 1.0,
@@ -165,6 +166,12 @@ def train_student(
     if per_device_batch_size < 1 or gradient_accumulation_steps < 1:
         raise ValueError("batch size and gradient accumulation must be positive")
 
+    training_config = {
+        "max_seq_length": max_seq_length, "epochs": epochs, "learning_rate": learning_rate,
+        "per_device_batch_size": per_device_batch_size,
+        "gradient_accumulation_steps": gradient_accumulation_steps,
+        "validation_fraction": validation_fraction, "seed": seed, "use_lora": use_lora,
+    }
     rows, preflight = validate_training_preflight(
         dataset_path=dataset_path,
         foundation_model=foundation_model,
@@ -173,6 +180,9 @@ def train_student(
         teacher_manifest_dir=teacher_qualification_manifest_dir,
         holdout_deployment_manifest_path=holdout_deployment_manifest,
         holdout_evaluation_results_dir=holdout_evaluation_results_dir,
+        training_execution_manifest_path=training_execution_manifest,
+        training_code_revision=training_code_revision,
+        training_config=training_config,
     )
     train_rows, validation_rows, split = split_dataset_by_prompt_group(
         rows, validation_fraction=validation_fraction, seed=seed
@@ -197,15 +207,12 @@ def train_student(
         "dataset_sha256": preflight["dataset_sha256"],
         "teacher_manifest_sha256": preflight["teacher_manifest_sha256"],
         "protected_holdout_deployment_sha256": preflight["protected_holdout_deployment_sha256"],
+        "training_execution_manifest_sha256": preflight["training_execution_manifest_sha256"],
+        "training_run_id": preflight["training_run_id"],
         "teacher_ids": sorted(teacher_ids),
         "accepted_examples_by_teacher": counts,
         "training_split": split,
-        "configuration": {
-            "max_seq_length": max_seq_length, "epochs": epochs, "learning_rate": learning_rate,
-            "per_device_batch_size": per_device_batch_size,
-            "gradient_accumulation_steps": gradient_accumulation_steps,
-            "validation_fraction": validation_fraction, "seed": seed, "use_lora": use_lora,
-        },
+        "configuration": training_config,
         "evaluation_policy": {
             "strategy": "epoch", "metric": "eval_loss", "load_best_model_at_end": True,
             "note": "Validation loss is a training diagnostic, not a substitute for independent capability evaluation.",
