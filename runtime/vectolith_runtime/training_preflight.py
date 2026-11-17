@@ -1,6 +1,6 @@
 """Evidence gates for Core Prime training preflight; no training dependencies imported."""
 from __future__ import annotations
-import hashlib, json, re
+import hashlib, json, re, math
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -175,7 +175,7 @@ def validate_training_execution_manifest(
     if not isinstance(budget,dict): budget={}
     cost=budget.get("maximum_cost_usd")
     runtime=budget.get("maximum_runtime_seconds")
-    if (isinstance(cost,bool) or not isinstance(cost,(int,float)) or cost<0 or
+    if (isinstance(cost,bool) or not isinstance(cost,(int,float)) or not math.isfinite(cost) or cost<0 or
         isinstance(runtime,bool) or not isinstance(runtime,int) or runtime<=0):
         errors.append("training budget cap is missing or invalid")
     if budget.get("currency")!="USD" or not _sha(budget.get("pricing_evidence_sha256")) or not budget.get("budget_reference"):
