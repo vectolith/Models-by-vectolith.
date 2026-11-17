@@ -108,8 +108,10 @@ class TrainingPreflightTests(unittest.TestCase):
     def test_dataset_teacher_revision_mismatch_blocks_preflight(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp); (root/"teachers").mkdir()
-            for i in range(4):
-                (root/"teachers"/f"teacher-{i}.json").write_text(json.dumps(teacher_manifest(f"teacher-{i}")))
+            teacher_ids=[f"teacher-{i}" for i in range(4)]
+            deployment_path, results_dir, deployment_sha, result_hashes = write_holdout_evidence(root, teacher_ids)
+            for teacher_id in teacher_ids:
+                (root/"teachers"/f"{teacher_id}.json").write_text(json.dumps(teacher_manifest(teacher_id,deployment_sha,result_hashes[teacher_id])))
             selection=root/"foundation.json"; selection.write_text(json.dumps(foundation_manifest()))
             rows=[]
             for i in range(4):
@@ -119,6 +121,7 @@ class TrainingPreflightTests(unittest.TestCase):
             dataset=root/"data.jsonl"; dataset.write_text("\n".join(json.dumps(x) for x in rows))
             with self.assertRaisesRegex(ValueError,"revision does not match"):
                 validate_training_preflight(dataset_path=dataset,foundation_model="publisher/model",
-                    foundation_revision=REV,foundation_selection_path=selection,teacher_manifest_dir=root/"teachers")
+                    foundation_revision=REV,foundation_selection_path=selection,teacher_manifest_dir=root/"teachers",
+                    holdout_deployment_manifest_path=deployment_path,holdout_evaluation_results_dir=results_dir)
 
 if __name__=="__main__": unittest.main()
