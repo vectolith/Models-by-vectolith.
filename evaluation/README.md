@@ -167,3 +167,8 @@ Additional verified follow-up artifacts from Core Prime runs 42 and 43 are recor
 
 
 Human disagreement records are generated and validated separately with \`evaluation/prepare_human_adjudication.py\`; adjudication never overwrites the original reviewer grades. See the operations guide for the third-party adjudicator workflow.
+
+
+## Fail-closed teacher qualification
+
+Use `teacher_qualification_gates.py` to validate candidate evidence against ten independent gates and enforce the minimum four-teacher Core Prime cohort. Inference success is not qualification. Legal permission to use generated outputs for training is separate from the model-weight license. Human review requires two independent reviewers and completed adjudication; protected-holdout evidence, corpus integrity, safety, and resource evidence remain mandatory. The template is intentionally empty and no candidate is approved by default. See [Core Prime teacher qualification gates](../docs/core-prime-four-teacher-qualification.md).
