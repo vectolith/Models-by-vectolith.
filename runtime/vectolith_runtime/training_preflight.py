@@ -84,7 +84,7 @@ def validate_foundation_selection(manifest: dict[str,Any], model_id: str, revisi
             ", ".join(sorted(required_kinds - {item["kind"] for item in evidence})))
     return errors
 
-def validate_training_preflight(*, dataset_path: str|Path, foundation_model: str, foundation_revision: str, foundation_selection_path: str|Path, teacher_manifest_dir: str|Path, holdout_deployment_manifest_path: str|Path, holdout_evaluation_results_dir: str|Path) -> tuple[list[dict[str,Any]],dict[str,Any]]:
+def validate_training_preflight(*, dataset_path: str|Path, foundation_model: str, foundation_revision: str, foundation_selection_path: str|Path, teacher_manifest_dir: str|Path, holdout_deployment_manifest_path: str|Path, holdout_evaluation_results_dir: str|Path, training_execution_manifest_path: str|Path, training_code_revision: str, training_config: dict[str,Any]) -> tuple[list[dict[str,Any]],dict[str,Any]]:
     dataset=Path(dataset_path); selection_path=Path(foundation_selection_path); manifest_dir=Path(teacher_manifest_dir)
     if not dataset.is_file(): raise FileNotFoundError(dataset)
     if not selection_path.is_file(): raise FileNotFoundError(selection_path)
@@ -92,6 +92,8 @@ def validate_training_preflight(*, dataset_path: str|Path, foundation_model: str
     holdout_deployment, holdout_deployment_sha256 = validate_deployment_file(holdout_deployment_manifest_path)
     holdout_results_dir = Path(holdout_evaluation_results_dir)
     if not holdout_results_dir.is_dir(): raise FileNotFoundError(holdout_results_dir)
+    execution_path=Path(training_execution_manifest_path)
+    if not execution_path.is_file(): raise FileNotFoundError(execution_path)
     selection=json.loads(selection_path.read_text(encoding="utf-8"))
     selection_errors=validate_foundation_selection(selection,foundation_model,foundation_revision)
     if selection_errors: raise ValueError("foundation selection preflight failed: "+"; ".join(selection_errors))
@@ -130,9 +132,17 @@ def validate_training_preflight(*, dataset_path: str|Path, foundation_model: str
         if row["content_sha256"]!=expected: raise ValueError(f"dataset line {number}: content digest mismatch")
         rows.append(row)
     if not rows: raise ValueError("training dataset is empty")
+    dataset_sha256=hashlib.sha256(dataset.read_bytes()).hexdigest()
+    execution=json.loads(execution_path.read_text(encoding="utf-8"))
+    execution_errors=validate_training_execution_manifest(
+        execution,foundation_model=foundation_model,foundation_revision=foundation_revision,
+        dataset_sha256=dataset_sha256,training_code_revision=training_code_revision,
+        training_config=training_config,
+    )
+    if execution_errors: raise ValueError("training execution preflight failed: "+"; ".join(execution_errors))
     teacher_ids={row["teacher_id"] for row in rows}
     if len(teacher_ids)<4: raise ValueError("student training requires at least four distinct qualified teachers")
-    return rows,{"schema_version":"vectolith-training-preflight/1.0","status":"passed","foundation_model":foundation_model,"foundation_revision":foundation_revision,"foundation_selection_sha256":hashlib.sha256(selection_path.read_bytes()).hexdigest(),"protected_holdout_deployment_sha256":holdout_deployment_sha256,"dataset_sha256":hashlib.sha256(dataset.read_bytes()).hexdigest(),"training_rows":len(rows),"qualified_teacher_ids":sorted(teacher_ids),"teacher_manifest_sha256":{key:manifest_hashes[key] for key in sorted(teacher_ids)}}
+    return rows,{"schema_version":"vectolith-training-preflight/1.0","status":"passed","foundation_model":foundation_model,"foundation_revision":foundation_revision,"foundation_selection_sha256":hashlib.sha256(selection_path.read_bytes()).hexdigest(),"protected_holdout_deployment_sha256":holdout_deployment_sha256,"dataset_sha256":dataset_sha256,"training_execution_manifest_sha256":hashlib.sha256(execution_path.read_bytes()).hexdigest(),"training_run_id":execution["run_id"],"training_rows":len(rows),"qualified_teacher_ids":sorted(teacher_ids),"teacher_manifest_sha256":{key:manifest_hashes[key] for key in sorted(teacher_ids)}}
 
 
 EXECUTION_SCHEMA = "vectolith-training-execution-approval/1.0"
