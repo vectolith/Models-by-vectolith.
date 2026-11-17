@@ -30,6 +30,9 @@ class VerificationResult:
         for i,item in enumerate(self.evidence):
             if not isinstance(item,dict) or not item.get("type") or not item.get("reference"):
                 errors.append(f"evidence[{i}] requires type and reference")
+            digest = item.get("sha256") if isinstance(item, dict) else None
+            if not isinstance(digest, str) or len(digest) != 64 or any(ch not in "0123456789abcdef" for ch in digest.lower()):
+                errors.append(f"evidence[{i}] requires a SHA-256 digest")
         if self.confidence is not None and (isinstance(self.confidence,bool) or not isinstance(self.confidence,(int,float)) or not 0<=self.confidence<=1):
             errors.append("confidence must be between 0 and 1")
         return errors
