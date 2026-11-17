@@ -105,6 +105,8 @@ def verify_fact_claim_review(*, case_id: str, output_sha256: str,
         raise ValueError("factuality adjudicator must be independent of the reviewer")
     if review_record.get("status") != "adjudicated":
         raise ValueError("factuality review must be independently adjudicated")
+    if hashlib.sha256(_canonical(review_record)).hexdigest() != review_record_sha256:
+        raise ValueError("review record digest does not match the supplied record")
     for index, claim in enumerate(claims):
         if not isinstance(claim, dict) or not isinstance(claim.get("claim"), str) or not claim["claim"].strip():
             raise ValueError(f"claim[{index}] text missing")
@@ -124,3 +126,29 @@ def verify_fact_claim_review(*, case_id: str, output_sha256: str,
                    "vectolith-source-backed-factuality-review/1.0", payload,
                    f"review://{case_id}/{review_record_sha256}",
                    ("This validates supplied human/source-review evidence; it does not independently browse publishers.",))
+
+
+def exact_answer_verifier(expected_by_case: dict[str, str],
+                          references_by_case: dict[str, str]):
+    """Create a run_capability_suite-compatible verifier for exact-answer cases."""
+    def verify(case: Any, output: str) -> dict[str, Any]:
+        if case.case_id not in expected_by_case or case.case_id not in references_by_case:
+            raise ValueError(f"missing exact-answer reference for {case.case_id}")
+        return verify_exact_answer(actual=output, expected=expected_by_case[case.case_id],
+                                   case_id=case.case_id, reference_id=references_by_case[case.case_id])
+    return verify
+
+
+def decimal_answer_verifier(expected_by_case: dict[str, str],
+                            references_by_case: dict[str, str],
+                            tolerances_by_case: dict[str, tuple[str, str]] | None = None):
+    """Create a run_capability_suite-compatible decimal verifier."""
+    tolerances_by_case = tolerances_by_case or {}
+    def verify(case: Any, output: str) -> dict[str, Any]:
+        if case.case_id not in expected_by_case or case.case_id not in references_by_case:
+            raise ValueError(f"missing decimal-answer reference for {case.case_id}")
+        absolute, relative = tolerances_by_case.get(case.case_id, ("0", "0"))
+        return verify_decimal_answer(actual=output, expected=expected_by_case[case.case_id],
+            case_id=case.case_id, reference_id=references_by_case[case.case_id],
+            absolute_tolerance=absolute, relative_tolerance=relative)
+    return verify
