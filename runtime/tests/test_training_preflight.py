@@ -129,4 +129,32 @@ class TrainingPreflightTests(unittest.TestCase):
                     foundation_revision=REV,foundation_selection_path=selection,teacher_manifest_dir=root/"teachers",
                     holdout_deployment_manifest_path=deployment_path,holdout_evaluation_results_dir=results_dir)
 
+    def test_training_preflight_rejects_unscored_holdout_cases_even_with_updated_digest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); (root/"teachers").mkdir()
+            teacher_ids=[f"teacher-{i}" for i in range(4)]
+            deployment_path, results_dir, deployment_sha, result_hashes = write_holdout_evidence(root, teacher_ids)
+            report_path=results_dir/"teacher-0.json"
+            report=json.loads(report_path.read_text())
+            report["verified_pass_count"]=89
+            report["unscored_count"]=1
+            report["pass_rate"]=0.89
+            report_path.write_text(json.dumps(report))
+            result_hashes["teacher-0"]=hashlib.sha256(report_path.read_bytes()).hexdigest()
+            for teacher_id in teacher_ids:
+                (root/"teachers"/f"{teacher_id}.json").write_text(json.dumps(
+                    teacher_manifest(teacher_id,deployment_sha,result_hashes[teacher_id])))
+            selection=root/"foundation.json"; selection.write_text(json.dumps(foundation_manifest()))
+            rows=[]
+            for i in range(4):
+                prompt=f"p{i}"; response=f"r{i}"
+                rows.append({"accepted":True,"teacher_id":f"teacher-{i}","teacher_revision":REV,
+                    "prompt":prompt,"response":response,
+                    "content_sha256":hashlib.sha256((prompt+"\\0"+response).encode()).hexdigest()})
+            dataset=root/"data.jsonl"; dataset.write_text("\\n".join(json.dumps(x) for x in rows)+"\\n")
+            with self.assertRaisesRegex(ValueError,"unscored"):
+                validate_training_preflight(dataset_path=dataset,foundation_model="publisher/model",
+                    foundation_revision=REV,foundation_selection_path=selection,teacher_manifest_dir=root/"teachers",
+                    holdout_deployment_manifest_path=deployment_path,holdout_evaluation_results_dir=results_dir)
+
 if __name__=="__main__": unittest.main()
