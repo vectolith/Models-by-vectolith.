@@ -115,3 +115,12 @@ The trainer evaluates at each epoch, retains the best checkpoint by validation
 loss, and records final validation metrics. Validation loss is only a training
 diagnostic; it does not replace the independent capability suite, protected
 holdout, or human review. Use a fresh, empty output directory for every run.
+
+
+The training preflight also consumes a protected deployment manifest and a separate
+candidate-specific evaluation report for every teacher (`holdout_deployment_manifest`
+and `holdout_evaluation_results_dir`). Each report must bind to the deployment digest,
+exact candidate revision, dedicated evaluator identity/image, full case count, zero
+unscored cases, and a declared pass-rate threshold. The teacher qualification manifest
+must carry the matching deployment and report digests. A boolean `holdout: passed` flag
+alone is insufficient.
