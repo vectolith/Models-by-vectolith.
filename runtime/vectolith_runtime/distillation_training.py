@@ -48,19 +48,24 @@ def split_dataset_by_prompt_group(
             f"need at least {minimum_validation_groups + 1} distinct prompts for a disjoint validation split"
         )
     all_teachers = {row["teacher_id"] for row in rows}
+    teacher_group_counts = {
+        teacher: sum(any(row["teacher_id"] == teacher for row in values) for values in groups.values())
+        for teacher in all_teachers
+    }
     target = max(minimum_validation_groups, math.ceil(len(groups) * validation_fraction))
     target = min(target, len(groups) - 1)
     ranked = sorted(groups, key=lambda key: hashlib.sha256(f"{seed}:{key}".encode()).hexdigest())
     validation_keys: list[str] = []
-    remaining_teachers = set(all_teachers)
     for key in ranked:
         if len(validation_keys) >= target:
             break
         candidate_teachers = {row["teacher_id"] for row in groups[key]}
-        after_removal = remaining_teachers - candidate_teachers
-        if after_removal:
-            validation_keys.append(key)
-            remaining_teachers = after_removal
+        # Keep at least one prompt group for every teacher in the training side.
+        if any(teacher_group_counts[teacher] <= 1 for teacher in candidate_teachers):
+            continue
+        validation_keys.append(key)
+        for teacher in candidate_teachers:
+            teacher_group_counts[teacher] -= 1
     if len(validation_keys) < minimum_validation_groups:
         raise ValueError(
             "cannot create the required validation split while retaining every teacher in training; "
