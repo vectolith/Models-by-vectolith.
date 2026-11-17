@@ -42,13 +42,38 @@ class TeacherPipelineTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "does not cover"):
             select_teacher_panel("core_prime", REV, "run-c", [candidate(i) for i in range(4)], required_competencies={"reasoning", "multilingual"})
 
-    def test_capability_suite_scores_cases(self):
-        result = run_capability_suite(lambda prompt: "reasoning", [
+    def test_keyword_overlap_never_scores_capability(self):
+        result = run_capability_suite(lambda prompt: "reasoning planning but incorrect", [
             EvaluationCase("1", "reasoning", "solve", ("reasoning",)),
             EvaluationCase("2", "planning", "plan", ("planning",)),
         ])
-        self.assertEqual(result["passed"], 1)
         self.assertEqual(result["total"], 2)
+        self.assertEqual(result["verified_case_count"], 0)
+        self.assertEqual(result["unscored_case_count"], 2)
+        self.assertNotIn("pass_rate", result)
+        self.assertEqual(result["evaluation_disposition"], "incomplete_requires_human_review")
+
+    def test_criterion_verifier_requires_auditable_evidence(self):
+        from vectolith_runtime.independent_evaluation import VerificationResult
+        def verifier(case, output):
+            return VerificationResult("verified_pass", "unit-test-verifier/1", (
+                {"type": "test_report", "reference": "artifact://tests/123"},
+            ), confidence=1.0)
+        result = run_capability_suite(lambda prompt: "output", [
+            EvaluationCase("1", "coding", "implement")
+        ], verifier=verifier)
+        self.assertEqual(result["passed"], 1)
+        self.assertEqual(result["pass_rate"], 1.0)
+        self.assertEqual(result["quality_decision"], "not_made")
+
+    def test_verifier_without_evidence_is_rejected(self):
+        from vectolith_runtime.independent_evaluation import VerificationResult
+        with self.assertRaisesRegex(ValueError, "evidence is required"):
+            run_capability_suite(lambda prompt: "output", [
+                EvaluationCase("1", "reasoning", "solve")
+            ], verifier=lambda case, output: VerificationResult(
+                "verified_pass", "unsubstantiated", ()
+            ))
 
 
 
