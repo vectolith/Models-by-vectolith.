@@ -77,6 +77,18 @@ class TeacherPipelineTests(unittest.TestCase):
             ))
 
 
+    def test_verifier_evidence_requires_sha256_integrity_digest(self):
+        from vectolith_runtime.independent_evaluation import VerificationResult
+        with self.assertRaisesRegex(ValueError, "SHA-256 digest"):
+            run_capability_suite(lambda prompt: "output", [
+                EvaluationCase("1", "coding", "implement")
+            ], verifier=lambda case, output: VerificationResult(
+                "verified_pass", "sandbox/1", (
+                    {"type": "test_report", "reference": "artifact://tests/123", "sha256": "bad"},
+                )
+            ))
+
+
 
     def test_finalize_panel_requires_actual_contributions_and_ablation(self):
         assignment = select_teacher_panel(
