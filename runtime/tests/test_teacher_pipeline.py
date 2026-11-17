@@ -58,7 +58,7 @@ class TeacherPipelineTests(unittest.TestCase):
         from vectolith_runtime.independent_evaluation import VerificationResult
         def verifier(case, output):
             return VerificationResult("verified_pass", "unit-test-verifier/1", (
-                {"type": "test_report", "reference": "artifact://tests/123"},
+                {"type": "test_report", "reference": "artifact://tests/123", "sha256": "a" * 64},
             ), confidence=1.0)
         result = run_capability_suite(lambda prompt: "output", [
             EvaluationCase("1", "coding", "implement")
