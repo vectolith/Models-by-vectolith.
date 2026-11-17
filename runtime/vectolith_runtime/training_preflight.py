@@ -40,6 +40,12 @@ def validate_teacher_manifest(manifest: dict[str,Any], teacher_id: str, revision
     if (res.get("status")!="recorded" or not res.get("runner_type") or not res.get("device") or not isinstance(res.get("peak_rss_bytes"),int) or isinstance(res.get("peak_rss_bytes"),bool) or res.get("peak_rss_bytes",0)<=0 or not isinstance(res.get("mean_latency_seconds"),(int,float)) or isinstance(res.get("mean_latency_seconds"),bool) or res.get("mean_latency_seconds",0)<=0 or not _sha(res.get("compute_record_sha256"))): errors.append("resource measurement gate failed")
     h=gate("human_review"); reviewers=h.get("independent_reviewer_ids")
     if (h.get("status")!="passed" or not isinstance(reviewers,list) or len(set(x for x in reviewers if isinstance(x,str) and x.strip()))<2 or h.get("independence_attested") is not True or h.get("adjudication_complete") is not True or not isinstance(h.get("expected_response_count"),int) or h.get("expected_response_count",0)<=0 or h.get("graded_response_count")!=h.get("expected_response_count") or not _sha(h.get("grade_report_sha256")) or not _sha(h.get("adjudication_sha256"))): errors.append("independent human review/adjudication gate failed")
+    agreement=h.get("agreement")
+    if not isinstance(agreement,dict) or agreement.get("status")!="accepted" or agreement.get("metric") not in {"quadratic_weighted_cohen_kappa","krippendorff_alpha"}: errors.append("human-review agreement record missing or invalid")
+    else:
+        value,threshold=agreement.get("value"),agreement.get("minimum_required")
+        if not isinstance(value,(int,float)) or isinstance(value,bool) or not -1<=value<=1 or not isinstance(threshold,(int,float)) or isinstance(threshold,bool) or not 0<=threshold<=1 or value<threshold: errors.append("human-review agreement below policy threshold or invalid")
+        if not _sha(agreement.get("report_sha256")) or not _sha(agreement.get("policy_sha256")) or not _sha(agreement.get("reviewer_independence_sha256")): errors.append("human-review agreement/independence digest missing")
     safety=gate("safety_review")
     if safety.get("status")!="passed" or not safety.get("reviewer_id") or not _sha(safety.get("report_sha256")): errors.append("safety review gate failed")
     holdout=gate("holdout")
