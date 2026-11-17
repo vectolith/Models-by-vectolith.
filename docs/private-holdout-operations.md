@@ -52,3 +52,12 @@ Use a separate owner-only output directory. Do not upload raw holdout output to 
 ## Current status
 
 The public repository contains the loader, integrity checks, execution wrapper and tests only. It does not contain the private dataset or secret scoring key. A holdout evaluation is not complete until a dataset custodian provisions a genuinely access-restricted external suite and the protected version/hash values are supplied to the runner. Never describe the public v2 suites as private.
+
+
+## Signed execution authorization (required)
+
+The runner now requires a custodian-issued, HMAC-SHA256-signed, short-lived, single-use authorization token. The token binds the exact dataset version and SHA-256, candidate ID, immutable model revision, student role, authorized principal, issue/expiry timestamps, and unique run ID. It is verified before the private suite is opened. Tokens with a lifetime over one hour, mismatched fields, invalid signatures, expired timestamps, or replayed run IDs are rejected.
+
+Supply the token path with `VECTOLITH_HOLDOUT_AUTH_TOKEN`, the signing secret through the protected secret store as `VECTOLITH_HOLDOUT_AUTH_SECRET`, the authenticated runner principal as `VECTOLITH_HOLDOUT_PRINCIPAL_ID`, and an owner-only audit directory as `VECTOLITH_HOLDOUT_AUDIT_DIR`. The signing secret must be held by the custodian/authorization service and must not be committed or passed on a command line. The runner records a one-time claim marker with the principal, candidate, revision, release digest, token digest, and timestamp. Existing output files are never overwritten.
+
+This provides a signed approval and replay-resistant local execution record. It does not by itself protect against a malicious administrator or arbitrary code running with the evaluation identity's privileges. For that threat model, run the evaluator in a separately administered service/container with OS-level dataset isolation, restricted egress, and a custodian-controlled authorization service. Never expose these secrets to pull-request CI or untrusted code.
