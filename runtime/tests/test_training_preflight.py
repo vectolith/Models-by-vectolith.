@@ -1,6 +1,7 @@
 from __future__ import annotations
 import hashlib, json, tempfile, unittest
 from pathlib import Path
+from vectolith_runtime.protected_holdout import DEPLOYMENT_SCHEMA, RESULT_SCHEMA, canonical_digest
 from vectolith_runtime.training_preflight import (
     validate_foundation_selection, validate_teacher_manifest, validate_training_preflight,
 )
@@ -8,7 +9,7 @@ from vectolith_runtime.training_preflight import (
 SHA="a"*64
 REV="b"*40
 
-def teacher_manifest(name):
+def teacher_manifest(name, deployment_sha=SHA, result_sha=SHA):
     return {
         "schema_version":"vectolith-teacher-qualification-candidate/1.0",
         "candidate_id":name,"immutable_revision":REV,
@@ -21,7 +22,7 @@ def teacher_manifest(name):
             "human_review":{"status":"passed","independent_reviewer_ids":["r1","r2"],"independence_attested":True,"adjudication_complete":True,"expected_response_count":10,"graded_response_count":10,"grade_report_sha256":SHA,"adjudication_sha256":SHA,
                 "agreement":{"status":"accepted","metric":"quadratic_weighted_cohen_kappa","value":0.8,"minimum_required":0.6,"report_sha256":SHA,"policy_sha256":SHA,"reviewer_independence_sha256":SHA}},
             "safety_review":{"status":"passed","reviewer_id":"safety-1","report_sha256":SHA},
-            "holdout":{"status":"passed","case_count":20,"leakage_audit_passed":True,"audit_sha256":SHA},
+            "holdout":{"status":"passed","case_count":100,"leakage_audit_passed":True,"audit_sha256":SHA,"deployment_manifest_sha256":deployment_sha,"evaluation_report_sha256":result_sha},
             "corpus_integrity":{"status":"passed","corpus_sha256":SHA,"duplicate_count":0,"provenance_verified":True},
             "training_output_permission":{"status":"granted","document_sha256":SHA,"authorized_by":"rights-holder","authorized_at":"2026-11-17T00:00:00Z"},
         }
@@ -31,7 +32,49 @@ def foundation_manifest():
     return {"schema_version":"vectolith-foundation-selection/1.0","decision_status":"approved",
         "selected_model_id":"publisher/model","immutable_revision":REV,
         "comparison_report_sha256":SHA,"approved_by":"approver","approved_at":"2026-11-17T00:00:00Z",
-        "evaluation_evidence":[{"kind":"protected-holdout-report","sha256":SHA}]}
+        "evaluation_evidence":[
+            {"kind":kind,"sha256":SHA,"model_id":"publisher/model","immutable_revision":REV}
+            for kind in ("candidate_metadata","license_review","training_output_permission",
+                "loader_compatibility","resource_measurement","capability_evaluation",
+                "protected_holdout","baseline_comparison")
+        ]}
+
+def write_holdout_evidence(root, teacher_ids):
+    deployment = {
+        "schema_version": DEPLOYMENT_SCHEMA, "dataset_version": "holdout-v1",
+        "dataset_sha256": SHA, "case_count": 100,
+        "custody": {"storage_uri": "vault://restricted/prime/holdout-v1",
+            "access_boundary": "dedicated_vault", "encryption_at_rest": True,
+            "key_custody_separate": True, "custodian_id": "custodian-1",
+            "evaluator_operator_id": "operator-1"},
+        "execution": {"evaluator_service_id": "prime-evaluator",
+            "deployment_image_sha256": SHA, "pull_request_code_denied": True,
+            "candidate_network_egress_denied": True, "dataset_mount_read_only": True,
+            "result_channel_separated": True},
+        "audit": {"access_log_sha256": SHA, "leakage_audit_sha256": SHA,
+            "provenance_report_sha256": SHA, "public_fixture_overlap_checked": True,
+            "unauthorized_access_count": 0, "reviewed_by": "independent-auditor"},
+    }
+    deployment_path = root / "holdout-deployment.json"
+    deployment_path.write_text(json.dumps(deployment))
+    deployment_sha = canonical_digest(deployment)
+    results_dir = root / "holdout-results"
+    results_dir.mkdir()
+    result_hashes = {}
+    for teacher_id in teacher_ids:
+        report = {
+            "schema_version": RESULT_SCHEMA, "deployment_manifest_sha256": deployment_sha,
+            "candidate_id": teacher_id, "candidate_revision": REV,
+            "evaluator_id": "operator-1", "evaluator_image_sha256": SHA,
+            "case_count": 100, "verified_pass_count": 90, "verified_fail_count": 10,
+            "unscored_count": 0, "pass_rate": 0.9, "minimum_required_pass_rate": 0.8,
+            "status": "passed", "evaluation_suite_version": "prime-holdout-v1",
+            "evaluated_at": "2026-11-17T00:00:00Z", "evaluator_run_id": "run-" + teacher_id,
+        }
+        path = results_dir / f"{teacher_id}.json"
+        path.write_text(json.dumps(report))
+        result_hashes[teacher_id] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return deployment_path, results_dir, deployment_sha, result_hashes
 
 class TrainingPreflightTests(unittest.TestCase):
     def test_teacher_requires_all_ten_gates(self):
@@ -49,8 +92,10 @@ class TrainingPreflightTests(unittest.TestCase):
     def test_training_preflight_requires_four_qualified_revision_matched_teachers(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp); (root/"teachers").mkdir()
-            for i in range(4):
-                (root/"teachers"/f"teacher-{i}.json").write_text(json.dumps(teacher_manifest(f"teacher-{i}")))
+            teacher_ids=[f"teacher-{i}" for i in range(4)]
+            deployment_path, results_dir, deployment_sha, result_hashes = write_holdout_evidence(root, teacher_ids)
+            for teacher_id in teacher_ids:
+                (root/"teachers"/f"{teacher_id}.json").write_text(json.dumps(teacher_manifest(teacher_id,deployment_sha,result_hashes[teacher_id])))
             selection=root/"foundation.json"; selection.write_text(json.dumps(foundation_manifest()))
             rows=[]
             for i in range(4):
@@ -60,7 +105,7 @@ class TrainingPreflightTests(unittest.TestCase):
                     "content_sha256":hashlib.sha256((prompt+"\0"+response).encode()).hexdigest()})
             dataset=root/"data.jsonl"; dataset.write_text("\n".join(json.dumps(x) for x in rows)+"\n")
             validated, report=validate_training_preflight(dataset_path=dataset,foundation_model="publisher/model",
-                foundation_revision=REV,foundation_selection_path=selection,teacher_manifest_dir=root/"teachers")
+                foundation_revision=REV,foundation_selection_path=selection,teacher_manifest_dir=root/"teachers",holdout_deployment_manifest_path=deployment_path,holdout_evaluation_results_dir=results_dir)
             self.assertEqual(len(validated),4)
             self.assertEqual(report["status"],"passed")
             self.assertEqual(len(report["teacher_manifest_sha256"]),4)
@@ -68,8 +113,10 @@ class TrainingPreflightTests(unittest.TestCase):
     def test_dataset_teacher_revision_mismatch_blocks_preflight(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp); (root/"teachers").mkdir()
-            for i in range(4):
-                (root/"teachers"/f"teacher-{i}.json").write_text(json.dumps(teacher_manifest(f"teacher-{i}")))
+            teacher_ids=[f"teacher-{i}" for i in range(4)]
+            deployment_path, results_dir, deployment_sha, result_hashes = write_holdout_evidence(root, teacher_ids)
+            for teacher_id in teacher_ids:
+                (root/"teachers"/f"{teacher_id}.json").write_text(json.dumps(teacher_manifest(teacher_id,deployment_sha,result_hashes[teacher_id])))
             selection=root/"foundation.json"; selection.write_text(json.dumps(foundation_manifest()))
             rows=[]
             for i in range(4):
@@ -79,6 +126,35 @@ class TrainingPreflightTests(unittest.TestCase):
             dataset=root/"data.jsonl"; dataset.write_text("\n".join(json.dumps(x) for x in rows))
             with self.assertRaisesRegex(ValueError,"revision does not match"):
                 validate_training_preflight(dataset_path=dataset,foundation_model="publisher/model",
-                    foundation_revision=REV,foundation_selection_path=selection,teacher_manifest_dir=root/"teachers")
+                    foundation_revision=REV,foundation_selection_path=selection,teacher_manifest_dir=root/"teachers",
+                    holdout_deployment_manifest_path=deployment_path,holdout_evaluation_results_dir=results_dir)
+
+    def test_training_preflight_rejects_unscored_holdout_cases_even_with_updated_digest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); (root/"teachers").mkdir()
+            teacher_ids=[f"teacher-{i}" for i in range(4)]
+            deployment_path, results_dir, deployment_sha, result_hashes = write_holdout_evidence(root, teacher_ids)
+            report_path=results_dir/"teacher-0.json"
+            report=json.loads(report_path.read_text())
+            report["verified_pass_count"]=89
+            report["unscored_count"]=1
+            report["pass_rate"]=0.89
+            report_path.write_text(json.dumps(report))
+            result_hashes["teacher-0"]=hashlib.sha256(report_path.read_bytes()).hexdigest()
+            for teacher_id in teacher_ids:
+                (root/"teachers"/f"{teacher_id}.json").write_text(json.dumps(
+                    teacher_manifest(teacher_id,deployment_sha,result_hashes[teacher_id])))
+            selection=root/"foundation.json"; selection.write_text(json.dumps(foundation_manifest()))
+            rows=[]
+            for i in range(4):
+                prompt=f"p{i}"; response=f"r{i}"
+                rows.append({"accepted":True,"teacher_id":f"teacher-{i}","teacher_revision":REV,
+                    "prompt":prompt,"response":response,
+                    "content_sha256":hashlib.sha256((prompt+"\0"+response).encode()).hexdigest()})
+            dataset=root/"data.jsonl"; dataset.write_text("\n".join(json.dumps(x) for x in rows)+"\n")
+            with self.assertRaisesRegex(ValueError,"unscored"):
+                validate_training_preflight(dataset_path=dataset,foundation_model="publisher/model",
+                    foundation_revision=REV,foundation_selection_path=selection,teacher_manifest_dir=root/"teachers",
+                    holdout_deployment_manifest_path=deployment_path,holdout_evaluation_results_dir=results_dir)
 
 if __name__=="__main__": unittest.main()

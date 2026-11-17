@@ -4,6 +4,7 @@ import hashlib, json, re
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from .protected_holdout import validate_deployment_file, validate_candidate_result
 
 TEACHER_SCHEMA="vectolith-teacher-qualification-candidate/1.0"
 FOUNDATION_SCHEMA="vectolith-foundation-selection/1.0"
@@ -16,7 +17,7 @@ def _time(value: Any) -> bool:
     try: datetime.fromisoformat(value.replace("Z","+00:00")); return True
     except ValueError: return False
 
-def validate_teacher_manifest(manifest: dict[str,Any], teacher_id: str, revision: str) -> list[str]:
+def validate_teacher_manifest(manifest: dict[str,Any], teacher_id: str, revision: str, *, holdout_deployment_sha256: str | None = None, holdout_evaluation_sha256: str | None = None, holdout_case_count: int | None = None, holdout_audit_sha256: str | None = None) -> list[str]:
     errors=[]
     if manifest.get("schema_version")!=TEACHER_SCHEMA: errors.append("unsupported teacher manifest schema")
     if manifest.get("candidate_id")!=teacher_id: errors.append("teacher identity mismatch")
@@ -49,7 +50,11 @@ def validate_teacher_manifest(manifest: dict[str,Any], teacher_id: str, revision
     safety=gate("safety_review")
     if safety.get("status")!="passed" or not safety.get("reviewer_id") or not _sha(safety.get("report_sha256")): errors.append("safety review gate failed")
     holdout=gate("holdout")
-    if holdout.get("status")!="passed" or not isinstance(holdout.get("case_count"),int) or holdout.get("case_count",0)<=0 or holdout.get("leakage_audit_passed") is not True or not _sha(holdout.get("audit_sha256")): errors.append("protected holdout gate failed")
+    if (holdout.get("status")!="passed" or not isinstance(holdout.get("case_count"),int) or holdout.get("case_count",0)<=0 or holdout.get("leakage_audit_passed") is not True or not _sha(holdout.get("audit_sha256")) or not _sha(holdout.get("deployment_manifest_sha256")) or not _sha(holdout.get("evaluation_report_sha256"))): errors.append("protected holdout gate failed")
+    if holdout_deployment_sha256 is not None and holdout.get("deployment_manifest_sha256") != holdout_deployment_sha256: errors.append("teacher holdout deployment digest mismatch")
+    if holdout_evaluation_sha256 is not None and holdout.get("evaluation_report_sha256") != holdout_evaluation_sha256: errors.append("teacher holdout evaluation report digest mismatch")
+    if holdout_case_count is not None and holdout.get("case_count") != holdout_case_count: errors.append("teacher holdout case count mismatch")
+    if holdout_audit_sha256 is not None and holdout.get("audit_sha256") != holdout_audit_sha256: errors.append("teacher holdout audit digest mismatch")
     corpus=gate("corpus_integrity")
     if corpus.get("status")!="passed" or not _sha(corpus.get("corpus_sha256")) or corpus.get("duplicate_count")!=0 or corpus.get("provenance_verified") is not True: errors.append("corpus integrity gate failed")
     perm=gate("training_output_permission")
@@ -65,14 +70,28 @@ def validate_foundation_selection(manifest: dict[str,Any], model_id: str, revisi
     if not _sha(manifest.get("comparison_report_sha256")): errors.append("foundation comparison report digest missing")
     if not manifest.get("approved_by") or not _time(manifest.get("approved_at")): errors.append("foundation approval provenance missing")
     evidence=manifest.get("evaluation_evidence")
-    if not isinstance(evidence,list) or not evidence or any(not isinstance(x,dict) or not _sha(x.get("sha256")) or not x.get("kind") for x in evidence): errors.append("foundation evaluation evidence is incomplete")
+    required_kinds = {"candidate_metadata", "license_review", "training_output_permission",
+        "loader_compatibility", "resource_measurement", "capability_evaluation",
+        "protected_holdout", "baseline_comparison"}
+    if not isinstance(evidence,list) or not evidence or any(
+        not isinstance(x,dict) or not _sha(x.get("sha256")) or not x.get("kind")
+        or x.get("model_id") != model_id or x.get("immutable_revision") != revision
+        for x in evidence
+    ):
+        errors.append("foundation evaluation evidence is incomplete or not bound to the exact candidate revision")
+    elif not required_kinds.issubset({item["kind"] for item in evidence}):
+        errors.append("foundation evaluation evidence is missing required categories: " +
+            ", ".join(sorted(required_kinds - {item["kind"] for item in evidence})))
     return errors
 
-def validate_training_preflight(*, dataset_path: str|Path, foundation_model: str, foundation_revision: str, foundation_selection_path: str|Path, teacher_manifest_dir: str|Path) -> tuple[list[dict[str,Any]],dict[str,Any]]:
+def validate_training_preflight(*, dataset_path: str|Path, foundation_model: str, foundation_revision: str, foundation_selection_path: str|Path, teacher_manifest_dir: str|Path, holdout_deployment_manifest_path: str|Path, holdout_evaluation_results_dir: str|Path) -> tuple[list[dict[str,Any]],dict[str,Any]]:
     dataset=Path(dataset_path); selection_path=Path(foundation_selection_path); manifest_dir=Path(teacher_manifest_dir)
     if not dataset.is_file(): raise FileNotFoundError(dataset)
     if not selection_path.is_file(): raise FileNotFoundError(selection_path)
     if not manifest_dir.is_dir(): raise FileNotFoundError(manifest_dir)
+    holdout_deployment, holdout_deployment_sha256 = validate_deployment_file(holdout_deployment_manifest_path)
+    holdout_results_dir = Path(holdout_evaluation_results_dir)
+    if not holdout_results_dir.is_dir(): raise FileNotFoundError(holdout_results_dir)
     selection=json.loads(selection_path.read_text(encoding="utf-8"))
     selection_errors=validate_foundation_selection(selection,foundation_model,foundation_revision)
     if selection_errors: raise ValueError("foundation selection preflight failed: "+"; ".join(selection_errors))
@@ -84,7 +103,17 @@ def validate_training_preflight(*, dataset_path: str|Path, foundation_model: str
         revision=value.get("immutable_revision") if isinstance(value,dict) else None
         if not isinstance(teacher_id,str) or not teacher_id.strip(): raise ValueError(f"{path}: candidate_id missing")
         if teacher_id in manifests: raise ValueError(f"duplicate qualification manifest for {teacher_id}")
-        errors=validate_teacher_manifest(value,teacher_id,revision)
+        result_path = holdout_results_dir / f"{teacher_id}.json"
+        _, holdout_result_sha256 = validate_candidate_result(
+            result_path, holdout_deployment, holdout_deployment_sha256, teacher_id, revision
+        )
+        errors=validate_teacher_manifest(
+            value,teacher_id,revision,
+            holdout_deployment_sha256=holdout_deployment_sha256,
+            holdout_evaluation_sha256=holdout_result_sha256,
+            holdout_case_count=holdout_deployment["case_count"],
+            holdout_audit_sha256=holdout_deployment["audit"]["leakage_audit_sha256"],
+        )
         if errors: raise ValueError(f"{teacher_id}: qualification preflight failed: "+"; ".join(errors))
         manifests[teacher_id]=revision
         manifest_hashes[teacher_id]=hashlib.sha256(path.read_bytes()).hexdigest()
@@ -103,4 +132,4 @@ def validate_training_preflight(*, dataset_path: str|Path, foundation_model: str
     if not rows: raise ValueError("training dataset is empty")
     teacher_ids={row["teacher_id"] for row in rows}
     if len(teacher_ids)<4: raise ValueError("student training requires at least four distinct qualified teachers")
-    return rows,{"schema_version":"vectolith-training-preflight/1.0","status":"passed","foundation_model":foundation_model,"foundation_revision":foundation_revision,"foundation_selection_sha256":hashlib.sha256(selection_path.read_bytes()).hexdigest(),"dataset_sha256":hashlib.sha256(dataset.read_bytes()).hexdigest(),"training_rows":len(rows),"qualified_teacher_ids":sorted(teacher_ids),"teacher_manifest_sha256":{key:manifest_hashes[key] for key in sorted(teacher_ids)}}
+    return rows,{"schema_version":"vectolith-training-preflight/1.0","status":"passed","foundation_model":foundation_model,"foundation_revision":foundation_revision,"foundation_selection_sha256":hashlib.sha256(selection_path.read_bytes()).hexdigest(),"protected_holdout_deployment_sha256":holdout_deployment_sha256,"dataset_sha256":hashlib.sha256(dataset.read_bytes()).hexdigest(),"training_rows":len(rows),"qualified_teacher_ids":sorted(teacher_ids),"teacher_manifest_sha256":{key:manifest_hashes[key] for key in sorted(teacher_ids)}}
