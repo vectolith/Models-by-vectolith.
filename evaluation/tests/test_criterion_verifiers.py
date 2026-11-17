@@ -31,8 +31,9 @@ class CriterionVerifierTests(unittest.TestCase):
         output="a"*64
         claims=[{"claim":"A claim","source_uri":"https://example.org/source","source_sha256":"b"*64,"review_status":"supported"}]
         review={"case_id":"fact-1","output_sha256":output,"reviewer_id":"r1","adjudicator_id":"r2","status":"adjudicated"}
+        digest=hashlib.sha256(json.dumps(review,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest()
         self.assertEqual(verify_fact_claim_review(case_id="fact-1",output_sha256=output,claims=claims,
-            review_record=review,review_record_sha256="c"*64)["status"],"verified_pass")
+            review_record=review,review_record_sha256=digest)["status"],"verified_pass")
         review["adjudicator_id"]="r1"
         digest=hashlib.sha256(json.dumps(review,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest()
         with self.assertRaisesRegex(ValueError,"independent"):
