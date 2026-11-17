@@ -49,7 +49,7 @@ class TrainingDatasetSplitTests(unittest.TestCase):
             for task in range(4)
         ]
         with self.assertRaisesRegex(ValueError, "retaining every teacher"):
-            split_dataset_by_prompt_group(rows, validation_fraction=0.5, minimum_validation_groups=2)
+            split_dataset_by_prompt_group(rows, validation_fraction=0.25, minimum_validation_groups=2)
 
 
 if __name__ == "__main__":
