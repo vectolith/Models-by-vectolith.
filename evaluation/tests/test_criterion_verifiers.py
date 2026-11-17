@@ -1,6 +1,8 @@
 from __future__ import annotations
 import hashlib, hmac, json, unittest
-from evaluation.criterion_verifiers import verify_decimal_answer, verify_exact_answer, verify_fact_claim_review, verify_sandbox_attestation
+from evaluation.criterion_verifiers import (decimal_answer_verifier, exact_answer_verifier,
+    verify_decimal_answer, verify_exact_answer, verify_fact_claim_review, verify_sandbox_attestation)
+from vectolith_runtime.independent_evaluation import EvaluationCase, run_capability_suite
 
 class CriterionVerifierTests(unittest.TestCase):
     def test_exact_answer(self):
@@ -32,7 +34,19 @@ class CriterionVerifierTests(unittest.TestCase):
         self.assertEqual(verify_fact_claim_review(case_id="fact-1",output_sha256=output,claims=claims,
             review_record=review,review_record_sha256="c"*64)["status"],"verified_pass")
         review["adjudicator_id"]="r1"
+        digest=hashlib.sha256(json.dumps(review,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest()
         with self.assertRaisesRegex(ValueError,"independent"):
             verify_fact_claim_review(case_id="fact-1",output_sha256=output,claims=claims,
-                review_record=review,review_record_sha256="c"*64)
+                review_record=review,review_record_sha256=digest)
+    def test_exact_verifier_adapter_integrates_with_capability_suite(self):
+        verifier=exact_answer_verifier({"case-1":"42"},{"case-1":"fixture://case-1"})
+        report=run_capability_suite(lambda prompt:"42",[EvaluationCase("case-1","math","answer")],verifier)
+        self.assertEqual(report["passed"],1)
+        self.assertEqual(report["pass_rate"],1.0)
+
+    def test_decimal_verifier_adapter_integrates_with_capability_suite(self):
+        verifier=decimal_answer_verifier({"case-1":"2.5"},{"case-1":"fixture://case-1"},{"case-1":("0.01","0")})
+        report=run_capability_suite(lambda prompt:"2.501",[EvaluationCase("case-1","math","answer")],verifier)
+        self.assertEqual(report["passed"],1)
+
 if __name__=="__main__": unittest.main()
