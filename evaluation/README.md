@@ -165,6 +165,8 @@ The builder verifies immutable artifact ZIPs, JSON/JSONL parity, provenance, exa
 
 Additional verified follow-up artifacts from Core Prime runs 42 and 43 are recorded in [run 42/43 evidence](core-prime-multi-teacher-runs-42-43-evidence-2026-11-16.md). The blinded review builder supports repeated inference runs for the same candidate without overwriting or collapsing their provenance.
 
+The later run 42 Phi-4 completion and the 2026-11-17 PR #73 local-grader/teacher-rights intake evidence are recorded in [Core Prime intake run 44110893414 evidence](core-prime-intake-run-44110893414-evidence-2026-11-17.md). The Qwen3.5-2B smoke was performed in the local grader role only; the rights capture does not grant legal approval or training-output permission.
+
 
 Human disagreement records are generated and validated separately with \`evaluation/prepare_human_adjudication.py\`; adjudication never overwrites the original reviewer grades. See the operations guide for the third-party adjudicator workflow.
 
