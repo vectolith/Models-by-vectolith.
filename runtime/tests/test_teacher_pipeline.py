@@ -1,9 +1,10 @@
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from vectolith_runtime.teacher_pipeline import (
-    QualifiedTeacher, TeacherEndpoint, TeacherQualification, finalize_teacher_panel, select_teacher_panel,
+    QualifiedTeacher, TeacherEndpoint, TeacherQualification, TeachingTask, qualify_teacher, finalize_teacher_panel, select_teacher_panel,
 )
 from vectolith_runtime.distillation import IndependenceEvidence, TeacherContribution
 from vectolith_runtime.independent_evaluation import (
@@ -133,6 +134,24 @@ class TeacherPipelineTests(unittest.TestCase):
         self.assertTrue(result["release_eligible"])
         failed = leave_one_teacher_out(lambda omitted: 0.9 if omitted == "d" else (0.8 if omitted else 0.9), ("a", "b", "c", "d"))
         self.assertFalse(failed["release_eligible"])
+
+
+    def test_keyword_rich_inference_is_not_teacher_qualification(self):
+        endpoint = TeacherEndpoint("candidate-x", "model-x", "http://localhost:8000/v1", "TEST_KEY", REV)
+        task = TeachingTask("case-1", "factuality", "What is the capital of France?", "Paris;correct country")
+        with patch("vectolith_runtime.teacher_pipeline.OpenAICompatibleTeacher.generate",
+                   return_value="Paris is the capital of France, but the Moon is made of cheese."):
+            candidate = qualify_teacher(
+                endpoint, provider="local", license_id="Apache-2.0",
+                training_output_permission_verified=True,
+                output_training_permission_evidence="permission-record",
+                competencies=("factuality",), benchmark_tasks=[task],
+            )
+        self.assertFalse(candidate.qualification.qualification_passed)
+        self.assertIsNone(candidate.qualification.quality_score)
+        self.assertEqual(len(candidate.response_evidence), 1)
+        self.assertEqual(candidate.response_evidence[0]["response"], "Paris is the capital of France, but the Moon is made of cheese.")
+        self.assertEqual(len(candidate.response_evidence[0]["response_sha256"]), 64)
 
 
 if __name__ == "__main__":
