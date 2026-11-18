@@ -66,7 +66,7 @@ A teacher is not qualified by family name, model-card claim or benchmark result 
 
 ## Stop conditions
 
-- No verified zero-cost GPU session: record not currently testable; do not call paid APIs.
+- No verified GPU session: record not currently testable; do not dispatch an unverified external inference path.
 - Missing immutable revision: reject snapshot.
 - Missing or ambiguous license evidence: block appointment.
 - Unverified training-output permission: block use as a distillation teacher.
