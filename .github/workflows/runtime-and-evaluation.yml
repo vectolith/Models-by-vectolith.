@@ -6,6 +6,7 @@ on:
       - "runtime/**"
       - "evaluation/**"
       - ".github/workflows/runtime-and-evaluation.yml"
+      - ".github/workflows/runtime.yml"
   push:
     branches: [main]
     paths:
