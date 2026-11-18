@@ -23,7 +23,7 @@ def main() -> int:
     rev=a.revision.lower()
     if len(rev)!=40 or any(ch not in "0123456789abcdef" for ch in rev): p.error("--revision must be a full immutable 40-character commit SHA")
     if not 1<=a.max_new_tokens<=1024: p.error("--max-new-tokens must be between 1 and 1024")
-    requested_threads = max(1, int(os.environ.get("VELNOR_INFERENCE_THREADS", "2")))
+    requested_threads = max(1, int(os.environ.get("MODELS_INFERENCE_THREADS", "2")))
     torch.set_num_threads(min(torch.get_num_threads(), requested_threads))
     if a.dtype=="bfloat16":
         try:

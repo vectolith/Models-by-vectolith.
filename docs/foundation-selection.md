@@ -46,7 +46,7 @@ Keep Prime and Prima scorecards separate. Apply a common controlled curriculum a
 - Context retention, repeated-run variance, refusal correctness, and output validity.
 - Time-to-first-token, tokens/second, throughput, concurrency, cold start, peak RAM/VRAM, storage, and measured cost.
 
-Preserve raw outputs, per-case scores, grading rubrics, evaluator identity/version, disagreements, run configuration, and prompt/dataset hashes. Report dimensions separately; do not hide trade-offs in a single unqualified aggregate score. Provider benchmarks and model-card claims are discovery evidence, not VELNOR measurements.
+Preserve raw outputs, per-case scores, grading rubrics, evaluator identity/version, disagreements, run configuration, and prompt/dataset hashes. Report dimensions separately; do not hide trade-offs in a single unqualified aggregate score. Provider benchmarks and model-card claims are discovery evidence, not measurements from this repository's own controlled runs.
 
 ## Selection and training policy
 

@@ -1,4 +1,4 @@
-# VELNOR model-download and execution safeguards
+# Model download and execution safeguards
 
 **Status:** Operational policy for evaluation and development
 
