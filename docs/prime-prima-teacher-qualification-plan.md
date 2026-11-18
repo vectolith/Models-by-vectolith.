@@ -74,7 +74,7 @@ The manifest records six candidates for each student. **The number of qualified 
 Next execution is to resolve immutable revisions and license snapshots for the complete pools, expand the role-specific qualification suites, and run real evaluations in a verified execution environment. Once evidence exists, appoint the best four or more for each student, create contribution shards, and require positive per-teacher ablation before accepting the panel.
 
 
-## Immutable candidate discovery and free-compute status
+## Immutable candidate discovery and execution availability
 
 CI now snapshots the exact Hub revision, license-file content/hash, model-card content/hash, parameter metadata, tokenizer/config files and weight-file inventory for every manifest candidate. These snapshots are discovery evidence, not legal approval or teacher qualification.
 
