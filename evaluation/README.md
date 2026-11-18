@@ -62,7 +62,7 @@ python evaluation/discover_hf_candidates.py \\
 python evaluation/probe_compute.py --output artifacts/compute/observation.json
 ```
 
-Catalog search returns discovery leads, not qualified candidates. Snapshots pin immutable revisions and retain exact retrieved license/model-card text, source URLs and SHA-256 hashes. Missing license evidence remains missing; legal suitability and training-output permission require human review. The compute probe reports process-visible hardware, not account quota, billing state or guaranteed free access. See `FOUNDATION_DISCOVERY.md` for the evidence and stop conditions.
+Catalog search returns discovery leads, not qualified candidates. Snapshots pin immutable revisions and retain exact retrieved license/model-card text, source URLs and SHA-256 hashes. Missing license evidence remains missing; legal suitability and training-output permission require human review. The compute probe reports process-visible hardware, not account-level execution entitlement or guaranteed capacity. See `FOUNDATION_DISCOVERY.md` for the evidence and stop conditions.
 
 ## Tests
 
