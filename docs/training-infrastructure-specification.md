@@ -48,7 +48,7 @@ The current `ModelManifest` is the canonical model catalogue record:
 - `lifecycle`: experimental, development, evaluation, released, deprecated or retired.
 - `foundation`, `adapter_id`, and non-secret metadata where known.
 
-Registry discovery returns all compatible candidates. The orchestrator applies release eligibility, evaluation evidence, resource budgets, availability and permissions. Only `released` models are production-eligible by default. A manifest never implies that weights exist or that a model has passed evaluation.
+Registry discovery returns all compatible candidates. The orchestrator applies release eligibility, evaluation evidence, resource limits, availability and permissions. Only `released` models are production-eligible by default. A manifest never implies that weights exist or that a model has passed evaluation.
 
 ### 3.2 Teacher qualification and assignment
 
