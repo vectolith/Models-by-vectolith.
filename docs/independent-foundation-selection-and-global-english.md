@@ -87,7 +87,7 @@ Use separate scorecards; do not transfer one role's weights to the other. Score 
 
 These weights are a prioritization instrument, not a substitute for minimum gates. A high aggregate score cannot compensate for a license failure, unacceptable safety behaviour, unreliable tool execution, or inability to deploy within the verified resource envelope.
 
-### Free-compute and cost gate
+### Execution feasibility and resource fit
 
 Record execution feasibility for every candidate. For each provider or community environment, record accelerator type/count, VRAM, session and quota limits, queue/wait availability, permitted model sizes, storage and egress limits, expiry, workload permissions, and regional/account eligibility. Verify availability from current terms and account-level access rather than assuming a public offer guarantees capacity.
 
@@ -100,7 +100,7 @@ Distinguish active execution capacity from conditional or time-limited offers. D
 3. **Global English:** dialect/register robustness, clarity, instruction fidelity, and multilingual coverage are measured.
 4. **Reliability:** repeated trials measure variance, invalid outputs, hallucination, refusal errors, and calibration.
 5. **Runtime:** candidate is loaded and exercised on the intended serving stack; tool-call parsing and cancellation/timeouts are tested.
-6. **Resource fit:** measured memory, throughput, latency, and cost fit an explicitly approved deployment envelope.
+6. **Resource fit:** measured memory, throughput and latency fit the verified deployment resource envelope.
 7. **Training fit:** a small, bounded compatibility experiment verifies tokenizer, model class, target-module discovery, and adapter save/reload before any substantial run.
 8. **Decision review:** retain raw evidence and explain why the selected candidate is better suited than the alternatives.
 
