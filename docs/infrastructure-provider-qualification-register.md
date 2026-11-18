@@ -60,15 +60,15 @@ Assessment:
 
 **Qualification state: discovered, access unverified.** The integration is technically relevant to Nemotron, but public documentation is not a capacity grant. Require a real workspace, node-group availability, quota, pricing/contract, region, data-handling terms and an approved Vectolith adapter before qualification.
 
-## Qualification gates before any paid workload
+## Qualification gates before any remote workload
 
 1. **Identity and eligibility:** confirm the legal account holder, country, account verification and payment method are accepted without geographic workarounds.
 2. **Capacity:** verify exact GPU model/VRAM, region, availability, quota, maximum runtime and storage.
-3. **Economics:** record the exact hourly rate, billing granularity, storage, egress, tax, minimum charge and an explicit run budget.
+3. **Economics:** record the exact hourly rate, billing granularity, storage, egress, tax, minimum charge and a documented resource envelope.
 4. **Security and data governance:** review data location, retention/deletion, encryption, isolation, access control, network exposure, support and incident terms. Use synthetic data until approval.
 5. **Execution compatibility:** pin the container image, CUDA/driver, framework, Nemotron revision, foundation model revision and tokenizer revision; run preflight and a no-training environment smoke test first.
 6. **Artifact portability:** export logs, checkpoints and run metadata to Vectolith-controlled storage with content hashes and restore verification.
-7. **Cost controls:** require a host-verified budget reference, operator approval, automatic stop/termination, and a tested cleanup path.
+7. **Cost controls:** require a host-verified run-approval reference, operator approval, automatic stop/termination, and a tested cleanup path.
 
 ## Current operating decision
 
@@ -76,4 +76,4 @@ Assessment:
 - RunPod Secure Cloud is the first candidate to verify for a small, bounded GPU smoke test, but it is not approved or connected.
 - Lambda is excluded for the current Nigeria-based billing context.
 - DGX Cloud Lepton remains an unverified enterprise/contracted option.
-- Do not run model training until the foundation model, dataset, evaluation gates, compute budget and provider qualification are all approved.
+- Do not run model training until the foundation model, dataset, evaluation gates, compute capacity and provider qualification are all approved.
