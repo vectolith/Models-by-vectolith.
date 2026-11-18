@@ -72,7 +72,7 @@ A teacher is not qualified by family name, model-card claim or benchmark result 
 - Unverified training-output permission: block use as a distillation teacher.
 - No controlled held-out evaluation: no foundation selection.
 - Fewer than four qualified teachers for a student: no distillation run.
-- No explicit approval for paid resources: no paid fallback.
+- No explicit approval for external resources: no external fallback.
 - Any student depends on teachers at inference: release blocked.
 
 ## Current implementation boundary
