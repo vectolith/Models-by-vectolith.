@@ -84,7 +84,7 @@ Official availability references:
 - Kaggle notebooks: https://www.kaggle.com/docs/notebooks
 - Google Colab resource limits: https://research.google.com/colaboratory/faq.html
 
-A candidate's free-compute status must be recorded per actual account/session, including accelerator model, VRAM, system RAM, free disk, queue/availability, quota remaining, runtime limit and whether the exact candidate loads and completes the qualification workload without billing.
+A candidate's execution availability must be recorded per actual account/session, including accelerator model, VRAM, system RAM, available disk, queue/availability, quota remaining, runtime limit and whether the exact candidate loads and completes the qualification workload.
 
 
 ## Candidate refresh — 15 November 2026
