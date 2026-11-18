@@ -78,7 +78,7 @@ Next execution is to resolve immutable revisions and license snapshots for the c
 
 CI now snapshots the exact Hub revision, license-file content/hash, model-card content/hash, parameter metadata, tokenizer/config files and weight-file inventory for every manifest candidate. These snapshots are discovery evidence, not legal approval or teacher qualification.
 
-For zero-cost execution, Kaggle documents free GPU notebook access with a P100 or T4 options, but accelerator availability is limited and queues may apply; Google Colab states that free GPU resources are not guaranteed and limits vary dynamically. Therefore these services are **conditionally available**, not verified for this project until an eligible account starts a session and the actual model workload probe succeeds. Promotional credits and paid Colab/Kaggle add-ons are excluded.
+Public provider documentation describes variable accelerator availability, queues and session limits. Treat an environment as **conditionally available**, not verified for this project, until an eligible account starts a session and the actual model workload probe succeeds. Record the exact environment and observed limits.
 
 Official availability references:
 - Kaggle notebooks: https://www.kaggle.com/docs/notebooks
