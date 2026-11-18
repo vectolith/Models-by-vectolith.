@@ -28,7 +28,7 @@ The machine-readable pool is `evaluation/fixtures/teacher_panel_candidates_v1.js
 | gpt-oss-20b | Reasoning and structured tool-use | Code correctness and Harmony tool-call fidelity |
 | Gemma 4 E4B | Efficient technical and multimodal comparator | Must prove software-engineering quality |
 | Qwen2.5-Coder-7B-Instruct | Compact code-specialist comparator | Older generation; verify exact license and quality |
-| Devstral Small 2 24B | Repository-level software engineering specialist | 24B dense footprint and zero-cost availability |
+| Devstral Small 2 24B | Repository-level software engineering specialist | 24B dense footprint and execution availability |
 
 These are **qualification candidates**, not the final four. The candidate pool remains extensible; discovery must admit better models and additional families.
 
@@ -44,7 +44,7 @@ Hard gates:
 4. Run the complete role-specific suite with raw outputs, reproducible settings and independent grading. Rubric keyword matching alone is not a qualification.
 5. Measure quality by competency, factuality, uncertainty calibration, instruction adherence, multilingual performance, tool-call validity, repeated-run variance and failure rate.
 6. Measure actual operating efficiency: peak RAM/VRAM, total checkpoint footprint, KV-cache growth, cold-start/load time, time-to-first-token, p50/p95 latency, tokens/sec, throughput, accepted examples/tokens per unit of compute, and cost per accepted training token.
-7. Verify that the exact checkpoint can be run on genuinely free compute available to the project. Free-to-download weights, promotional credits and an unverified free-tier claim do not count as available compute.
+7. Verify that the exact checkpoint can run in an execution environment actually available to the project. Downloadable weights and unverified provider claims do not establish loader, hardware or runtime compatibility.
 8. Generate a pilot contribution shard, cross-review it, apply deterministic/executable checks where possible, and prove the teacher contributes useful accepted examples.
 9. Run leave-one-teacher-out ablation. A teacher that adds no measurable held-out capability is replaced, even if that would otherwise leave four; qualification is not a headcount exercise.
 
@@ -58,37 +58,37 @@ The final panel should be a quality/efficiency Pareto choice: retain candidates 
 
 Each task must have an objective or human-reviewed rubric. Keep public starter tasks separate from a private holdout. Track performance per competency; do not collapse all results into one opaque aggregate score.
 
-## Efficiency and zero-budget policy
+## Efficiency and execution feasibility
 
 - Compare multiple sizes within each model family where practical.
 - Compare dense and MoE models using both total weight footprint and active compute; active parameters do not eliminate weight storage.
 - Evaluate full precision and explicitly identified quantized variants as separate artifacts. Never compare one candidate's BF16 weights with another candidate's quantized weights without recording the difference.
-- Do not pay for APIs, GPU time, storage, or credits. Promotional trials are not recurring free compute.
-- If a candidate cannot be evaluated with verified free resources, mark it **blocked by compute availability**, not qualified and not failed on model quality.
+- Do not infer execution availability from advertised capacity; verify access, workload permissions, session limits and resource fit before dispatch.
+- If a candidate cannot be evaluated with verified execution capacity, mark it **blocked by compute availability**, not qualified and not failed on model quality.
 - Do not begin student training until the foundation is selected and four teachers per student have passed all gates.
 
 ## Current decision
 
 The manifest records six candidates for each student. **The number of qualified teachers is currently zero for Prime and zero for Prima.** Qwen2.5-7B-Instruct remains in Prime's evaluation pool as requested; it does not automatically displace newer models or become a teacher without passing the same tests.
 
-Next execution is to resolve immutable revisions and license snapshots for the complete pools, expand the role-specific qualification suites, and run real evaluations on verified no-cost compute. Once evidence exists, appoint the best four or more for each student, create contribution shards, and require positive per-teacher ablation before accepting the panel.
+Next execution is to resolve immutable revisions and license snapshots for the complete pools, expand the role-specific qualification suites, and run real evaluations in a verified execution environment. Once evidence exists, appoint the best four or more for each student, create contribution shards, and require positive per-teacher ablation before accepting the panel.
 
 
-## Immutable candidate discovery and free-compute status
+## Immutable candidate discovery and execution availability
 
 CI now snapshots the exact Hub revision, license-file content/hash, model-card content/hash, parameter metadata, tokenizer/config files and weight-file inventory for every manifest candidate. These snapshots are discovery evidence, not legal approval or teacher qualification.
 
-For zero-cost execution, Kaggle documents free GPU notebook access with a P100 or T4 options, but accelerator availability is limited and queues may apply; Google Colab states that free GPU resources are not guaranteed and limits vary dynamically. Therefore these services are **conditionally available**, not verified for this project until an eligible account starts a session and the actual model workload probe succeeds. Promotional credits and paid Colab/Kaggle add-ons are excluded.
+Public provider documentation describes variable accelerator availability, queues and session limits. Treat an environment as **conditionally available**, not verified for this project, until an eligible account starts a session and the actual model workload probe succeeds. Record the exact environment and observed limits.
 
 Official availability references:
 - Kaggle notebooks: https://www.kaggle.com/docs/notebooks
 - Google Colab resource limits: https://research.google.com/colaboratory/faq.html
 
-A candidate's free-compute status must be recorded per actual account/session, including accelerator model, VRAM, system RAM, free disk, queue/availability, quota remaining, runtime limit and whether the exact candidate loads and completes the qualification workload without billing.
+A candidate's execution availability must be recorded per actual account/session, including accelerator model, VRAM, system RAM, available disk, queue/availability, quota remaining, runtime limit and whether the exact candidate loads and completes the qualification workload.
 
 
 ## Candidate refresh — 15 November 2026
 
-The candidate pools are continuously refreshed rather than frozen to the original shortlist. The current expansion adds Qwen3.8-27B and Qwen3.6-27B/35B-A3B comparisons, plus Gemma 4 E2B, E4B, 12B, 26B-A4B and 31B instruction checkpoints where published. The smaller Gemma variants must be compared using both effective and total parameters because PLE embeddings contribute to actual weight storage. MoE candidates must be measured by total weight footprint as well as active parameters. These additions remain unqualified until exact revisions, legal/output-training permissions, role-specific benchmarks, measured efficiency, free-compute execution and contribution/ablation evidence pass.
+The candidate pools are continuously refreshed rather than frozen to the original shortlist. The current expansion adds Qwen3.8-27B and Qwen3.6-27B/35B-A3B comparisons, plus Gemma 4 E2B, E4B, 12B, 26B-A4B and 31B instruction checkpoints where published. The smaller Gemma variants must be compared using both effective and total parameters because PLE embeddings contribute to actual weight storage. MoE candidates must be measured by total weight footprint as well as active parameters. These additions remain unqualified until exact revisions, legal/output-training permissions, role-specific benchmarks, measured efficiency, verified execution availability and contribution/ablation evidence pass.
 
 Official model-family references: Qwen3.8 model card (https://huggingface.co/Qwen/Qwen3.8-27B); Gemma 4 model overview (https://huggingface.co/blog/gemma4).
