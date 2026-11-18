@@ -24,7 +24,7 @@ See the [delegated execution contract](docs/delegated-execution-contract.md) and
 
 This repository defines model-side specifications and optional interfaces. It does not provide a mandatory shared runtime for other Vectolith products. Each product that uses a model is responsible for its own application runtime, authentication, authorization, data storage, orchestration, deployment, observability, and release lifecycle.
 
-A product may optionally integrate with a released model through a documented API or adapter, but that integration must be replaceable and must not be required for the product to build, deploy, or provide its core purpose. No Vectolith product is assumed to consume Core Prime, this repository, or any other Vectolith product.
+No product-to-product integration is part of the default architecture. A future consumer may use a released model only through an explicitly approved, documented and replaceable interface; the consuming product must remain buildable, deployable and useful without it. No Vectolith product is assumed to consume Core Prime, this repository, or any other Vectolith product.
 
 - [Extensible family specification](docs/model-family-specification.md)
 - [Shared identity contract](docs/shared-identity-contract.md)
