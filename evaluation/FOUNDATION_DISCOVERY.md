@@ -40,7 +40,7 @@ For each provider, maintain a separate account-level record containing:
 - Storage, persistent volume, egress, download and model-cache limits.
 - Provider terms URL, capture timestamp and the exact execution access condition verified.
 - Workload restrictions and whether model inference, benchmarking, fine-tuning and long-running jobs are permitted.
-- Evidence of zero charges and confirmation that no billing-enabled fallback was used.
+- Evidence of account-level execution access and confirmation that no unverified fallback path was used.
 
 Only mark a resource **verified available** after an eligible account actually starts a session and a workload probe succeeds. Use **conditional** for queue, quota or account-dependent offers; **unverified** when only public marketing documentation exists; **unavailable** when an attempted session cannot start. Do not assume a provider label guarantees access, duration, workload permission or usable capacity.
 
