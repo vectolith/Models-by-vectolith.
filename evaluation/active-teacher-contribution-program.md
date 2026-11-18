@@ -30,9 +30,9 @@
 9. Participation in inference/evaluation does not imply teacher qualification. Qualification still requires legal review, independent human grading/adjudication, safety, protected holdout and corpus-integrity gates, and the four-qualified-teacher requirement.
 10. Training-output permission is a separate explicit gate. No response may enter a training corpus or optimization run until written permission is recorded for that candidate and intended use.
 
-## Zero-budget execution constraints
+## Execution availability and resource controls
 
-Use only legitimately free resources already available to the project: local execution on available hardware or confirmed free-tier capacity within its actual limits. Never assume hosted CI is free, never dispatch a run that could incur charges, and never use paid APIs, paid inference, paid compute, trials, quota workarounds or account rotation. If available resources cannot fit a candidate, record the measured blocker and retain the candidate in the active queue until suitable free capacity is available.
+Before dispatch, verify that the selected execution environment is accessible, the intended workload is permitted, and its actual CPU/GPU, memory, storage, session and concurrency limits can accommodate the candidate. Record measured capacity and runtime observations. Do not infer availability from public claims or model-download access. If a candidate cannot run within the verified environment, preserve the measured blocker and keep its intake work active; never bypass platform limits or silently substitute an unverified execution path.
 
 ## Core Prime scope and safeguards
 
