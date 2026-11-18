@@ -111,7 +111,7 @@ A student is not considered taught merely because training completed. Before rel
 - ablations confirm meaningful contributions from every teacher;
 - reproducibility, provenance, security and license checks pass.
 
-The production runtime may use vectolith's own explicitly registered peer models when the product's delegation design calls for it. That is separate from teacher dependence: a student must never need its former training teachers to function. Core Prime and Core Prima may delegate to each other under the VELNOR delegation contract, but neither may silently substitute an external teacher for its own missing capability.
+The model-family runtime maintained in this repository may use explicitly registered peer models when a model-family workflow calls for it. That is separate from teacher dependence: a released student must never need its former training teachers to function. Core Prime and Core Prima may communicate through the family task contract defined here, but neither may silently substitute an external teacher for its own missing capability. No external Vectolith product or shared runtime is required.
 
 ## 7. Future model onboarding
 
