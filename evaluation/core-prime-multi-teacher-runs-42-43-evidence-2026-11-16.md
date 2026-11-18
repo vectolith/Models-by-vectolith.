@@ -34,7 +34,7 @@ Every successful artifact was downloaded and inspected. Its JSON result array ma
 | 43 | LFM2.5-2.6B | 133347523890 | 14245324681 | 180 | 0 | 162 |
 | 43 | Phi-4-mini-instruct | 133444059471 | 14261964529 | 180 | 0 | 69 |
 
-The three existing teachers remain additive. LFM2.5 remains discovery-only. These are additional run-specific response sets; none replaces the run 40 response set and none has been graded or ranked.
+The three existing teachers remain additive. LFM2.5 also has preserved real Core Prime inference evidence in runs 40, 42 and 43 and remains an additive candidate alongside them. It is not yet qualified or approved for training; legal review and separate written permission to use its outputs for training remain pending. These are additional run-specific response sets; none replaces another run's response set and none has been ranked or discarded.
 
 ## Immutable model revisions and execution observations
 
