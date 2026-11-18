@@ -15,7 +15,7 @@ Evaluate multiple eligible checkpoint sizes and variants within each family. Do 
 - reliability, instruction following, and factuality;
 - knowledge quality and task-specific competency.
 
-Record measured inference cost, peak memory/VRAM requirements, throughput and latency, quantization compatibility, and the actual availability and limits of free compute. Distinguish free-to-download weights from free-to-run inference: open weights do not make compute free. No paid inference or compute is assumed or initiated.
+Record measured peak memory/VRAM requirements, throughput and latency, quantization compatibility, and the actual availability and limits of the execution environment. Distinguish downloadable weights from runnable checkpoints: open weights do not establish loader, hardware or runtime compatibility.
 
 Select at least four distinct, qualified teachers for each student. Panels may overlap, but each must collectively cover that student's required competencies and every appointed teacher must make a measurable accepted contribution. Select on demonstrated quality and practical execution feasibility, not parameter count alone.
 
