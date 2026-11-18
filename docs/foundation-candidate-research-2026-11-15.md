@@ -104,6 +104,6 @@ Prima: SWE-bench-style repository tasks, controlled issue-to-PR tasks, unit/inte
 
 ## Current recommendation
 
-Do **not** select either foundation yet. Prioritize a reproducible first-round comparison of Qwen3.5-9B, Granite 4.2 8B, and Gemma 4 E4B. Keep Mistral Small 4 as a high-capability reference if a suitable GPU budget is later approved.
+Do **not** select either foundation yet. Prioritize a reproducible first-round comparison of Qwen3.5-9B, Granite 4.2 8B, and Gemma 4 E4B. Keep Mistral Small 4 as a high-capability reference if suitable GPU capacity becomes available.
 
 This is the most defensible next step: the available evidence is enough to narrow the first test batch, but not enough to establish which foundation is best for either model. No weights have been downloaded, no training has started, and no GPU spending is authorized by this research note.
