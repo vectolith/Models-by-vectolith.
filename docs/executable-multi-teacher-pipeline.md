@@ -83,7 +83,7 @@ The caller must run the independence test in an isolated process/container with 
 ~~~python
 # 1. Discover multiple sizes/variants across the initial families and beyond.
 # 2. Benchmark candidates on the same versioned, role-specific suite.
-# 3. Record measured cost, memory, latency, and real free-compute availability.
+# 3. Record measured resource use, memory, latency, and execution availability.
 # 4. Qualify candidates and build one assignment panel (>=4 teachers) per student.
 # 5. Generate accepted JSONL corpora independently.
 # 6. Fine-tune each student's own selected foundation.
