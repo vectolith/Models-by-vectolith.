@@ -91,7 +91,7 @@ These weights are a prioritization instrument, not a substitute for minimum gate
 
 Record execution feasibility for every candidate. For each provider or community environment, record accelerator type/count, VRAM, session and quota limits, queue/wait availability, permitted model sizes, storage and egress limits, expiry, workload permissions, and regional/account eligibility. Verify availability from current terms and account-level access rather than assuming a public offer guarantees capacity.
 
-Separate genuinely no-cost capacity from trials, promotional credits, limited-time grants, and services that require billing activation. Do not start paid API calls, paid compute, or a training run without explicit approval. If no suitable free capacity is currently available, mark the candidate **not currently testable at zero cost** rather than silently relaxing the evaluation or claiming it passed. Record measured inference cost and resource use where a provider or environment supplies them; parameter count alone is not a cost estimate.
+Distinguish active execution capacity from conditional or time-limited offers. Do not start external inference or a training run without explicit authorization. If no suitable execution capacity is currently available, mark the candidate **not currently testable** rather than silently relaxing the evaluation or claiming it passed. Record measured resource use and runtime where the environment supplies them; parameter count alone is not a capacity estimate.
 
 ### Minimum evaluation gates
 
