@@ -2,7 +2,7 @@
 
 ## Training prerequisites
 
-Training is blocked until foundations are selected and pinned to immutable revisions; licenses are reviewed; data provenance and splits are documented; trainer compatibility is proven; baselines are complete; GPU capacity and run budget are explicitly approved; and reproducible configurations and rollback plans exist.
+Training is blocked until foundations are selected and pinned to immutable revisions; licenses are reviewed; data provenance and splits are documented; trainer compatibility is proven; baselines are complete; GPU capacity and the run-specific resource envelope are explicitly approved; and reproducible configurations and rollback plans exist.
 
 Do not launch expensive jobs on smoke-test data or unverified hardware assumptions.
 
