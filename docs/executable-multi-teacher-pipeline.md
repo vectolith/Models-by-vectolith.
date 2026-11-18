@@ -94,7 +94,7 @@ The caller must run the independence test in an isolated process/container with 
 
 ## Current execution boundary
 
-The repository contains the endpoint adapter, qualification and panel selection, provenance-preserving corpus generation, optional LoRA SFT, capability/ablation helpers, and a fail-closed release decision. It does not yet appoint real teachers or launch a run. Exact teacher revisions, license/terms evidence, student foundation selection, evaluation datasets, verified compute availability and budget approval remain prerequisites. No provider calls, paid inference, model downloads or training jobs are started by CI.
+The repository contains the endpoint adapter, qualification and panel selection, provenance-preserving corpus generation, optional LoRA SFT, capability/ablation helpers, and a fail-closed release decision. It does not yet appoint real teachers or launch a run. Exact teacher revisions, license/terms evidence, student foundation selection, evaluation datasets, verified execution access and resource approvals remain prerequisites. CI does not start provider calls, model downloads or training jobs.
 
 
 ### Training-run safeguards added
