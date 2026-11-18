@@ -93,7 +93,7 @@ VECTOLITH_RUN_LIVE_TESTS=1 python -m unittest evaluation.tests.test_live_hugging
 
 `run_real_candidate_eval.py` records download time, model-load time, generation time, checkpoint disk size, per-case latency and token counts, CPU capability, visible CPU count, peak process memory, immutable revision, runtime versions and raw model outputs. `summarize_real_candidate_results.py` creates JSON and Markdown reports from those real artifacts. The report intentionally does not invent a capability score or quality ranking.
 
-This remains an execution/resource comparison, not a foundation selection. The run uses CPU only and does not predict GPU performance or establish free GPU-provider access. Public smoke-suite outputs require independent rubric grading and are not a hidden holdout.
+This remains an execution/resource comparison, not a foundation selection. The run uses CPU only and does not predict GPU performance or establish GPU-provider availability. Public smoke-suite outputs require independent rubric grading and are not a hidden holdout.
 
 Every candidate remains `license_review=pending_human_legal_review`, `training_output_permission=not_verified`, and `teacher_qualification=not_qualified`. No student training is performed.
 
