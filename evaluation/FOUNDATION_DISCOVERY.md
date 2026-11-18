@@ -34,7 +34,7 @@ Run `python evaluation/probe_compute.py --output artifacts/compute/observation.j
 For each provider, maintain a separate account-level record containing:
 
 - Provider, account owner/identifier (never commit secrets), country/region and verification state.
-- Whether a payment card is required, whether billing activation is required, and whether any credit is promotional.
+- Whether the account is eligible, the workload is permitted, and access depends on a trial, quota or time-limited offer.
 - Successful session start timestamp and observed accelerator model/count/VRAM.
 - Quota remaining before and after the run, reset policy, maximum session duration, idle timeout, queue wait and observed interruption.
 - Storage, persistent volume, egress, download and model-cache limits.
