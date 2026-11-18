@@ -64,7 +64,7 @@ Each task must have an objective or human-reviewed rubric. Keep public starter t
 - Compare dense and MoE models using both total weight footprint and active compute; active parameters do not eliminate weight storage.
 - Evaluate full precision and explicitly identified quantized variants as separate artifacts. Never compare one candidate's BF16 weights with another candidate's quantized weights without recording the difference.
 - Do not infer execution availability from advertised capacity; verify access, workload permissions, session limits and resource fit before dispatch.
-- If a candidate cannot be evaluated with verified free resources, mark it **blocked by compute availability**, not qualified and not failed on model quality.
+- If a candidate cannot be evaluated with verified execution capacity, mark it **blocked by compute availability**, not qualified and not failed on model quality.
 - Do not begin student training until the foundation is selected and four teachers per student have passed all gates.
 
 ## Current decision
