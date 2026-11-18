@@ -35,7 +35,7 @@ Update each record as evidence arrives. An unresolved field does not stop unrela
 - `provider_claim`: statement published by the model publisher or service provider.
 - `metadata_observed`: information retrieved from an official model repository or API at a recorded time.
 - `verified`: independently checked fact with retained supporting evidence.
-- `measured`: result observed in an identified VELNOR run, with configuration and raw evidence.
+- `measured`: result observed in an identified, product-specific evaluation run, with configuration and raw evidence.
 - `pending`: not yet established.
 - `blocked`: an attempted action cannot proceed under current conditions; include the reason.
 - `not_applicable`: field does not apply, with a short rationale.
@@ -52,4 +52,4 @@ If the exact candidate cannot be fetched, licensed, loaded, or evaluated, preser
 
 Publish a per-candidate evidence ledger and separate Prime/Prima scorecards. Report missing evidence and uncertainty alongside results. Preserve raw outputs, per-case grades, run manifests, dataset/prompt hashes, software versions, hardware observations, and failures. Compare trade-offs by dimension rather than hiding them in one score.
 
-The current repository research note is a discovery shortlist, not a benchmark report. At the time this standard was added, no VELNOR comparative foundation benchmark, final selection, or foundation-specific training approval had been established.
+The current repository research note is a discovery shortlist, not a benchmark report. At the time this standard was added, no comparative foundation benchmark in this repository, final selection, or foundation-specific training approval had been established.
