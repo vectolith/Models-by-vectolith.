@@ -34,15 +34,13 @@ Run `python evaluation/probe_compute.py --output artifacts/compute/observation.j
 For each provider, maintain a separate account-level record containing:
 
 - Provider, account owner/identifier (never commit secrets), country/region and verification state.
-- Whether a payment card is required, whether billing activation is required, and whether any credit is promotional.
 - Successful session start timestamp and observed accelerator model/count/VRAM.
 - Quota remaining before and after the run, reset policy, maximum session duration, idle timeout, queue wait and observed interruption.
 - Storage, persistent volume, egress, download and model-cache limits.
-- Provider terms URL, capture timestamp and the exact no-cost entitlement used.
+- Provider terms URL, capture timestamp and the applicable service entitlement.
 - Workload restrictions and whether model inference, benchmarking, fine-tuning and long-running jobs are permitted.
-- Evidence of zero charges and confirmation that no billing-enabled fallback was used.
 
-Only mark a resource **verified available** after an eligible account actually starts a session and a workload probe succeeds. Use **conditional** for queue/quota/account-dependent offers; **promotional** for credits or trials; **unverified** when only public marketing documentation exists; **unavailable** when an attempted session cannot start. Promotional credits do not count as recurring free compute. A strict no-budget resource must not require billing activation or permit charges.
+Only mark a resource **verified available** after an eligible account actually starts a session and a workload probe succeeds. Use **conditional** for queue/quota/account-dependent offers; **promotional** for credits or trials; **unverified** when only public marketing documentation exists; **unavailable** when an attempted session cannot start. Promotional credits do not count as recurring free compute. A resource must not be marked verified until its applicable access and usage conditions have been checked.
 
 ## Benchmark protocol
 
@@ -56,7 +54,7 @@ Before comparing actual checkpoints:
 4. Run the same prompt suite, decoding parameters, context settings and repeated trials for each candidate.
 5. Grade with blinded evaluators using the case rubrics; retain raw outputs, evaluator/version, per-case scores and disagreements.
 6. Report per-category results, confidence intervals, repeated-run variance, refusals, invalid tool calls and failures. Do not collapse everything into one score without publishing the dimensions.
-7. Measure peak VRAM/RAM, time-to-first-token, output tokens/sec, throughput, concurrency, cold-start time and actual zero-cost quota consumed.
+7. Measure peak VRAM/RAM, time-to-first-token, output tokens/sec, throughput, concurrency, cold-start time and observed quota and resource consumption.
 8. Run a bounded adapter compatibility test: model load, tokenizer consistency, target-module discovery, tiny LoRA/QLoRA step, adapter save/reload and deterministic inference check. This is a compatibility test, not student training.
 9. Select Prime and Prima independently against their own minimum gates.
 
@@ -66,13 +64,13 @@ A teacher is not qualified by family name, model-card claim or benchmark result 
 
 ## Stop conditions
 
-- No verified zero-cost GPU session: record not currently testable; do not call paid APIs.
+- No verified execution session: record not currently testable; do not claim evaluation results.
 - Missing immutable revision: reject snapshot.
 - Missing or ambiguous license evidence: block appointment.
 - Unverified training-output permission: block use as a distillation teacher.
 - No controlled held-out evaluation: no foundation selection.
 - Fewer than four qualified teachers for a student: no distillation run.
-- No explicit approval for paid resources: no paid fallback.
+- No explicit run approval: no execution.
 - Any student depends on teachers at inference: release blocked.
 
 ## Current implementation boundary
