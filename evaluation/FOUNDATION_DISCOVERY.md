@@ -42,7 +42,7 @@ For each provider, maintain a separate account-level record containing:
 - Workload restrictions and whether model inference, benchmarking, fine-tuning and long-running jobs are permitted.
 - Evidence of zero charges and confirmation that no billing-enabled fallback was used.
 
-Only mark a resource **verified available** after an eligible account actually starts a session and a workload probe succeeds. Use **conditional** for queue/quota/account-dependent offers; **promotional** for credits or trials; **unverified** when only public marketing documentation exists; **unavailable** when an attempted session cannot start. Promotional credits do not count as recurring free compute. A strict no-budget resource must not require billing activation or permit charges.
+Only mark a resource **verified available** after an eligible account actually starts a session and a workload probe succeeds. Use **conditional** for queue, quota or account-dependent offers; **unverified** when only public marketing documentation exists; **unavailable** when an attempted session cannot start. Do not assume a provider label guarantees access, duration, workload permission or usable capacity.
 
 ## Benchmark protocol
 
