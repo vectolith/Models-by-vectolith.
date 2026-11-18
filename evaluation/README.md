@@ -68,7 +68,7 @@ Catalog search returns discovery leads, not qualified candidates. Snapshots pin 
 
 The ordinary unit suite uses deterministic fixtures for edge cases. The live integration suite makes real HTTPS requests to the public Hugging Face Hub, performs catalog searches, and snapshots a real public checkpoint's metadata/model card.
 
-CI downloads Qwen3-0.6B at an immutable revision and runs both public Prime and Prima smoke suites through the real tokenizer and model using Transformers on CPU. It records raw outputs, prompt hashes, rubric text, input/output token counts, per-case latency, runtime versions, architecture and peak RSS. These public smoke fixtures are execution-path checks, not secret holdouts and not a capability score. This is not a comparison across model families, a GPU/free-provider test, or training.
+CI downloads Qwen3-0.6B at an immutable revision and runs both public Prime and Prima smoke suites through the real tokenizer and model using Transformers on CPU. It records raw outputs, prompt hashes, rubric text, input/output token counts, per-case latency, runtime versions, architecture and peak RSS. These public smoke fixtures are execution-path checks, not secret holdouts and not a capability score. This is not a comparison across model families, a GPU-provider availability test, or training.
 
 Run the real checkpoint suite locally (requires torch, transformers, accelerate and network access):
 
