@@ -18,8 +18,13 @@ personal data from logs, screenshots, and requests.
 ## Scope
 
 Reports may cover authentication, authorization, cryptography, data exposure,
-tenant isolation, unsafe parsing, dependency vulnerabilities, build/release
-integrity, and deployment configuration in this repository.
+unsafe parsing, dependency vulnerabilities, build/release integrity, and
+model-data, evaluation, training or artifact handling in this repository.
+
+Model security includes dataset and teacher provenance, training-use rights,
+secret isolation, protected holdouts, artifact integrity and authorization for
+training execution. Software CI success does not establish legal data rights,
+teacher qualification, human-evaluation completion or training approval.
 
 Do not test against third-party services, accounts, wallets, homeservers,
 production deployments, or other users' data without explicit authorization.
