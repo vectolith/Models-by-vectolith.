@@ -81,7 +81,7 @@ This section supersedes the earlier "discovery-only" and "deferred" dispositions
 - **Gemma 4 E2B IT:** active intake contributor. Next: resolve repository access and exact terms, immutable snapshot, supported text/multimodal loader validation, resource measurement and full Prime v1-v4 inference when gates pass.
 - **NVIDIA Nemotron 3 Nano 4B:** active intake contributor, no longer deferred as a research topic. Next: verify OpenMDW-1.1 terms and snapshot evidence, test the actual hybrid Mamba/Transformer architecture with a compatible pinned loader, measure resource requirements and run full Prime v1-v4 inference when gates pass.
 
-Every candidate runs independently so one candidate's failure cannot block another. All use only confirmed free/local compute within available limits; no paid inference, paid APIs, paid compute, trials, quota workarounds or account rotation. Preserve real outputs, including truncations and failures. No candidate is ranked or selected, and no teacher response is discarded.
+Every candidate runs independently so one candidate's failure cannot block another. Verify execution access, workload permissions and resource limits before dispatch. Preserve measured blockers and all real outputs, including truncations and failures; never bypass platform limits. No candidate is ranked or selected, and no teacher response is discarded.
 
 Inference participation remains separate from qualification and training authorization. Legal review, independent human grading/adjudication, safety, protected holdout, corpus integrity and the four-qualified-teacher gate remain mandatory. Written permission for generated-output training use must be separately recorded. Core Prima remains paused; no training is authorized or started.
 
