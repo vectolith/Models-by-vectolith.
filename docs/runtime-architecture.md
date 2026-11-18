@@ -32,7 +32,7 @@ A product may optionally connect to a released model through a documented API, S
 6. Fail closed for consequential actions when model output is invalid, unavailable, or unverifiable.
 7. Be tested by the consuming product independently of this repository's training and evaluation pipelines.
 
-No downstream consumer is presumed. No Vectolith product, including VELNOR, is required to adopt this model family or any runtime described here.
+No downstream consumer is presumed. No other Vectolith product is required to adopt this model family or any runtime described here.
 
 ## Model family operations
 
