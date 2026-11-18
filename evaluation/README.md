@@ -45,6 +45,10 @@ The output records raw response text, tool calls, refusal, finish reason, token 
 
 See [automated discovery and qualification](FOUNDATION_DISCOVERY.md) for immutable Hugging Face metadata snapshots, compute evidence, benchmark methodology, and teacher gates.
 
+## Active Core Prime teacher contributions
+
+The teacher pool is an additive evaluation ecosystem, not a three-model shortlist. LFM2.5 and Phi-4 already have real Prime inference evidence; Qwen3.5-2B, Gemma 4 E2B IT and NVIDIA Nemotron 3 Nano 4B are active intake contributors with owned snapshot, compatibility, resource and inference work paths. They are not catalog-only discovery items. Their actual responses must be produced by real, independently recorded inference runs after immutable revision, applicable license/access, loader and execution-environment checks pass. See [the active teacher contribution program](active-teacher-contribution-program.md) for the execution contract, per-candidate next steps and safeguards. No candidate is ranked or selected, and no response is discarded.
+
 ## Candidate and compute discovery
 
 ```bash
@@ -58,13 +62,13 @@ python evaluation/discover_hf_candidates.py \\
 python evaluation/probe_compute.py --output artifacts/compute/observation.json
 ```
 
-Catalog search returns discovery leads, not qualified candidates. Snapshots pin immutable revisions and retain exact retrieved license/model-card text, source URLs and SHA-256 hashes. Missing license evidence remains missing; legal suitability and training-output permission require human review. The compute probe reports process-visible hardware, not account quota, billing state or guaranteed free access. See `FOUNDATION_DISCOVERY.md` for the evidence and stop conditions.
+Catalog search returns discovery leads, not qualified candidates. Snapshots pin immutable revisions and retain exact retrieved license/model-card text, source URLs and SHA-256 hashes. Missing license evidence remains missing; legal suitability and training-output permission require human review. The compute probe reports process-visible hardware, not account-level execution entitlement or guaranteed capacity. See `FOUNDATION_DISCOVERY.md` for the evidence and stop conditions.
 
 ## Tests
 
 The ordinary unit suite uses deterministic fixtures for edge cases. The live integration suite makes real HTTPS requests to the public Hugging Face Hub, performs catalog searches, and snapshots a real public checkpoint's metadata/model card.
 
-CI downloads Qwen3-0.6B at an immutable revision and runs both public Prime and Prima smoke suites through the real tokenizer and model using Transformers on CPU. It records raw outputs, prompt hashes, rubric text, input/output token counts, per-case latency, runtime versions, architecture and peak RSS. These public smoke fixtures are execution-path checks, not secret holdouts and not a capability score. This is not a comparison across model families, a GPU/free-provider test, or training.
+CI downloads Qwen3-0.6B at an immutable revision and runs both public Prime and Prima smoke suites through the real tokenizer and model using Transformers on CPU. It records raw outputs, prompt hashes, rubric text, input/output token counts, per-case latency, runtime versions, architecture and peak RSS. These public smoke fixtures are execution-path checks, not secret holdouts and not a capability score. This is not a comparison across model families, a GPU-provider availability test, or training.
 
 Run the real checkpoint suite locally (requires torch, transformers, accelerate and network access):
 
@@ -89,7 +93,7 @@ VECTOLITH_RUN_LIVE_TESTS=1 python -m unittest evaluation.tests.test_live_hugging
 
 `run_real_candidate_eval.py` records download time, model-load time, generation time, checkpoint disk size, per-case latency and token counts, CPU capability, visible CPU count, peak process memory, immutable revision, runtime versions and raw model outputs. `summarize_real_candidate_results.py` creates JSON and Markdown reports from those real artifacts. The report intentionally does not invent a capability score or quality ranking.
 
-This remains an execution/resource comparison, not a foundation selection. The run uses CPU only and does not predict GPU performance or establish free GPU-provider access. Public smoke-suite outputs require independent rubric grading and are not a hidden holdout.
+This remains an execution/resource comparison, not a foundation selection. The run uses CPU only and does not predict GPU performance or establish GPU-provider availability. Public smoke-suite outputs require independent rubric grading and are not a hidden holdout.
 
 Every candidate remains `license_review=pending_human_legal_review`, `training_output_permission=not_verified`, and `teacher_qualification=not_qualified`. No student training is performed.
 
