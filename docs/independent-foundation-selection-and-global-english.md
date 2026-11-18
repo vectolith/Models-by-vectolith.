@@ -85,7 +85,7 @@ Use separate scorecards; do not transfer one role's weights to the other. Score 
 | Training compatibility and adaptability | 3% | 3% |
 | License and operational constraints | 2% | 2% |
 
-These weights are a prioritization instrument, not a substitute for minimum gates. A high aggregate score cannot compensate for a license failure, unacceptable safety behaviour, unreliable tool execution, or inability to deploy within the approved budget.
+These weights are a prioritization instrument, not a substitute for minimum gates. A high aggregate score cannot compensate for a license failure, unacceptable safety behaviour, unreliable tool execution, or inability to deploy within the verified resource envelope.
 
 ### Free-compute and cost gate
 
