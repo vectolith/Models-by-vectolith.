@@ -119,15 +119,15 @@ Both models must pass the same vectolith identity, instruction hierarchy, safety
 
 Training datasets must have documented provenance, licensing/usage review, deduplication, contamination checks, quality filters, and train/validation/test separation. Keep held-out evaluations private to the extent practical. Do not use benchmark answers as training examples.
 
-## 6. Inference and VELNOR integration gate
+## 6. Inference and optional consumer-interface gate
 
 Do not bind the family to a single inference engine before candidate selection. After each foundation is selected:
 - Choose a serving engine based on that checkpoint's architecture and measured deployment needs.
 - Implement and test a concrete adapter for the selected engine/API.
-- Expose a versioned, authenticated service contract to VELNOR.
-- Keep policy, permissions, tool execution, tenant isolation, approvals, and audit enforcement in VELNOR's trusted runtime, not in model-generated text.
-- Route by model identity, lifecycle, capability, availability, and policy; never by a hard-coded assumption that Prime and Prima share a backend.
-- Test successful delegation, invalid tool calls, timeouts, cancellation, backend failure, partial completion, missing evidence, and independent Prime review.
+- Publish a versioned model interface only if there is a justified consumer need; it is not a requirement for another Vectolith product.
+- Any consuming application owns its own authentication, authorization, policy, permissions, tool execution, tenant isolation, approvals and audit enforcement. Model-generated text is never an authorization authority.
+- Keep model identity, lifecycle, capability and serving requirements explicit; never assume Prime and Prima share a backend.
+- Test model loading, inference correctness, invalid outputs, timeout, cancellation, backend failure, partial output and evidence handling within this repository's own release scope.
 
 ## 7. Initial research shortlist (not a selection)
 
