@@ -4,7 +4,7 @@
 
 This is a **provisional active-shortlist decision**, not a qualification result and not a human quality grade. The decision uses the eight preserved public-suite inference artifacts from workflow run `43741294441`. All original outputs and artifacts remain retained for blinded review and audit. No historical evidence is deleted.
 
-Execution conditions were the same for all candidates: CPU-only GitHub Actions runner class, BF16, greedy decoding, chat template enabled, thinking disabled, and a 256-new-token response cap. These are single-run measurements; they do not establish repeated-run variance or production performance. Runner billing/free-capacity eligibility was not verified.
+Execution conditions were the same for all candidates: CPU-only GitHub Actions runner class, BF16, greedy decoding, chat template enabled, thinking disabled, and a 256-new-token response cap. These are single-run measurements; they do not establish repeated-run variance or production performance. Runner account-level execution eligibility and available capacity were not verified.
 
 ## Active shortlist decision
 
