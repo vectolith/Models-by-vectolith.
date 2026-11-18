@@ -26,7 +26,7 @@ The runtime now includes:
 
 See [the executable pipeline guide](../docs/executable-multi-teacher-pipeline.md) for configuration and execution boundaries. Install optional training dependencies with `python -m pip install -e ".[training]"`.
 
-These components do not select a production teacher or student foundation automatically. Exact model revisions, licenses, provider terms, training-output permissions, held-out evaluation suites, hardware and budget must be reviewed before a run. CI tests do not call providers or start training.
+These components do not select a production teacher or student foundation automatically. Exact model revisions, licenses, provider terms, training-output permissions, held-out evaluation suites, hardware and the run-specific resource envelope must be reviewed before a run. CI tests do not call providers or start training.
 
 ## Infrastructure contribution registry
 
@@ -49,7 +49,7 @@ Versioned JSON Schemas are in `../schemas/`. See [the contribution-system specif
 An optional CLI bridge is available at `vectolith_runtime.adapters.NemotronCLIAdapter`. It uses the documented `nemotron steps show` and `nemotron steps run` interface without importing the Nemotron Python stack or adding it as a runtime dependency.
 
 - Install and pin the Nemotron repository/toolchain separately; the adapter does not install it.
-- Use a local profile for development. Attached profile execution requires a recorded resource-budget reference.
+- Use a local profile for development. Attached profile execution requires a recorded run-approval reference.
 - Every run requires an explicit approval flag and approval reference.
 - The adapter uses argument arrays (no shell), bounded timeouts, step inspection before execution, and captures command output.
 - Detached submissions are intentionally unsupported until Vectolith implements remote job polling, cancellation, and artifact lineage.
@@ -99,4 +99,4 @@ See the [model family specification](../docs/model-family-specification.md), [id
 
 This remains a reference implementation, not a production-ready agent platform. SQLite persistence covers model manifests and infrastructure-contribution metadata; task state remains in-memory. The repository does not yet ship a concrete Hugging Face, vLLM, llama.cpp, hosted API, or other model-provider adapter, nor does it download weights. Applications must supply and secure their own loaders. Authentication/authorization, signed release metadata, health/availability integration, tenant isolation, policy-engine integration, approval UI, sandboxed tool execution, observability exporters, retries/deadlines, and production deployment controls remain future work. Registry membership never implies that weights exist, are loaded, released, or executable.
 
-The SFT entry point also requires a run-specific protected-holdout deployment and candidate-result bundle plus a `training_execution_manifest` that binds the exact dataset, foundation revision, training-code commit, hyperparameters, compute capacity, software image, and approved runtime/cost ceiling. It will refuse to load model weights when any evidence is absent or inconsistent. Validation loss is recorded for training diagnostics only; independent capability evaluation remains a separate release requirement.
+The SFT entry point also requires a run-specific protected-holdout deployment and candidate-result bundle plus a `training_execution_manifest` that binds the exact dataset, foundation revision, training-code commit, hyperparameters, compute capacity, software image, and approved runtime/resource ceiling. It will refuse to load model weights when any evidence is absent or inconsistent. Validation loss is recorded for training diagnostics only; independent capability evaluation remains a separate release requirement.
