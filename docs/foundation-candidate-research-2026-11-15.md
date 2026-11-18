@@ -67,9 +67,9 @@ Prima must be evaluated on repository-level changes, bug localization, debugging
 | Latency, VRAM, cost | No vectolith measurements exist; do not estimate from parameter count alone |
 | Final selection | Not made |
 
-## Zero-budget availability
+## Execution availability
 
-The project has no approved spending budget. A candidate is not considered practically available merely because its weights are open. Before scheduling an evaluation, record current no-cost GPU access, accelerator memory, quota/session duration, queue availability, model-size limits, storage/egress constraints, account and regional eligibility, and whether payment details or billing activation are required. Distinguish free capacity from trial credits and promotional grants. No paid inference, hosted API, or compute is authorized by this research note. If a candidate cannot be evaluated on genuinely free capacity, record it as pending rather than substituting vendor benchmark claims for measured results.
+A candidate is not considered practically runnable merely because its weights are open. Before scheduling an evaluation, verify accelerator access, memory, quota and session duration, queue availability, model-size limits, storage and egress constraints, workload permissions, and account or regional eligibility. Distinguish currently available capacity from conditional or unverified offers. If execution access or resource fit cannot be confirmed, record the candidate as pending rather than substituting vendor benchmark claims for measured results.
 
 ## Reproducible evaluation protocol
 
