@@ -96,7 +96,7 @@ Every training invocation must produce a machine-readable run manifest before wo
 - foundation repository/model ID, immutable weight revision, tokenizer revision and configuration hash;
 - dataset ID/version/hash and explicit train/validation split references;
 - trainer adapter/name/version, source commit, method (SFT, PEFT, RLVR, preference optimization, or distillation), full hyperparameter/config snapshot and random seed;
-- hardware/runtime inventory, precision, distributed topology, memory observations and approved resource budget;
+- hardware/runtime inventory, precision, distributed topology, memory observations and approved resource envelope;
 - output checkpoint/artifact URI and hashes, logs, metrics, evaluation report references and known limitations;
 - stop reason, failure details, rollback parent and operator identity.
 
@@ -125,7 +125,7 @@ A failed or missing gate blocks promotion. Training loss, a successful training 
 
 ### 3.6 Distillation interface
 
-Distillation is a training-time adapter boundary, not a student inference dependency. The common request must identify student foundation/revision, teacher panel/revisions, dataset or prompt stream, tokenizer compatibility, method, objective, hyperparameters, resource budget and evaluation plan. The result must identify student checkpoint/hash, source run, accepted teacher contributions, metrics, ablations, and limitations.
+Distillation is a training-time adapter boundary, not a student inference dependency. The common request must identify student foundation/revision, teacher panel/revisions, dataset or prompt stream, tokenizer compatibility, method, objective, hyperparameters, resource envelope and evaluation plan. The result must identify student checkpoint/hash, source run, accepted teacher contributions, metrics, ablations, and limitations.
 
 Supported maturity must be stated accurately:
 
