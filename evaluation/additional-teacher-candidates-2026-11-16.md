@@ -70,3 +70,19 @@ The workflow does not commit model weights to Git. Snapshot weights remain in th
 The follow-up snapshot-manifest correction and evidence record passed GitHub Actions run 43935195199 (40 runtime tests; 45 evaluation tests; 3 live-Hugging-Face tests skipped). All candidates remain unqualified. LFM2.5 is still discovery-only despite having real inference evidence: its 90% token-cap rate requires careful review, and its LFM Open License requires legal review. The model-weight license remains separate from permission to use generated outputs for student training. No candidate is authorized for training, no human grades are inferred, and no training is performed.
 
 PR #33 has been merged on GitHub and cannot be updated in place. Follow-up evidence and the snapshot-manifest correction are in draft PR #39; no follow-up PR is merged.
+
+
+## Status correction — active contribution program (2026-11-18)
+
+This section supersedes the earlier "discovery-only" and "deferred" dispositions above. The candidates are now active contributors to the Core Prime evaluation program, with concrete intake and inference work assigned; they are not being considered only as catalog discoveries. This status is not a claim that every candidate has already produced a real teacher response.
+
+- **LFM2.5-2.6B and Phi-4-mini-instruct:** active additional contributors with existing real Prime v1-v4 inference artifacts. Continue repeated matched runs and preserve the high truncation/cap-hit evidence for human review.
+- **Qwen3.5-2B:** active intake contributor. The previously recorded single-case semantic-grader smoke is not teacher inference. Next: immutable teacher snapshot, license-file evidence, actual loader/template smoke, resource measurement and full Prime v1-v4 inference when gates pass.
+- **Gemma 4 E2B IT:** active intake contributor. Next: resolve repository access and exact terms, immutable snapshot, supported text/multimodal loader validation, resource measurement and full Prime v1-v4 inference when gates pass.
+- **NVIDIA Nemotron 3 Nano 4B:** active intake contributor, no longer deferred as a research topic. Next: verify OpenMDW-1.1 terms and snapshot evidence, test the actual hybrid Mamba/Transformer architecture with a compatible pinned loader, measure resource requirements and run full Prime v1-v4 inference when gates pass.
+
+Every candidate runs independently so one candidate's failure cannot block another. Verify execution access, workload permissions and resource limits before dispatch. Preserve measured blockers and all real outputs, including truncations and failures; never bypass platform limits. No candidate is ranked or selected, and no teacher response is discarded.
+
+Inference participation remains separate from qualification and training authorization. Legal review, independent human grading/adjudication, safety, protected holdout, corpus integrity and the four-qualified-teacher gate remain mandatory. Written permission for generated-output training use must be separately recorded. Core Prima remains paused; no training is authorized or started.
+
+See [the active teacher contribution program](active-teacher-contribution-program.md) for the current operating contract. Earlier paragraphs in this historical register describe the previous intake state and must not be used as the current disposition after this correction.

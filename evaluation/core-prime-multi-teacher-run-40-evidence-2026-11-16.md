@@ -27,7 +27,7 @@ SmolLM3 failure detail: evaluation/snapshot_additional_teacher.py raised the err
 
 ## Immutable revisions, loader and resource observations
 
-Runner probes show four visible CPUs, CPU-only PyTorch 2.8.0, no CUDA device, and approximately 15.3–15.6 GiB system RAM. CPU capabilities differed between hosted runners (AVX2 or AVX512), so these are per-run observations, not a controlled cross-model throughput ranking. GitHub account billing/free-capacity eligibility was not verified.
+Runner probes show four visible CPUs, CPU-only PyTorch 2.8.0, no CUDA device, and approximately 15.3–15.6 GiB system RAM. CPU capabilities differed between hosted runners (AVX2 or AVX512), so these are per-run observations, not a controlled cross-model throughput ranking. GitHub account-level execution eligibility and available capacity were not verified.
 
 | Candidate | Immutable revision | Model class / Transformers | Snapshot bytes | CPU capability | Peak RSS | Mean case latency | 256-token cap hits |
 |---|---|---|---:|---|---:|---:|---:|

@@ -45,6 +45,11 @@ The output records raw response text, tool calls, refusal, finish reason, token 
 
 See [automated discovery and qualification](FOUNDATION_DISCOVERY.md) for immutable Hugging Face metadata snapshots, compute evidence, benchmark methodology, and teacher gates.
 
+## Active Core Prime teacher contributions
+
+The teacher pool is an additive evaluation ecosystem, not a three-model shortlist. LFM2.5 and Phi-4 already have real Prime inference evidence; Qwen3.5-2B, Gemma 4 E2B IT and NVIDIA Nemotron 3 Nano 4B are active intake contributors with owned snapshot, compatibility, resource and inference work paths. They are not catalog-only discovery items. Their actual responses must be produced by real, independently recorded inference runs after immutable revision, applicable license/access, loader and execution-environment checks pass. See [the active teacher contribution program](active-teacher-contribution-program.md) for the execution contract, per-candidate next steps and safeguards. No candidate is ranked or selected, and no response is discarded.
+
+
 ## Candidate and compute discovery
 
 ```bash
