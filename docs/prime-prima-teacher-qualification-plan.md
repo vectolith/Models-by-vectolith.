@@ -44,7 +44,7 @@ Hard gates:
 4. Run the complete role-specific suite with raw outputs, reproducible settings and independent grading. Rubric keyword matching alone is not a qualification.
 5. Measure quality by competency, factuality, uncertainty calibration, instruction adherence, multilingual performance, tool-call validity, repeated-run variance and failure rate.
 6. Measure actual operating efficiency: peak RAM/VRAM, total checkpoint footprint, KV-cache growth, cold-start/load time, time-to-first-token, p50/p95 latency, tokens/sec, throughput, accepted examples/tokens per unit of compute, and cost per accepted training token.
-7. Verify that the exact checkpoint can be run on genuinely free compute available to the project. Free-to-download weights, promotional credits and an unverified free-tier claim do not count as available compute.
+7. Verify that the exact checkpoint can run in an execution environment actually available to the project. Downloadable weights and unverified provider claims do not establish loader, hardware or runtime compatibility.
 8. Generate a pilot contribution shard, cross-review it, apply deterministic/executable checks where possible, and prove the teacher contributes useful accepted examples.
 9. Run leave-one-teacher-out ablation. A teacher that adds no measurable held-out capability is replaced, even if that would otherwise leave four; qualification is not a headcount exercise.
 
