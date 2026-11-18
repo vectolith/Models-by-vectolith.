@@ -7,13 +7,13 @@ These are pre-existing GitHub Actions runs discovered during the live repository
 - Run 42: https://github.com/vectolith/Models-by-vectolith./actions/runs/43820188813
   - Source branch: \`add-qwen25-7b-to-expanded-intake\`
   - Head SHA: \`6f9157b8a4e2150dac6a8d777ed0a8057c795251\`
-  - As last inspected, overall workflow remained \`in_progress\` because Phi-4 job 133549417510 remained \`in_progress\`.
+  - The workflow has now completed with overall failure because SmolLM3 failed its missing-LICENSE gate. Phi-4 job 133549417510 subsequently completed successfully and uploaded artifact 14280614317 with 180 responses.
 - Run 43: https://github.com/vectolith/Models-by-vectolith./actions/runs/43821046671
   - Source branch: \`audit-candidate-weight-memory-2026-11-16\`
   - Head SHA: \`fbe20c9095cbf01b12a7c35b4eae94bed1f5b1ba\`
   - Workflow completed with overall failure because SmolLM3 failed its missing-LICENSE gate; Phi-4 job 133444059471 completed successfully and uploaded artifact 14261964529.
 
-In both runs, Granite 3.1, Granite 4.2, MiniCPM5, and LFM2.5 jobs completed successfully with real 180-case response artifacts. The SmolLM3 snapshot job failed because the downloaded snapshot had no LICENSE file. Its inference step was skipped. Its upload step reported that no files were found, so no SmolLM3 artifact was produced. Run 42 Phi-4 job 133549417510 remains in_progress and has no artifact. Run 43 Phi-4 job 133444059471 completed successfully and produced a verified 180-case artifact.
+In both runs, Granite 3.1, Granite 4.2, MiniCPM5, and LFM2.5 jobs completed successfully with real 180-case response artifacts. The SmolLM3 snapshot job failed because the downloaded snapshot had no LICENSE file. Its inference step was skipped and no SmolLM3 response artifact was produced. Run 42 Phi-4 job 133549417510 has now completed successfully and produced artifact 14280614317 with 180 verified records. Run 43 Phi-4 job 133444059471 also completed successfully and produced artifact 14261964529 with 180 verified records.
 
 These branches predate the PR #39 snapshot-manifest correction. The failed SmolLM3 attempt in these runs did not preserve a snapshot manifest. PR #39 adds that behavior and tests it; do not attribute the later fix to these older run artifacts.
 
@@ -27,13 +27,14 @@ Every successful artifact was downloaded and inspected. Its JSON result array ma
 | 42 | Granite 4.2 3B | 133174330091 | 14222803141 | 180 | 0 | 103 |
 | 42 | MiniCPM5 2B | 133275261975 | 14230880744 | 180 | 0 | 52 |
 | 42 | LFM2.5-2.6B | 133332287803 | 14262556692 | 180 | 0 | 163 |
+| 42 | Phi-4-mini-instruct | 133549417510 | 14280614317 | 180 | 0 | 63 |
 | 43 | Granite 3.1 3B-A800M | 133143953242 | 14208733041 | 180 | 0 | 93 |
 | 43 | Granite 4.2 3B | 133178581513 | 14223262221 | 180 | 0 | 103 |
 | 43 | MiniCPM5 2B | 133277594971 | 14231498894 | 180 | 0 | 52 |
 | 43 | LFM2.5-2.6B | 133347523890 | 14245324681 | 180 | 0 | 162 |
 | 43 | Phi-4-mini-instruct | 133444059471 | 14261964529 | 180 | 0 | 69 |
 
-The three existing teachers remain additive. LFM2.5 remains discovery-only. These are additional run-specific response sets; none replaces the run 40 response set and none has been graded or ranked.
+The three existing teachers remain additive. LFM2.5 also has preserved real Core Prime inference evidence in runs 40, 42 and 43 and remains an additive candidate alongside them. It is not yet qualified or approved for training; legal review and separate written permission to use its outputs for training remain pending. These are additional run-specific response sets; none replaces another run's response set and none has been ranked or discarded.
 
 ## Immutable model revisions and execution observations
 
@@ -43,9 +44,9 @@ The three existing teachers remain additive. LFM2.5 remains discovery-only. Thes
 | Granite 4.2 | \`4e9c275e232f10211ec88644d106a1f6a1b60e06\` | 5.0.0 | AVX512 / AVX512 | 7824760 / 7799152 KiB | 67.34 / 65.69 s |
 | MiniCPM5 | \`42433e90dad95123ab87729fd7011e7110629556\` | 4.57.1 | AVX512 / AVX2 | 5515692 / 5480056 KiB | 35.62 / 42.99 s |
 | LFM2.5 | \`7141b56cd4650af95c7c7b86983443aed050c96a\` | 5.0.0 | AVX512 / AVX512 | 5944736 / 5939748 KiB | 115.48 / 50.25 s |
-| Phi-4-mini | \`cfbefacb99257ffa30c83adab238a50856ac3083\` | 4.57.1 | — / AVX512 | — / 8089804 KiB | — / 62.23 s |
+| Phi-4-mini | \`cfbefacb99257ffa30c83adab238a50856ac3083\` | 4.57.1 | AVX2 / AVX512 | 8030660 / 8089804 KiB | 75.61 / 62.23 s |
 
-All nine completed candidate jobs used four visible CPUs and CPU-only PyTorch 2.8.0. The hosted runner system RAM was approximately 15.3–15.6 GiB. CPU capability and hosted machine type varied, so latency and RSS figures are per-run observations, not a controlled ranking. All runs used greedy BF16 decoding, chat template enabled, thinking disabled, and a 256-new-token limit.
+All ten completed candidate jobs used four visible CPUs and CPU-only PyTorch 2.8.0. The hosted runner system RAM was approximately 15.3–15.6 GiB. CPU capability and hosted machine type varied, so latency and RSS figures are per-run observations, not a controlled ranking. All runs used greedy BF16 decoding, chat template enabled, thinking disabled, and a 256-new-token limit.
 
 Cap-hit counts are incomplete/truncated execution metadata, not correctness scores or human grades.
 
@@ -63,6 +64,7 @@ ZIP, JSON and JSONL digests were recomputed from downloaded artifacts. Artifact 
 | 43 Granite 4.2 | \`prime-teacher-granite-4.2-3b\` | \`a3781ef0dd5240eca4f223a44f69c39f641bb20d9adf6d2bb7f4efb3b44c2739\` | \`90026164949b4eb58cd2c082e20a205806eab3a1cc087fd994de55448120d5cd\` | \`06652a1b6afc7955bc5b14ded5283c5b9f20a93e602c16cca23ac49ccfece6fe\` |
 | 43 MiniCPM5 | \`prime-teacher-minicpm5-2b\` | \`109c2f235ab8edde59b2beeeedf778f6ae3babf309e70952c62febf09cf93acb\` | \`d14d818dcbb1938e0caa3d8507fee64e3b70d587921027e97102c149543470a9\` | \`a2053c0ecdbcfbb339c1c8aefbc4e7323421b2eeb34756750eee124978fbc0f6\` |
 | 43 LFM2.5 | \`prime-teacher-lfm2.5-2.6b\` | \`7130d8c7f4754e689f4652951a12f09e70df43f7c7e67ecc27dfb1a1fea192ca\` | \`3b9b6dd658baee431f72beb9090992449684d83e39b58a3187d046b043628355\` | \`ea8e5aa4292b0c953f03f087303723993027e5b449921b4c64a174a8d2fde0bf\` |
+| 42 Phi-4-mini | \`prime-teacher-phi-4-mini-instruct\` | \`9b34e52ef661236741bae16b7de0ce9b04b065fdb223e2aec3bfb4d812cbac4c\` | \`c44f3b9a172f8bd7b79a5713696e847a957208d3a6aaaae8a5a33d915f8c3a8c\` | \`fedd465d04b4521f8bbdb191d53aeaf7afe3119fb98dd0d5fff28b37d63cb38b\` |
 | 43 Phi-4-mini | \`prime-teacher-phi-4-mini-instruct\` | \`584ac7979398db27234870b72e3c94c65ff79749828e78ba388db198c68df50f\` | \`0910b02c67b0bb11993a34f50ba075e6c1b44d0ce157211458d060cb366b80ff\` | \`b229dfae12981680547b5f3f28cb2f37a05299d81014a7553a3fcd6574dbdb69\` |
 
 Artifact links:
@@ -71,6 +73,7 @@ Artifact links:
 - Run 42 Granite 4.2: https://github.com/vectolith/Models-by-vectolith./actions/runs/43820188813/artifacts/14222803141
 - Run 42 MiniCPM5: https://github.com/vectolith/Models-by-vectolith./actions/runs/43820188813/artifacts/14230880744
 - Run 42 LFM2.5: https://github.com/vectolith/Models-by-vectolith./actions/runs/43820188813/artifacts/14262556692
+- Run 42 Phi-4-mini: https://github.com/vectolith/Models-by-vectolith./actions/runs/43820188813/artifacts/14280614317
 - Run 43 Granite 3.1: https://github.com/vectolith/Models-by-vectolith./actions/runs/43821046671/artifacts/14208733041
 - Run 43 Granite 4.2: https://github.com/vectolith/Models-by-vectolith./actions/runs/43821046671/artifacts/14223262221
 - Run 43 MiniCPM5: https://github.com/vectolith/Models-by-vectolith./actions/runs/43821046671/artifacts/14231498894
@@ -80,8 +83,8 @@ Artifact links:
 ## Candidate and training disposition
 
 - Granite 3.1, Granite 4.2 and MiniCPM5 remain the three existing additive Core Prime teachers.
-- LFM2.5 remains discovery-only despite repeated successful inference. Its 90%–90.6% cap-hit rate remains a major completeness concern; legal review and separate written training-output permission remain outstanding.
-- Phi-4 run 42 remains in progress without an artifact. Phi-4 run 43 completed successfully and produced 180 responses; it remains discovery-only and unqualified.
+- LFM2.5 remains an additive candidate despite repeated successful inference. Its 90%–90.6% cap-hit rate is a completion concern to address through future evaluation, not a ranking or removal decision; legal review and separate written training-output permission remain outstanding.
+- Phi-4 runs 42 and 43 both completed successfully and produced 180 responses each. Run 42 artifact 14280614317 remains discovery-only and unqualified; inference does not satisfy legal review, independent human grading, or separate training-output permission.
 - SmolLM3 remains blocked by the missing LICENSE file. No response artifact exists from either run.
 - Qwen3.5-2B and Gemma 4 E2B IT remain discovery-only. Nemotron 3 Nano 4B remains deferred.
 - No human grades were created. No candidate was qualified, ranked, or selected. No response was overwritten or discarded.
@@ -97,6 +100,8 @@ Both LFM2.5 artifacts include the 11-file immutable snapshot inventory. The LICE
 - LICENSE SHA-256 in both: \`4d28ca14dedc0b3d0fcc2b3339f0e79931faa33874f3d24f522183a8fc70068c\`
 
 
+- Run 42 Phi-4 snapshot manifest SHA-256: \`962a01c296453cdcff3d08840a51daca9cf8c1bd204f41041fa6724aba8dec3d\`; 21 files, 7,694,054,130 bytes.
+- Run 42 Phi-4 LICENSE SHA-256: \`fa8235e5b48faca34e3ca98cf4f694ef08bd216d28b58071a1f85b1d50cb814d\`.
 - Run 43 Phi-4 snapshot manifest SHA-256: \`837c68404e8ccce17fbe7d1c88c23d58731021805663ecea2ba78f06bcd0a1c9\`; 21 files, 7,694,054,130 bytes.
 - Run 43 Phi-4 LICENSE SHA-256: \`fa8235e5b48faca34e3ca98cf4f694ef08bd216d28b58071a1f85b1d50cb814d\`.
 
