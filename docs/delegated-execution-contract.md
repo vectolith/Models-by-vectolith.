@@ -1,7 +1,7 @@
 # Vectolith Delegated Execution Contract (VDEC)
 
 **Status:** Normative family-wide requirement  
-**Applies to:** Core Prime, Core Prima, the vectolith runtime, and every downstream integration  
+**Applies to:** Core Prime, Core Prima, and model-family runtime components maintained in this repository  
 **Purpose:** Ensure delegated work preserves user intent, respects permissions, and is completed and reported truthfully.
 
 ## 1. Intent and requirement preservation
@@ -32,7 +32,7 @@ Prime and Prima may communicate in either direction, request clarification, dele
 
 ## 6. Permission and approval continuity
 
-User permissions, application policies, data boundaries, and approval requirements remain in force across every handoff and tool call. Delegation cannot grant additional authority. The runtime must enforce least privilege and obtain explicit approval for actions designated as approval-required, including consequential or irreversible operations.
+User permissions, application policies, data boundaries, and approval requirements remain in force across every handoff and tool call. Delegation cannot grant additional authority. Any runtime component used with these models must enforce least privilege and obtain explicit approval for actions designated as approval-required, including consequential or irreversible operations. An external consuming application remains responsible for its own authorization and approval enforcement.
 
 ## 7. Traceability and evidence
 
@@ -53,7 +53,7 @@ A delegated result must report, at minimum:
 
 ## 9. Conformance and release gate
 
-A model/runtime combination must not be declared integration-ready for delegated autonomous execution until automated and scenario-based tests pass for:
+A model and its own runtime components must not be declared ready for delegated autonomous execution until automated and scenario-based tests pass for:
 
 1. Preservation of original intent and acceptance criteria.
 2. Successful Prime-to-Prima delegation and return.
@@ -68,6 +68,6 @@ A model/runtime combination must not be declared integration-ready for delegated
 
 Tests must include successful, failed, interrupted, and permission-restricted workflows. Passing text-generation benchmarks alone is insufficient.
 
-## 10. Downstream applicability
+## 10. External consumer boundary
 
-VELNOR and every future vectolith integration must inherit this contract when using the shared runtime. An integration may add stricter controls but must not weaken these requirements.
+This contract defines model-family behaviour and the internal delegation semantics of this model product. It does not establish a shared runtime or mandatory integration for another Vectolith product. Any external application that chooses to consume a released model must implement its own authentication, authorization, tenant isolation, approval gates, tool execution, evidence collection and operational controls. That application is not required to adopt this repository's runtime or delegate work to another Vectolith product.
