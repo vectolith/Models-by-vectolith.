@@ -10,7 +10,7 @@ The initial candidate pool should be expanded beyond one model family. The best 
 - **Qwen3.5-9B** is a high-priority cross-role candidate because its model card documents 201 languages/dialects, multimodal pretraining, 262K native context, and explicit SGLang/vLLM OpenAI-compatible serving and tool-call parsers. Its hybrid Gated DeltaNet/Gated Attention architecture means generic decoder-only LoRA tooling must be validated, not assumed.
 - **IBM Granite 4.2 8B** is a high-priority Prima candidate and Prime comparator: reasoning-augmented tool calling, agentic workflows, Apache 2.0, 128K native context, and a conventional dense decoder-only `GraniteForCausalLM` architecture. IBM documents tested support for 12 languages, not broad dialect coverage. Current vLLM instructions require recent versions and a model-specific reasoning parser.
 - **Gemma 4 E4B** is a high-priority Prime efficiency candidate and multimodal comparator: Apache 2.0, 128K context, audio/image input, and multilingual support described as 35+ supported languages / pretraining across 140+ languages. Its per-layer embeddings and hybrid attention require explicit trainer and serving compatibility checks.
-- **Mistral Small 4** belongs in a high-capability reference tier, not the first constrained deployment tier. It unifies reasoning, coding, agentic and multimodal capabilities under Apache 2.0, but its 119B total / 6B active (8B including embedding and output layers) and stated 4x H100-class minimum infrastructure make its total memory and operational cost materially different from the smaller candidates.
+- **Mistral Small 4** belongs in a high-capability reference tier, not the first constrained deployment tier. It unifies reasoning, coding, agentic and multimodal capabilities under Apache 2.0, but its 119B total / 6B active (8B including embedding and output layers) and stated 4x H100-class minimum infrastructure make its total memory and operational resource requirements materially different from the smaller candidates.
 
 These are candidate hypotheses, not rankings. No model has been benchmarked by vectolith in this repository yet.
 
@@ -40,7 +40,7 @@ These are candidate hypotheses, not rankings. No model has been benchmarked by v
 1. Qwen3.5-9B — first candidate for global-language breadth and general capability.
 2. Gemma 4 E4B — first efficiency and multimodal candidate.
 3. Granite 4.2 8B — dense reasoning and language-quality comparator.
-4. Mistral Small 4 — high-end reference only, pending infrastructure economics.
+4. Mistral Small 4 — high-end reference only, pending infrastructure feasibility.
 
 Prime must be evaluated on global-English quality, general reasoning, instruction following, writing, synthesis, long-context tasks, multilingual comprehension, calibration, and safe everyday assistance. Vendor language coverage is not a substitute for testing World Englishes and regional registers.
 
@@ -64,12 +64,12 @@ Prima must be evaluated on repository-level changes, bug localization, debugging
 | Tool calling | Qwen, Granite, Gemma and Mistral document tool/function calling; parser, schema fidelity, refusal behaviour and multi-turn tool reliability remain untested here |
 | Training compatibility | No candidate has yet passed a pinned PEFT/QLoRA smoke test with the repository's actual trainer |
 | Serving compatibility | Official server recipes exist for all candidates or their serving stacks, but exact pinned versions and production reliability have not been validated in VELNOR |
-| Latency, VRAM, cost | No vectolith measurements exist; do not estimate from parameter count alone |
+| Latency, VRAM, resource use | No vectolith measurements exist; do not estimate from parameter count alone |
 | Final selection | Not made |
 
-## Zero-budget availability
+## Execution availability
 
-The project has no approved spending budget. A candidate is not considered practically available merely because its weights are open. Before scheduling an evaluation, record current no-cost GPU access, accelerator memory, quota/session duration, queue availability, model-size limits, storage/egress constraints, account and regional eligibility, and whether payment details or billing activation are required. Distinguish free capacity from trial credits and promotional grants. No paid inference, hosted API, or compute is authorized by this research note. If a candidate cannot be evaluated on genuinely free capacity, record it as pending rather than substituting vendor benchmark claims for measured results.
+A candidate is not considered practically executable merely because its weights are downloadable. Before scheduling an evaluation, record the available accelerator, memory, session duration, queue conditions, model-size limits, storage and egress constraints, account and regional eligibility, workload restrictions, and the exact runtime configuration. Distinguish a documented service offer from a session that has actually started and completed the intended workload. If a candidate cannot be evaluated in a verified environment, record it as pending rather than substituting vendor benchmark claims for measured results.
 
 ## Reproducible evaluation protocol
 
@@ -83,7 +83,7 @@ For each role, run all shortlisted checkpoints through the same role-appropriate
 - Instruction following: multi-constraint prompts, format adherence, and preservation of user intent.
 - Tool use: schema-valid calls, correct tool selection, argument accuracy, recovery, and no fabricated tool outcomes.
 - Reliability: repeated-run variance, latency distribution, invalid output rate, context degradation, and refusal correctness.
-- Deployment: peak memory, tokens/sec, time-to-first-token, concurrency, cost per million input/output tokens, cold start, and operational complexity.
+- Deployment: peak memory, tokens/sec, time-to-first-token, concurrency, throughput and resource utilization under the same workload, cold start, and operational complexity.
 - Training: immutable revision loading, model class, tokenizer compatibility, target-module discovery, adapter save/reload, and quantized training smoke test.
 
 ### Role-specific suites
@@ -106,4 +106,4 @@ Prima: SWE-bench-style repository tasks, controlled issue-to-PR tasks, unit/inte
 
 Do **not** select either foundation yet. Prioritize a reproducible first-round comparison of Qwen3.5-9B, Granite 4.2 8B, and Gemma 4 E4B. Keep Mistral Small 4 as a high-capability reference if a suitable GPU budget is later approved.
 
-This is the most defensible next step: the available evidence is enough to narrow the first test batch, but not enough to establish which foundation is best for either model. No weights have been downloaded, no training has started, and no GPU spending is authorized by this research note.
+This is the most defensible next step: the available evidence is enough to narrow the first test batch, but not enough to establish which foundation is best for either model. No weights have been downloaded, no training has started, and no training run is authorized by this research note.
