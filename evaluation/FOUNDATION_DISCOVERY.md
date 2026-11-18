@@ -56,7 +56,7 @@ Before comparing actual checkpoints:
 4. Run the same prompt suite, decoding parameters, context settings and repeated trials for each candidate.
 5. Grade with blinded evaluators using the case rubrics; retain raw outputs, evaluator/version, per-case scores and disagreements.
 6. Report per-category results, confidence intervals, repeated-run variance, refusals, invalid tool calls and failures. Do not collapse everything into one score without publishing the dimensions.
-7. Measure peak VRAM/RAM, time-to-first-token, output tokens/sec, throughput, concurrency, cold-start time and actual zero-cost quota consumed.
+7. Measure peak VRAM/RAM, time-to-first-token, output tokens/sec, throughput, concurrency, cold-start time and actual quota consumed.
 8. Run a bounded adapter compatibility test: model load, tokenizer consistency, target-module discovery, tiny LoRA/QLoRA step, adapter save/reload and deterministic inference check. This is a compatibility test, not student training.
 9. Select Prime and Prima independently against their own minimum gates.
 
