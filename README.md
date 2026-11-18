@@ -1,6 +1,6 @@
 # Models by vectolith
 
-Canonical upstream project for the vectolith model family. This repository owns model specifications, foundation selection, training pipelines, evaluation, artifacts, and releases. It is an independently operated model product. Other Vectolith products do not depend on this repository, its runtime, or its release schedule.
+Standalone model product for the Vectolith model family. This repository owns model specifications, foundation selection, training pipelines, evaluation, artifacts, and releases. It is an independently operated model product. Other Vectolith products do not depend on this repository, its runtime, or its release schedule.
 
 ## Model family
 
