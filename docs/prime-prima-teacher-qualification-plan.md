@@ -28,7 +28,7 @@ The machine-readable pool is `evaluation/fixtures/teacher_panel_candidates_v1.js
 | gpt-oss-20b | Reasoning and structured tool-use | Code correctness and Harmony tool-call fidelity |
 | Gemma 4 E4B | Efficient technical and multimodal comparator | Must prove software-engineering quality |
 | Qwen2.5-Coder-7B-Instruct | Compact code-specialist comparator | Older generation; verify exact license and quality |
-| Devstral Small 2 24B | Repository-level software engineering specialist | 24B dense footprint and zero-cost availability |
+| Devstral Small 2 24B | Repository-level software engineering specialist | 24B dense footprint and execution availability |
 
 These are **qualification candidates**, not the final four. The candidate pool remains extensible; discovery must admit better models and additional families.
 
