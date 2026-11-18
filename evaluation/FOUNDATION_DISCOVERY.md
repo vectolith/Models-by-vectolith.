@@ -40,7 +40,7 @@ For each provider, maintain a separate account-level record containing:
 - Provider terms URL, capture timestamp and the applicable service entitlement.
 - Workload restrictions and whether model inference, benchmarking, fine-tuning and long-running jobs are permitted.
 
-Only mark a resource **verified available** after an eligible account actually starts a session and a workload probe succeeds. Use **conditional** for queue/quota/account-dependent offers; **promotional** for credits or trials; **unverified** when only public marketing documentation exists; **unavailable** when an attempted session cannot start. Promotional credits do not count as recurring free compute. A resource must not be marked verified until its applicable access and usage conditions have been checked.
+Only mark a resource **verified available** after an eligible account actually starts a session and a workload probe succeeds. Use **conditional** for queue/quota/account-dependent offers; **unverified** when only public service documentation exists; **unavailable** when an attempted session cannot start. A resource must not be marked verified until its applicable access and usage conditions have been checked.
 
 ## Benchmark protocol
 
