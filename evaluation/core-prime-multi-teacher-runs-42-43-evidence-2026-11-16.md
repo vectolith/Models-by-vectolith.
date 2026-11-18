@@ -83,7 +83,7 @@ Artifact links:
 ## Candidate and training disposition
 
 - Granite 3.1, Granite 4.2 and MiniCPM5 remain the three existing additive Core Prime teachers.
-- LFM2.5 remains discovery-only despite repeated successful inference. Its 90%–90.6% cap-hit rate remains a major completeness concern; legal review and separate written training-output permission remain outstanding.
+- LFM2.5 remains an additive candidate despite repeated successful inference. Its 90%–90.6% cap-hit rate is a completion concern to address through future evaluation, not a ranking or removal decision; legal review and separate written training-output permission remain outstanding.
 - Phi-4 runs 42 and 43 both completed successfully and produced 180 responses each. Run 42 artifact 14280614317 remains discovery-only and unqualified; inference does not satisfy legal review, independent human grading, or separate training-output permission.
 - SmolLM3 remains blocked by the missing LICENSE file. No response artifact exists from either run.
 - Qwen3.5-2B and Gemma 4 E2B IT remain discovery-only. Nemotron 3 Nano 4B remains deferred.
