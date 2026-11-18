@@ -15,7 +15,7 @@ Evaluate multiple eligible checkpoint sizes and variants within each family. Do 
 - reliability, instruction following, and factuality;
 - knowledge quality and task-specific competency.
 
-Record measured inference cost, peak memory/VRAM requirements, throughput and latency, quantization compatibility, and the actual availability and limits of free compute. Distinguish free-to-download weights from free-to-run inference: open weights do not make compute free. No paid inference or compute is assumed or initiated.
+Record peak memory/VRAM requirements, throughput and latency, quantization compatibility, and the actual availability and limits of the execution environment. Distinguish model-weight availability from executable capacity; downloadable weights alone do not establish that a candidate can be run.
 
 Select at least four distinct, qualified teachers for each student. Panels may overlap, but each must collectively cover that student's required competencies and every appointed teacher must make a measurable accepted contribution. Select on demonstrated quality and practical execution feasibility, not parameter count alone.
 
@@ -83,7 +83,7 @@ The caller must run the independence test in an isolated process/container with 
 ~~~python
 # 1. Discover multiple sizes/variants across the initial families and beyond.
 # 2. Benchmark candidates on the same versioned, role-specific suite.
-# 3. Record measured cost, memory, latency, and real free-compute availability.
+# 3. Record measured resource use, memory, latency, and execution-environment availability.
 # 4. Qualify candidates and build one assignment panel (>=4 teachers) per student.
 # 5. Generate accepted JSONL corpora independently.
 # 6. Fine-tune each student's own selected foundation.
@@ -94,7 +94,7 @@ The caller must run the independence test in an isolated process/container with 
 
 ## Current execution boundary
 
-The repository contains the endpoint adapter, qualification and panel selection, provenance-preserving corpus generation, optional LoRA SFT, capability/ablation helpers, and a fail-closed release decision. It does not yet appoint real teachers or launch a run. Exact teacher revisions, license/terms evidence, student foundation selection, evaluation datasets, verified compute availability and budget approval remain prerequisites. No provider calls, paid inference, model downloads or training jobs are started by CI.
+The repository contains the endpoint adapter, qualification and panel selection, provenance-preserving corpus generation, optional LoRA SFT, capability/ablation helpers, and a fail-closed release decision. It does not yet appoint real teachers or launch a run. Exact teacher revisions, license/terms evidence, student foundation selection, evaluation datasets, verified compute availability and explicit run approval remain prerequisites. CI does not initiate provider calls, model downloads or training jobs.
 
 
 ### Training-run safeguards added
@@ -131,7 +131,7 @@ Before any model weights are loaded, `train_student()` also requires a run-speci
 revision, dataset digest, training-code commit, and complete hyperparameter set. It
 must record the compute account/project, region, accelerator, runtime image and
 software versions, measured available VRAM/RAM/storage, peak resource estimates,
-pricing evidence, maximum USD cost, maximum runtime, and named approval provenance.
-The preflight rejects a configuration mismatch, missing budget evidence, or resource
+resource evidence, maximum runtime, and named approval provenance.
+The preflight rejects a configuration mismatch, missing resource approval evidence, or resource
 estimates above measured capacity. This approval is specific to one run; it does not
 authorize future runs or a different configuration.
