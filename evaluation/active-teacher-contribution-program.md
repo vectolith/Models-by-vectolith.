@@ -45,4 +45,4 @@ Before dispatch, verify that the selected execution environment is accessible, t
 
 ## Current evidence boundary
 
-LFM2.5 and Phi-4 have real inference artifacts already recorded in the run 40–43 evidence. Qwen3.5-2B has only a prior one-case semantic-grader smoke, not teacher inference. No verified full Prime response artifact is currently recorded here for Qwen3.5-2B, Gemma 4 E2B IT or Nemotron 3 Nano 4B. Their next contribution is immutable intake and compatibility evidence followed by real inference when the rights, loader and zero-cost execution gates pass.
+LFM2.5 and Phi-4 have real inference artifacts already recorded in the run 40–43 evidence. Qwen3.5-2B has only a prior one-case semantic-grader smoke, not teacher inference. No verified full Prime response artifact is currently recorded here for Qwen3.5-2B, Gemma 4 E2B IT or Nemotron 3 Nano 4B. Their next contribution is immutable intake and compatibility evidence followed by real inference when the rights, loader and execution-environment gates pass.
