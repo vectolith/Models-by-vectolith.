@@ -87,11 +87,11 @@ Use separate scorecards; do not transfer one role's weights to the other. Score 
 
 These weights are a prioritization instrument, not a substitute for minimum gates. A high aggregate score cannot compensate for a license failure, unacceptable safety behaviour, unreliable tool execution, or inability to deploy within the approved budget.
 
-### Free-compute and cost gate
+### Execution resource gate
 
-Because the project has no approved training or inference budget, record the actual no-cost compute options available at evaluation time for every candidate. For each provider or community environment, record accelerator type/count, VRAM, session and quota limits, queue/wait availability, permitted model sizes, storage and egress limits, expiry, regional/account eligibility, and whether a payment method or billing-enabled account is required. Verify availability from the provider's current terms and account-level quota rather than assuming a free tier exists.
+For every candidate, record the actual execution environment available at evaluation time: accelerator type/count, VRAM, session and quota limits, queue/wait availability, permitted model sizes, storage and egress limits, expiry, regional/account eligibility and workload restrictions. Verify availability from the provider's current terms and an actual account session rather than assuming a published service offer is available.
 
-Separate genuinely no-cost capacity from trials, promotional credits, limited-time grants, and services that require billing activation. Do not start paid API calls, paid compute, or a training run without explicit approval. If no suitable free capacity is currently available, mark the candidate **not currently testable at zero cost** rather than silently relaxing the evaluation or claiming it passed. Record measured inference cost and resource use where a provider or environment supplies them; parameter count alone is not a cost estimate.
+If no suitable execution environment is currently available, mark the candidate **not currently testable** rather than silently relaxing the evaluation or claiming it passed. Record measured memory, throughput, latency and resource use where the environment supplies them; parameter count alone is not a resource estimate.
 
 ### Minimum evaluation gates
 
@@ -100,7 +100,7 @@ Separate genuinely no-cost capacity from trials, promotional credits, limited-ti
 3. **Global English:** dialect/register robustness, clarity, instruction fidelity, and multilingual coverage are measured.
 4. **Reliability:** repeated trials measure variance, invalid outputs, hallucination, refusal errors, and calibration.
 5. **Runtime:** candidate is loaded and exercised on the intended serving stack; tool-call parsing and cancellation/timeouts are tested.
-6. **Resource fit:** measured memory, throughput, latency, and cost fit an explicitly approved deployment envelope.
+6. **Resource fit:** measured memory, throughput and latency fit an explicitly approved deployment envelope.
 7. **Training fit:** a small, bounded compatibility experiment verifies tokenizer, model class, target-module discovery, and adapter save/reload before any substantial run.
 8. **Decision review:** retain raw evidence and explain why the selected candidate is better suited than the alternatives.
 
