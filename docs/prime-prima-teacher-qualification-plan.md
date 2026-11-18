@@ -71,7 +71,7 @@ Each task must have an objective or human-reviewed rubric. Keep public starter t
 
 The manifest records six candidates for each student. **The number of qualified teachers is currently zero for Prime and zero for Prima.** Qwen2.5-7B-Instruct remains in Prime's evaluation pool as requested; it does not automatically displace newer models or become a teacher without passing the same tests.
 
-Next execution is to resolve immutable revisions and license snapshots for the complete pools, expand the role-specific qualification suites, and run real evaluations on verified no-cost compute. Once evidence exists, appoint the best four or more for each student, create contribution shards, and require positive per-teacher ablation before accepting the panel.
+Next execution is to resolve immutable revisions and license snapshots for the complete pools, expand the role-specific qualification suites, and run real evaluations in a verified execution environment. Once evidence exists, appoint the best four or more for each student, create contribution shards, and require positive per-teacher ablation before accepting the panel.
 
 
 ## Immutable candidate discovery and free-compute status
