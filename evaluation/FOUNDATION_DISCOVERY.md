@@ -38,7 +38,7 @@ For each provider, maintain a separate account-level record containing:
 - Successful session start timestamp and observed accelerator model/count/VRAM.
 - Quota remaining before and after the run, reset policy, maximum session duration, idle timeout, queue wait and observed interruption.
 - Storage, persistent volume, egress, download and model-cache limits.
-- Provider terms URL, capture timestamp and the exact no-cost entitlement used.
+- Provider terms URL, capture timestamp and the exact execution access condition verified.
 - Workload restrictions and whether model inference, benchmarking, fine-tuning and long-running jobs are permitted.
 - Evidence of zero charges and confirmation that no billing-enabled fallback was used.
 
