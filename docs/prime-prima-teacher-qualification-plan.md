@@ -58,7 +58,7 @@ The final panel should be a quality/efficiency Pareto choice: retain candidates 
 
 Each task must have an objective or human-reviewed rubric. Keep public starter tasks separate from a private holdout. Track performance per competency; do not collapse all results into one opaque aggregate score.
 
-## Efficiency and zero-budget policy
+## Efficiency and execution feasibility
 
 - Compare multiple sizes within each model family where practical.
 - Compare dense and MoE models using both total weight footprint and active compute; active parameters do not eliminate weight storage.
