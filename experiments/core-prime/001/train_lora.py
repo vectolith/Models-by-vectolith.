@@ -50,7 +50,7 @@ def validate_checkpoint(path):
  if not any(path.glob("rng_state*.pth")):raise ValueError("checkpoint RNG state missing")
  return step
 def build_sequence(tok,prompt,response,max_length=2048):
- prefix=f"User:\\n{prompt}\\nAssistant:\\n"
+ prefix=f"User:\n{prompt}\nAssistant:\n"
  prefix_ids=tok(prefix)["input_ids"]
  response_ids=tok(response+tok.eos_token,add_special_tokens=False)["input_ids"]
  if not response_ids:raise ValueError("empty tokenized response")
