@@ -46,7 +46,7 @@ def main():
  try:from peft import LoraConfig,get_peft_model
  except Exception as e:p.error(f"peft unavailable: {e}")
  if not torch.cuda.is_available():p.error("free-GPU requirement not met; CPU training blocked")
- started=time.time();x.output.mkdir(parents=True,exist_ok=True);tok=AutoTokenizer.from_pretrained(c["repository_id"],revision=c["revision"]);model=AutoModelForCausalLM.from_pretrained(c["repository_id"],revision=c["revision"],torch_dtype=torch.float16,device_map="auto")
+ started=time.time();x.output.mkdir(parents=True,exist_ok=True);telemetry_path=x.output/"telemetry.jsonl";session_id=str(a.get("hardware",{}).get("session_id"));prior_elapsed=0.0\n if telemetry_path.exists():\n  try:\n   records=[json.loads(line) for line in telemetry_path.read_text(encoding="utf-8").splitlines() if line.strip()]\n   by_session={}\n   for rec in records: by_session[rec.get("session_id","unknown")]=max(by_session.get(rec.get("session_id","unknown"),0.0),float(rec.get("session_elapsed_seconds",0.0)))\n   prior_elapsed=sum(by_session.values())\n  except Exception as e:p.error(f"telemetry history invalid; recovery blocked: {e}")\n if prior_elapsed>=x.max_wall_seconds:p.error("cumulative wall-time budget already exhausted")\n tok=AutoTokenizer.from_pretrained(c["repository_id"],revision=c["revision"]);model=AutoModelForCausalLM.from_pretrained(c["repository_id"],revision=c["revision"],torch_dtype=torch.float16,device_map="auto")
  model=get_peft_model(model,LoraConfig(r=x.rank,lora_alpha=x.alpha,target_modules=[s.strip() for s in x.target_modules.split(",") if s.strip()],lora_dropout=0,bias="none",task_type="CAUSAL_LM"))
  if tok.pad_token is None:tok.pad_token=tok.eos_token
  class DS(torch.utils.data.Dataset):
@@ -60,13 +60,13 @@ def main():
   z=torch.nn.utils.rnn.pad_sequence([torch.tensor(i) for i in batch],batch_first=True,padding_value=tok.pad_token_id);labels=z.clone();labels[z==tok.pad_token_id]=-100
   return {"input_ids":z,"attention_mask":(z!=tok.pad_token_id).long(),"labels":labels}
  class TelemetryAndBudget(TrainerCallback):
-  def __init__(self):self.started=time.monotonic();self.telemetry=x.output/"telemetry.jsonl"
+  def __init__(self):self.started=time.monotonic();self.telemetry=telemetry_path
   def on_log(self,args,state,control,logs=None,**kwargs):
-   record={"timestamp":time.time(),"step":state.global_step,"elapsed_seconds":time.monotonic()-self.started,"logs":logs or {}}
+   record={"timestamp":time.time(),"step":state.global_step,"session_id":session_id,"session_elapsed_seconds":time.monotonic()-self.started,"cumulative_elapsed_seconds":prior_elapsed+time.monotonic()-self.started,"logs":logs or {}}
    with self.telemetry.open("a",encoding="utf-8") as f:f.write(json.dumps(record,default=str)+"\n")
    return control
   def on_step_end(self,args,state,control,**kwargs):
-   if time.monotonic()-self.started>=x.max_wall_seconds:control.should_training_stop=True
+   if prior_elapsed+time.monotonic()-self.started>=x.max_wall_seconds:control.should_training_stop=True
    return control
  args=TrainingArguments(output_dir=str(x.output/"checkpoints"),max_steps=x.max_steps,per_device_train_batch_size=1,gradient_accumulation_steps=4,learning_rate=2e-4,logging_steps=1,save_steps=max(1,min(25,x.max_steps)),save_total_limit=2,fp16=True,report_to=[],seed=42,data_seed=42)
  trainer=Trainer(model=model,args=args,train_dataset=DS(),data_collator=collate,callbacks=[TelemetryAndBudget()])
@@ -75,6 +75,6 @@ def main():
  if x.resume and resume is None:p.error("--resume requested but no checkpoint exists")
  trainer.train(resume_from_checkpoint=str(resume) if resume else None)
  model.save_pretrained(x.output/"adapter");tok.save_pretrained(x.output/"adapter")
- manifest={"candidate_id":c["candidate_id"],"candidate_revision":c["revision"],"dataset_sha256":sha256_file(x.dataset),"code_commit":x.code_commit,"steps_limit":x.max_steps,"wall_limit_seconds":x.max_wall_seconds,"duration_seconds":time.time()-started,"gpu":torch.cuda.get_device_name(0),"python":sys.version,"platform":platform.platform(),"torch":torch.__version__,"adapter_sha256_inventory":[{"path":str(f.relative_to(x.output)),"sha256":sha256_file(f)} for f in sorted((x.output/"adapter").rglob("*")) if f.is_file()],"status":"trained_pending_evaluation","holdout_evaluated":False}
+ manifest={"candidate_id":c["candidate_id"],"candidate_revision":c["revision"],"dataset_sha256":sha256_file(x.dataset),"code_commit":x.code_commit,"steps_limit":x.max_steps,"wall_limit_seconds":x.max_wall_seconds,"duration_seconds":time.time()-started,"prior_session_elapsed_seconds":prior_elapsed,"cumulative_wall_seconds":prior_elapsed+time.time()-started,"gpu":torch.cuda.get_device_name(0),"python":sys.version,"platform":platform.platform(),"torch":torch.__version__,"adapter_sha256_inventory":[{"path":str(f.relative_to(x.output)),"sha256":sha256_file(f)} for f in sorted((x.output/"adapter").rglob("*")) if f.is_file()],"status":"trained_pending_evaluation","holdout_evaluated":False}
  (x.output/"training-manifest.json").write_text(json.dumps(manifest,indent=2));print(json.dumps(manifest,indent=2))
 if __name__=="__main__":main()
