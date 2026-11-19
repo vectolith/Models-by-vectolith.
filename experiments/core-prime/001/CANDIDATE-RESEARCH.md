@@ -86,3 +86,28 @@ Sources for this screening (discovery references, not legal opinions):
 - MiniCPM-V 2.6 model card: https://huggingface.co/openbmb/MiniCPM-V-2_6
 
 For teacher outputs, each teacher's exact revision, license, provider/model terms, permitted collection method, privacy and output-to-training/distillation scope must be separately documented and reviewed. Do not collect or train on teacher outputs from hosted services or open-weight models until those permissions and any restrictions are genuinely cleared. This screening found no basis to mark any teacher output permission verified.
+
+
+## Version-specific license distinctions discovered (2026-11-19)
+
+This update distinguishes model-family versions instead of treating all Gemma or Granite releases as having identical terms. It remains discovery research, not legal review or an output-training permission grant.
+
+| Exact family/variant observed | Upstream license signal | Output-distillation status |
+|---|---|---|
+| Qwen/Qwen3-0.6B (pinned LICENSE revision above) | Apache-2.0 on the upstream revision-specific LICENSE page. | No explicit output-training grant located in the LICENSE; unresolved. |
+| HuggingFaceTB/SmolLM2-360M-Instruct | Model card and file pages show Apache-2.0 metadata. | No separate explicit output-training grant located; unresolved. |
+| microsoft/Phi-4-mini-instruct | Model card links an MIT license. This observation applies to this variant only, not its sibling models. | No separate explicit output-training grant located; unresolved. |
+| ibm-granite/granite-4.2-3b / 8b / 30b | Model cards and IBM release documentation describe Apache-2.0. Size and hardware suitability must be separately measured. | No separate explicit output-training grant located in this screening; unresolved. |
+| Gemma 4 (distinct from older Gemma models covered by the April 2026 Gemma Terms of Use) | Gemma 4 license documentation and model cards identify Apache-2.0. Do not apply the older Gemma ToU wholesale to Gemma 4, or assume Gemma 4's terms apply to older variants. | Apache-2.0 does not itself resolve output rights, provenance or other legal questions; explicit permission and independent review remain required for this project's teacher-output use. Unresolved. |
+| Older Gemma families covered by the April 1, 2026 Gemma Terms of Use | Custom terms define Model Derivatives to include models trained from Gemma outputs, including synthetic-output distillation; the terms also distinguish Outputs from Model Derivatives. | Terms must be independently reviewed for the exact model and contemplated student use; not cleared. |
+
+Sources (retrieved during discovery; no bytes or hashes captured in this run):
+- Qwen3-0.6B model card and pinned LICENSE: https://huggingface.co/Qwen/Qwen3-0.6B and https://huggingface.co/Qwen/Qwen3-0.6B/blob/c1899de289a04d12100db370d81485cdf75e47ca/LICENSE
+- SmolLM2-360M-Instruct: https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct
+- Phi-4-mini-instruct: https://huggingface.co/microsoft/Phi-4-mini-instruct
+- Granite 4.2 3B and 8B: https://huggingface.co/ibm-granite/granite-4.2-3b and https://huggingface.co/ibm-granite/granite-4.2-8b
+- Granite 4.2 release overview: https://huggingface.co/blog/ibm-granite/granite-4-2
+- Gemma 4 license: https://ai.google.dev/gemma/docs/gemma_4_license
+- Older Gemma Terms (last modified April 1, 2026): https://ai.google.dev/gemma/terms
+
+No license artifacts, revisions, output permissions, human legal review, dataset provenance, compute evidence or student model results were verified by this update. No inference or training was performed.
