@@ -96,23 +96,26 @@ def main()->int:
     seed_python(a.seed)
     torch.manual_seed(a.seed)
     if torch.cuda.is_available():torch.cuda.manual_seed_all(a.seed)
-    records=[];errors=0
-    device="cuda" if torch.cuda.is_available() else "cpu"
-    hardware=torch.cuda.get_device_name(0) if device=="cuda" else (platform.processor() or platform.machine())
+    records=[];errors=0;device="cpu";hardware=platform.processor() or platform.machine();model=None;tokenizer=None
     try:
+        device="cuda" if torch.cuda.is_available() else "cpu"
+        hardware=torch.cuda.get_device_name(0) if device=="cuda" else (platform.processor() or platform.machine())
         tokenizer=AutoTokenizer.from_pretrained(a.model,revision=a.revision,trust_remote_code=a.trust_remote_code)
         model=AutoModelForCausalLM.from_pretrained(a.model,revision=a.revision,trust_remote_code=a.trust_remote_code,
             torch_dtype="auto",device_map="auto" if device=="cuda" else None)
         if device=="cpu":model.to(device)
         model.eval()
         if device=="cuda":torch.cuda.reset_peak_memory_stats()
+    except Exception as e:
+        errors=len(tasks)
+        records=initialization_failure_records(run_id,tasks,e)
+    if model is not None and tokenizer is not None:
         for task in tasks:
             prompt=task["prompt"];t0=time.perf_counter()
             try:
                 if getattr(tokenizer,"chat_template",None):
                     messages=[{"role":"user","content":prompt}]
                     template_kwargs={"tokenize":False,"add_generation_prompt":True}
-                    # Qwen3 templates accept this switch; do not silently retry on a template error.
                     if "qwen3" in str(getattr(model.config,"model_type","")).lower():
                         template_kwargs["enable_thinking"]=bool(a.qwen3_thinking)
                     encoded=tokenizer.apply_chat_template(messages,**template_kwargs)
@@ -135,9 +138,6 @@ def main()->int:
                 errors+=1
                 records.append({"run_id":run_id,"task_id":task["task_id"],"category":task["category"],"split":task["split"],
                     "prompt_sha256":sha256_text(prompt),"status":"failed","error":repr(e),"generation_seconds":time.perf_counter()-t0})
-    except Exception as e:
-        errors += len(tasks)
-        records.extend(initialization_failure_records(run_id,tasks,e))
     write_jsonl(raw,records)
     completed,failed,status=tally_records(records,len(tasks))
     peak_memory=torch.cuda.max_memory_allocated() if device=="cuda" else None
