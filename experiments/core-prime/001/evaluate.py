@@ -182,6 +182,7 @@ def main()->int:
             template_text=getattr(tokenizer,"chat_template",None)
             template_hash=sha256_serialized(template_text) if template_text else None
         except Exception as e:capture_warnings.append("Chat-template hash capture failed: "+repr(e))
+    inventory,inventory_sha256=package_inventory_snapshot()
     summary={"run_id":run_id,"status":status,"model":a.model,"revision":a.revision,"task_file":str(a.tasks),
         "task_file_sha256":task_hash,"task_count":len(tasks),"completed_count":completed,"failed_count":failed,
         "device":device,"hardware":hardware,"peak_cuda_memory_allocated_bytes":peak_memory,
@@ -189,7 +190,7 @@ def main()->int:
         "accelerate_version":package_version("accelerate"),"safetensors_version":package_version("safetensors"),
         "seed":a.seed,"seed_scope":"Python and PyTorch CPU/CUDA RNGs; deterministic kernels are not guaranteed",
         "effective_limit":a.limit,"selected_task_count":len(selected_task_ids),"selected_task_ids_sha256":selected_task_ids_sha256,
-        "package_inventory":package_inventory_snapshot()[0],"package_inventory_sha256":package_inventory_snapshot()[1],
+        "package_inventory":inventory,"package_inventory_sha256":inventory_sha256,
         "model_config_sha256":config_hash,"chat_template_sha256":template_hash,"capture_warnings":capture_warnings,
         "started_at_epoch":started,"duration_seconds":time.time()-started,"max_new_tokens":a.max_new_tokens,
         "temperature":a.temperature,"qwen3_thinking":bool(a.qwen3_thinking),"trust_remote_code":a.trust_remote_code,
