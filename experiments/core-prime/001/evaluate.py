@@ -52,7 +52,8 @@ def tally_records(records: list[dict[str,Any]], task_count: int) -> tuple[int,in
     completed=min(completed_ids,task_count)
     accounted=len(by_id)
     missing=max(0,task_count-accounted)
-    failed=max(task_count-completed,ambiguous,missing)
+    excess=max(0,accounted-task_count)
+    failed=max(task_count-completed,ambiguous,missing,excess)
     clean=completed==task_count and failed==0 and len(records)==task_count and accounted==task_count
     status="completed" if clean else ("failed" if completed==0 else "partial")
     return completed,failed,status
