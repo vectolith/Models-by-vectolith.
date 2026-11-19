@@ -14,8 +14,8 @@
   "weight_inventory": [],
   "architecture": "Qwen3",
   "parameter_count": 600000000,
-  "context_length": null,
+  "context_length": 32768,
   "compatibility_status": "pending",
   "compute_evidence": null,
-  "notes": "Discovery record only. Revision is reported in a third-party source as the upstream base revision; confirm directly against Hugging Face commit API and capture evidence before status advancement. License metadata is not training-output permission. No inference or training performed."
+  "notes": "Discovery only. The upstream Hugging Face model page and pinned revision page confirm the c1899de revision, Apache-2.0 metadata, and published 32,768 context length. License file content hash, model/config/tokenizer/weight hashes, output-training permission, independent legal review and compatibility checks remain pending. Metadata does not grant or verify training-output permission. No inference or training performed."
 }
