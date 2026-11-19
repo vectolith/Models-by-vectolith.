@@ -1,24 +1,33 @@
 # Executable baseline harness
 
-This directory contains a minimal real inference and task-validation CLI. The example JSONL record is a harness smoke-test fixture, not a benchmark, training example, or evaluation evidence.
+This directory contains an inference CLI, JSONL task validator, candidate-record validator, and automated tests. The example JSONL record is a harness fixture, not benchmark, training data, or evaluation evidence.
 
-## Requirements and setup
-Use a disposable environment and install the requirements listed here. Hardware availability is determined at runtime.
-
+## Setup
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -r experiments/core-prime/001/requirements.txt
 ```
 
-## Validate task files
+## Tests
+```bash
+python -m unittest discover -s experiments/core-prime/001/tests -v
+```
+Tests cover parsing, duplicate IDs, normalized prompt duplicates and cross-split leakage, prompt hash integrity, candidate checks, and evaluator input handling. They do not load a model.
+
+## Task validation
 ```bash
 python experiments/core-prime/001/validate_tasks.py tasks.jsonl
 ```
+Records require task_id, category, prompt, split, rubric_id, provenance. Optional content_sha256 must match SHA-256 of the exact prompt UTF-8 bytes. Detects exact normalized prompt duplicates, including cross-split contamination; semantic or answer-level leakage is out of scope.
 
-Task JSONL records require task_id, category, prompt, split, rubric_id, and provenance. Keep holdout data isolated and do not pass it to evaluation until the run configuration is frozen.
+## Candidate validation
+```bash
+python experiments/core-prime/001/validate_candidate.py candidate.json
+```
+Requires a full 40-character lowercase commit SHA and validates fields, evidence hashes, and prerequisites for verified status. Structural validation is not independent verification of license, authenticity, or compatibility.
 
-## Run a baseline
+## Baseline inference
 ```bash
 python experiments/core-prime/001/evaluate.py \
   --model MODEL_REPOSITORY_OR_LOCAL_PATH \
@@ -27,11 +36,8 @@ python experiments/core-prime/001/evaluate.py \
   --output experiment-results \
   --max-new-tokens 256
 ```
+Use a pinned revision. For local model paths, the revision string is only recorded and provenance is not automatically authenticated. Remote custom code should only be enabled after review with `--trust-remote-code`.
 
-Use an immutable revision, not a moving tag. On a Hub model, the revision must be the full commit hash. For a local model path, provide a stable identifier for the revision/artifact in the run record; local path handling does not itself verify provenance. If remote custom model code is required, enable it only after reviewing it, using `--trust-remote-code`.
+Holdout inference is blocked by default; use `--allow-holdout` only after configuration freeze and proper access control. The evaluator records prompts/responses, hashes, tokens, timing, versions, device/hardware and run status. Raw data can be sensitive; avoid committing private content.
 
-Holdout inference is blocked by default. After the run configuration is frozen, use `--allow-holdout` for an authorized holdout run. This flag is not a substitute for access controls; holdout files must be protected operationally.
-
-The evaluator records prompt and response hashes, raw outputs, token counts, timing, software versions, device and hardware, task-file hash and run status. It does not grade responses or select/promote models. Raw results are sensitive if prompts contain private data; keep datasets public or appropriately secured and never commit private prompts, credentials or outputs.
-
-This initial harness is a bounded baseline tool, not a production evaluator: it does not yet implement schema-level candidate manifest validation, robust model-specific chat templates, multi-GPU benchmarking, independent grading, dataset leakage detection, GPU peak-memory instrumentation, or automated statistical comparison. Those remain subsequent engineering tasks.
+Remaining limitations: model-specific templates, multi-GPU benchmarking, independent grading, semantic leakage detection, GPU peak-memory instrumentation and statistical comparison.
