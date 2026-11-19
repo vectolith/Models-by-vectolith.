@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Reproducible baseline evaluator; outputs raw per-task records and integrity summary."""
 from __future__ import annotations
-import argparse, hashlib, json, platform, random, sys, time, uuid
+import argparse, hashlib, json, platform, random, sys, time, uuid, importlib.metadata
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -12,6 +12,13 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda:f.read(1024*1024),b""): h.update(chunk)
     return h.hexdigest()
 def sha256_text(s: str) -> str: return hashlib.sha256(s.encode("utf-8")).hexdigest()
+def seed_python(seed: int) -> None: random.seed(seed)
+def write_jsonl(path: Path, records: list[dict[str,Any]]) -> None:
+    with path.open("w",encoding="utf-8") as f:
+        for record in records: f.write(json.dumps(record,ensure_ascii=False)+"\\n")
+def package_version(name: str) -> str | None:
+    try: return importlib.metadata.version(name)
+    except importlib.metadata.PackageNotFoundError: return None
 def load_jsonl(path: Path) -> list[dict[str,Any]]:
     rows=[]
     with path.open(encoding="utf-8") as f:
@@ -63,13 +70,12 @@ def main()->int:
         from transformers import AutoModelForCausalLM,AutoTokenizer
     except Exception as e:
         records=initialization_failure_records(run_id,tasks,e,status="dependency_blocked")
-        with raw.open("w",encoding="utf-8") as f:
-            for r in records:f.write(json.dumps(r,ensure_ascii=False)+"\\n")
+        write_jsonl(raw,records)
         summary={"run_id":run_id,"status":"blocked","error":repr(e),"task_file_sha256":task_hash,
             "task_count":len(tasks),"completed_count":0,"failed_count":len(tasks),"raw_file":str(raw),
             "raw_file_sha256":sha256_file(raw),"model":a.model,"revision":a.revision,"seed":a.seed}
         summary_file.write_text(json.dumps(summary,indent=2),encoding="utf-8");print(json.dumps(summary,indent=2));return 2
-    random.seed(a.seed)
+    seed_python(a.seed)
     torch.manual_seed(a.seed)
     if torch.cuda.is_available():torch.cuda.manual_seed_all(a.seed)
     records=[];errors=0
@@ -114,8 +120,7 @@ def main()->int:
     except Exception as e:
         errors += len(tasks)
         records.extend(initialization_failure_records(run_id,tasks,e))
-    with raw.open("w",encoding="utf-8") as f:
-        for r in records:f.write(json.dumps(r,ensure_ascii=False)+"\n")
+    write_jsonl(raw,records)
     completed=sum(r.get("status")=="completed" for r in records)
     status="completed" if completed==len(tasks) else ("failed" if completed==0 else "partial")
     peak_memory=torch.cuda.max_memory_allocated() if device=="cuda" else None
@@ -125,6 +130,7 @@ def main()->int:
         "task_file_sha256":task_hash,"task_count":len(tasks),"completed_count":completed,"failed_count":errors,
         "device":device,"hardware":hardware,"peak_cuda_memory_allocated_bytes":peak_memory,
         "python":sys.version,"platform":platform.platform(),"torch_version":torch.__version__,"transformers_version":transformers.__version__,
+        "accelerate_version":package_version("accelerate"),"safetensors_version":package_version("safetensors"),
         "seed":a.seed,"seed_scope":"Python and PyTorch CPU/CUDA RNGs; deterministic kernels are not guaranteed",
         "model_config_sha256":sha256_text(config_text),"chat_template_sha256":sha256_text(template_text) if template_text else None,
         "started_at_epoch":started,"duration_seconds":time.time()-started,"max_new_tokens":a.max_new_tokens,
