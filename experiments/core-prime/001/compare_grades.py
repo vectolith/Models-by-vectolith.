@@ -22,8 +22,10 @@ def load(path):
         scores=r.get("scores")
         if not isinstance(scores,dict) or not scores:raise ValueError(f"{path}:{n}: nonempty scores object required")
         for k,v in scores.items():
-            if not isinstance(k,str) or not k or not isinstance(v,(int,float)) or isinstance(v,bool) or not math.isfinite(v):
+            if not isinstance(k,str) or not k.strip() or not isinstance(v,(int,float)) or isinstance(v,bool) or not math.isfinite(v):
                 raise ValueError(f"{path}:{n}: scores must be finite numeric values")
+        notes=r.get("notes")
+        if notes is not None and not isinstance(notes,str):raise ValueError(f"{path}:{n}: notes must be text when present")
         rows[r["task_id"]]=r
     if not rows:raise ValueError(f"{path}: no grades")
     candidate_ids={r["candidate_id"] for r in rows.values()}
