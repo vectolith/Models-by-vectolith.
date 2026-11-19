@@ -38,6 +38,14 @@ def load_jsonl(path: Path) -> list[dict[str,Any]]:
     if len(ids)!=len(set(ids)): raise ValueError("task_id values must be unique")
     return rows
 
+def verify_frozen_config(manifest_path: Path, model: str, revision: str, tasks_path: Path, seed: int, max_new_tokens: int, temperature: float, trust_remote_code: bool, qwen3_thinking: bool) -> str:
+    try: manifest=json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception as e: raise ValueError(f"freeze manifest invalid: {e}") from e
+    expected={"model":model,"revision":revision,"tasks_sha256":sha256_file(tasks_path),"seed":seed,"max_new_tokens":max_new_tokens,"temperature":temperature,"trust_remote_code":trust_remote_code,"qwen3_thinking":qwen3_thinking}
+    for key,value in expected.items():
+        if manifest.get(key)!=value: raise ValueError(f"freeze manifest mismatch: {key}")
+    return sha256_file(manifest_path)
+
 def initialization_failure_records(run_id: str, tasks: list[dict[str,Any]], error: Exception, status: str="initialization_failed") -> list[dict[str,Any]]:
     return [{"run_id":run_id,"task_id":task["task_id"],"category":task["category"],"split":task["split"],
         "prompt_sha256":sha256_text(task["prompt"]),"status":status,"error":repr(error)}
@@ -68,7 +76,7 @@ def main()->int:
     p.add_argument("--max-new-tokens",type=int,default=256);p.add_argument("--temperature",type=float,default=0.0)
     p.add_argument("--limit",type=int,default=0);p.add_argument("--trust-remote-code",action="store_true")
     p.add_argument("--seed",type=int,default=42,help="Seed for Python and PyTorch RNGs (default: 42)")
-    p.add_argument("--allow-holdout",action="store_true",help="deprecated; holdout access is disabled until a separately reviewed authorization mechanism exists")
+    p.add_argument("--allow-holdout",action="store_true",help="deprecated; holdout access is disabled until a separately reviewed authorization mechanism exists")\n    p.add_argument("--freeze-manifest",required=True,type=Path,help="immutable configuration manifest matching this evaluation run")
     p.add_argument("--qwen3-thinking",action="store_true",help="Enable Qwen3 thinking mode; default disabled when template supports it")
     a=p.parse_args()
     if a.max_new_tokens<=0:p.error("--max-new-tokens must be positive")
@@ -163,7 +171,7 @@ def main()->int:
         "model_config_sha256":config_hash,"chat_template_sha256":template_hash,"capture_warnings":capture_warnings,
         "started_at_epoch":started,"duration_seconds":time.time()-started,"max_new_tokens":a.max_new_tokens,
         "temperature":a.temperature,"qwen3_thinking":bool(a.qwen3_thinking),"trust_remote_code":a.trust_remote_code,
-        "raw_file":str(raw),"raw_file_sha256":sha256_file(raw)}
+        "freeze_manifest":str(a.freeze_manifest.resolve()),"freeze_manifest_sha256":freeze_sha,"raw_file":str(raw),"raw_file_sha256":sha256_file(raw)}
     summary_file.write_text(json.dumps(summary,indent=2),encoding="utf-8");print(json.dumps(summary,indent=2))
     return 0 if status=="completed" else 1
 if __name__=="__main__":raise SystemExit(main())
