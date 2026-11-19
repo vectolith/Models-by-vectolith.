@@ -52,7 +52,7 @@ class EvaluatorTests(unittest.TestCase):
    evaluator.write_jsonl(path,records)
    lines=path.read_text(encoding="utf-8").splitlines()
    self.assertEqual([json.loads(line) for line in lines],records)
-   self.assertTrue(path.read_bytes().endswith(b"\\n"))
+   self.assertTrue(path.read_bytes().endswith(b"\n"))
    self.assertEqual(evaluator.sha256_file(path),evaluator.sha256_text(path.read_text(encoding="utf-8")))
  def test_dependency_block_records_status(self):
   records=evaluator.initialization_failure_records("run",[row("1","p")],RuntimeError("missing"),status="dependency_blocked")
