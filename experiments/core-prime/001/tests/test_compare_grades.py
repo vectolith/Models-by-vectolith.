@@ -20,10 +20,10 @@ class ComparisonTests(unittest.TestCase):
    with self.assertRaises(ValueError):m.load(p)
  def test_candidate_id_required(self):
   with tempfile.TemporaryDirectory() as d:
-   p=Path(d)/"x";p.write_text('{"task_id":"1","scores":{"x":1}}\\n')
+   p=Path(d)/"x";p.write_text('{"task_id":"1","scores":{"x":1}}\n')
    with self.assertRaisesRegex(ValueError,"candidate_id required"):m.load(p)
  def test_candidate_id_consistency(self):
   with tempfile.TemporaryDirectory() as d:
-   p=Path(d)/"x";p.write_text('{"task_id":"1","candidate_id":"b","scores":{"x":1}}\\n{"task_id":"2","candidate_id":"a","scores":{"x":2}}\\n')
+   p=Path(d)/"x";p.write_text('{"task_id":"1","candidate_id":"b","scores":{"x":1}}\n{"task_id":"2","candidate_id":"a","scores":{"x":2}}\n')
    with self.assertRaisesRegex(ValueError,"consistent"):m.load(p)
 if __name__=="__main__":unittest.main()
