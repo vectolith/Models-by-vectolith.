@@ -6,5 +6,8 @@
   "max_new_tokens": 256,
   "temperature": 0.0,
   "trust_remote_code": false,
-  "qwen3_thinking": false
+  "qwen3_thinking": false,
+  "limit": 0,
+  "selected_task_count": 0,
+  "selected_task_ids_sha256": "REPLACE_WITH_SHA256"
 }
