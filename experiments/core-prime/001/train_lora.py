@@ -100,7 +100,7 @@ def main():
     prefix=f"User:\n{r['prompt']}\nAssistant:\n"
     full=prefix+r['response']+tok.eos_token
     ids=tok(full,truncation=True,max_length=2048)["input_ids"]
-    prefix_len=len(tok(prefix,add_special_tokens=False)["input_ids"])
+    prefix_len=len(tok(prefix)["input_ids"])
     prefix_len=min(prefix_len,len(ids))
     if prefix_len>=len(ids):raise ValueError(f"task {r['task_id']}: truncation left no response tokens")
     self.items.append((ids,prefix_len))
