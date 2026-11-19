@@ -44,9 +44,17 @@ def new_run_id() -> str:
     return "cp001-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:12]
 
 def tally_records(records: list[dict[str,Any]], task_count: int) -> tuple[int,int,str]:
-    completed=sum(record.get("status")=="completed" for record in records)
-    failed=sum(record.get("status")!="completed" for record in records)
-    status="completed" if completed==task_count and failed==0 else ("failed" if completed==0 else "partial")
+    by_id={}
+    for record in records:
+        by_id.setdefault(record.get("task_id"),[]).append(record)
+    ambiguous=sum(len(group)!=1 or not group[0].get("task_id") for group in by_id.values())
+    completed_ids=sum(len(group)==1 and group[0].get("status")=="completed" for group in by_id.values())
+    completed=min(completed_ids,task_count)
+    accounted=len(by_id)
+    missing=max(0,task_count-accounted)
+    failed=max(task_count-completed,ambiguous,missing)
+    clean=completed==task_count and failed==0 and len(records)==task_count and accounted==task_count
+    status="completed" if clean else ("failed" if completed==0 else "partial")
     return completed,failed,status
 
 def main()->int:
