@@ -49,6 +49,16 @@ def validate_checkpoint(path):
   if not (path/required).is_file():raise ValueError(f"checkpoint missing {required}")
  if not any(path.glob("rng_state*.pth")):raise ValueError("checkpoint RNG state missing")
  return step
+def build_sequence(tok,prompt,response,max_length=2048):
+ prefix=f"User:\\n{prompt}\\nAssistant:\\n"
+ prefix_ids=tok(prefix)["input_ids"]
+ response_ids=tok(response+tok.eos_token,add_special_tokens=False)["input_ids"]
+ if not response_ids:raise ValueError("empty tokenized response")
+ prefix_len=len(prefix_ids)
+ ids=(prefix_ids+response_ids)[:max_length]
+ prefix_len=min(prefix_len,len(ids))
+ if prefix_len>=len(ids):raise ValueError("truncation left no response tokens")
+ return ids,prefix_len
 def make_labels(input_ids, attention_mask, prompt_lengths):
  labels=input_ids.clone()
  labels[attention_mask==0]=-100
@@ -97,14 +107,8 @@ def main():
   def __init__(self):
    self.items=[]
    for r in rows:
-    prefix=f"User:\n{r['prompt']}\nAssistant:\n"
-    prefix_ids=tok(prefix)["input_ids"]
-    response_ids=tok(r["response"]+tok.eos_token,add_special_tokens=False)["input_ids"]
-    if not response_ids:raise ValueError(f"task {r['task_id']}: empty tokenized response")
-    prefix_len=len(prefix_ids)
-    ids=(prefix_ids+response_ids)[:2048]
-    prefix_len=min(prefix_len,len(ids))
-    if prefix_len>=len(ids):raise ValueError(f"task {r['task_id']}: truncation left no response tokens")
+    try:ids,prefix_len=build_sequence(tok,r["prompt"],r["response"])
+    except ValueError as e:raise ValueError(f"task {r['task_id']}: {e}")
     self.items.append((ids,prefix_len))
   def __len__(self):return len(self.items)
   def __getitem__(self,i):return self.items[i]
