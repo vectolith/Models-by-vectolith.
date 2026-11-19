@@ -58,7 +58,7 @@ class EvaluatorTests(unittest.TestCase):
   records=evaluator.initialization_failure_records("run",[row("1","p")],RuntimeError("missing"),status="dependency_blocked")
   self.assertEqual(records[0]["status"],"dependency_blocked")
  def test_task_result_tally_partial_and_failure(self):
-  records=[{"status":"completed"},{"status":"failed"},{"status":"initialization_failed"}]
+  records=[{"task_id":"1","status":"completed"},{"task_id":"2","status":"failed"},{"task_id":"3","status":"initialization_failed"}]
   self.assertEqual(evaluator.tally_records(records,3),(1,2,"partial"))
  def test_task_result_tally_initialization_failure(self):
   records=[{"status":"initialization_failed"},{"status":"initialization_failed"}]
@@ -72,4 +72,7 @@ class EvaluatorTests(unittest.TestCase):
  def test_task_result_tally_duplicate_record(self):
   records=[{"task_id":"1","status":"completed"},{"task_id":"1","status":"completed"}]
   self.assertEqual(evaluator.tally_records(records,2),(0,2,"failed"))
+ def test_task_result_tally_extra_record(self):
+  records=[{"task_id":"1","status":"completed"},{"task_id":"2","status":"completed"},{"task_id":"3","status":"completed"}]
+  self.assertEqual(evaluator.tally_records(records,2),(2,1,"partial"))
 if __name__=="__main__":unittest.main()
