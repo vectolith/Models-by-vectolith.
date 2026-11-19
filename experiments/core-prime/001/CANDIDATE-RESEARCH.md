@@ -39,3 +39,16 @@ These links are discovery entry points, not evidence that any particular candida
 ## Selection rule
 
 Do not approve a candidate based on popularity, vendor benchmark scores, model size, or a license label alone. Run a common baseline suite, preserve per-task outputs and resource measurements, then review evidence before selection.
+
+## Additional candidate discovery (2026-11-19)
+
+| Candidate | Discovery observation | Status |
+|---|---|---|
+| Qwen/Qwen3-0.6B | Model card declares Apache-2.0; compact candidate for baseline measurement | Pending immutable revision, license artifact capture, output-permission review and inference |
+| HuggingFaceTB/SmolLM3-3B | Model card declares Apache-2.0; 3B candidate for capability/resource comparison | Pending immutable revision, license artifact capture, output-permission review and inference |
+
+Discovery references (not approvals):
+- https://huggingface.co/Qwen/Qwen3-0.6B
+- https://huggingface.co/HuggingFaceTB/SmolLM3-3B
+
+License metadata alone is not output-training permission. Neither candidate has been downloaded, pinned, legally reviewed, or measured for this experiment as of this entry.
