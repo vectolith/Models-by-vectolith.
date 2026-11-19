@@ -111,3 +111,16 @@ Sources (retrieved during discovery; no bytes or hashes captured in this run):
 - Older Gemma Terms (last modified April 1, 2026): https://ai.google.dev/gemma/terms
 
 No license artifacts, revisions, output permissions, human legal review, dataset provenance, compute evidence or student model results were verified by this update. No inference or training was performed.
+
+
+## Additional primary-source screening (2026-11-20)
+
+This is public-document screening only; not independent legal review and no output permission or model is approved.
+
+- **Qwen/Qwen3-0.6B (revision `c1899de289a04d12100db370d81485cdf75e47ca`)**: the revision-specific Hugging Face LICENSE page declares Apache-2.0 and displays the license. Source: https://huggingface.co/Qwen/Qwen3-0.6B/blob/c1899de289a04d12100db370d81485cdf75e47ca/LICENSE. This does not specifically address the contemplated output-to-training use; unresolved.
+- **HuggingFaceTB/SmolLM2-360M-Instruct**: its official model card/file metadata identifies Apache-2.0. Source: https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct. No separate explicit output-to-training grant was located in this screening; unresolved.
+- **microsoft/Phi-4-mini-instruct**: the official model card identifies MIT. Source: https://huggingface.co/microsoft/Phi-4-mini-instruct. No separate explicit output-to-training grant was located in this screening; unresolved.
+- **IBM Granite 4.2**: IBM's official documentation describes the 3B/8B/30B family as Apache-2.0. Source: https://www.ibm.com/granite/docs/models/granite4-2. This does not itself resolve rights in generated text or student training; unresolved.
+- **Gemma version distinction**: Gemma 4's official overview/license materials describe an Apache-2.0 release (https://ai.google.dev/gemma/docs/gemma_4_license; https://ai.google.dev/gemma/docs/core). Older Gemma versions listed in the April 1, 2026 Gemma Terms remain under custom terms; the terms expressly define model derivatives to include student models created by synthetic-output distillation and require use restrictions to accompany distribution. Source: https://ai.google.dev/gemma/terms. Do not apply older terms to Gemma 4 or Gemma 4 Apache-2.0 to older versions.
+
+The screening did not find an explicit, separate output-to-training permission statement for Qwen3-0.6B, SmolLM2-360M-Instruct, Phi-4-mini-instruct or Granite 4.2. This is not a finding that such use is prohibited or permitted; it is a legal question requiring review of exact candidate/teacher revisions, provider terms, source material rights, privacy, jurisdiction and contemplated student distribution. No output generation, training or inference was performed.

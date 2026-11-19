@@ -35,3 +35,11 @@ This is an evidence checklist, not an approval. Do not mark a gate passed based 
 
 ## Decision
 Training is blocked until every required item above is evidenced, independently reviewed where indicated and approved. The validator and authorization file alone do not establish authenticity of evidence.
+
+
+## Additional reproducibility gates
+
+- A verified candidate must have a staged local snapshot directory whose complete file inventory and hashes match the candidate record. Baseline evaluation loads that snapshot locally (`local_files_only`), not from an unverified live download.
+- Authorization binds the candidate-record SHA-256, dataset SHA-256, exact Git HEAD, pre-import package inventory SHA-256 and genuinely free compute evidence. The actual checkout HEAD and package inventory are checked before ML imports.
+- Baseline evaluation is development-split only. Holdout remains blocked. Evaluation authorization binds the freeze-manifest hash, candidate revision, selected task budget, output-token ceiling, wall-clock ceiling, free compute evidence and package inventory.
+- These are integrity controls, not legal opinions or proof of evidence authenticity. Independent legal review and written output-training permission remain required.

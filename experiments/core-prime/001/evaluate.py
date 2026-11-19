@@ -5,6 +5,7 @@ import argparse, hashlib, json, math, platform, random, sys, time, uuid, importl
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+import evaluation_gate
 
 def sha256_file(path: Path) -> str:
     h=hashlib.sha256()
@@ -47,13 +48,8 @@ def load_jsonl(path: Path) -> list[dict[str,Any]]:
     if len(ids)!=len(set(ids)): raise ValueError("task_id values must be unique")
     return rows
 
-def verify_frozen_config(manifest_path: Path, model: str, revision: str, tasks_path: Path, seed: int, max_new_tokens: int, temperature: float, trust_remote_code: bool, qwen3_thinking: bool, limit: int, selected_task_ids: list[str]) -> str:
-    try: manifest=json.loads(manifest_path.read_text(encoding="utf-8"))
-    except Exception as e: raise ValueError(f"freeze manifest invalid: {e}") from e
-    expected={"model":model,"revision":revision,"tasks_sha256":sha256_file(tasks_path),"seed":seed,"max_new_tokens":max_new_tokens,"temperature":temperature,"trust_remote_code":trust_remote_code,"qwen3_thinking":qwen3_thinking,"limit":limit,"selected_task_count":len(selected_task_ids),"selected_task_ids_sha256":sha256_serialized(selected_task_ids)}
-    for key,value in expected.items():
-        if manifest.get(key)!=value: raise ValueError(f"freeze manifest mismatch: {key}")
-    return sha256_file(manifest_path)
+def verify_frozen_config(manifest_path: Path, model: str, revision: str, tasks_path: Path, seed: int, max_new_tokens: int, temperature: float, trust_remote_code: bool, qwen3_thinking: bool, limit: int, selected_task_ids: list[str], candidate_sha: str, code_commit: str, package_hash: str, max_wall_seconds: int) -> str:
+    return evaluation_gate.verify_frozen_config(manifest_path,model,revision,tasks_path,seed,max_new_tokens,temperature,trust_remote_code,qwen3_thinking,limit,selected_task_ids,candidate_sha,code_commit,package_hash,max_wall_seconds)
 
 def initialization_failure_records(run_id: str, tasks: list[dict[str,Any]], error: Exception, status: str="initialization_failed") -> list[dict[str,Any]]:
     return [{"run_id":run_id,"task_id":task["task_id"],"category":task["category"],"split":task["split"],
@@ -87,6 +83,9 @@ def main()->int:
     p.add_argument("--seed",type=int,default=42,help="Seed for Python and PyTorch RNGs (default: 42)")
     p.add_argument("--allow-holdout",action="store_true",help="deprecated; holdout access is disabled until a separately reviewed authorization mechanism exists")
     p.add_argument("--freeze-manifest",required=True,type=Path,help="immutable configuration manifest matching this evaluation run")
+    p.add_argument("--candidate-record",required=True,type=Path)
+    p.add_argument("--authorization",required=True,type=Path)
+    p.add_argument("--code-commit",required=True)
     p.add_argument("--qwen3-thinking",action="store_true",help="Enable Qwen3 thinking mode; default disabled when template supports it")
     a=p.parse_args()
     if a.max_new_tokens<=0:p.error("--max-new-tokens must be positive")
@@ -94,14 +93,25 @@ def main()->int:
     if a.temperature<0:p.error("--temperature cannot be negative")
     if a.seed<0:p.error("--seed must be non-negative")
     if a.limit<0:p.error("--limit must be non-negative")
+    if not evaluation_gate.SHA40.fullmatch(a.code_commit):p.error("--code-commit must be a 40-character lowercase SHA")
+    try:actual_code_commit=evaluation_gate.git_head()
+    except Exception as e:p.error(f"Git commit capture failed: {e}")
+    if actual_code_commit!=a.code_commit:p.error("--code-commit does not match evaluator checkout HEAD")
     tasks=load_jsonl(a.tasks)
     if any(t["split"]=="holdout" for t in tasks):p.error("holdout inference blocked; this evaluator has no reviewed holdout authorization mechanism")
+    if any(t["split"]!="development" for t in tasks):p.error("baseline inference requires development-only task records")
     if a.limit>0:tasks=tasks[:a.limit]
     if not tasks:p.error("no tasks")
     selected_task_ids=[t["task_id"] for t in tasks]
     selected_task_ids_sha256=sha256_serialized(selected_task_ids)
-    try: freeze_sha=verify_frozen_config(a.freeze_manifest,a.model,a.revision,a.tasks,a.seed,a.max_new_tokens,a.temperature,a.trust_remote_code,bool(a.qwen3_thinking),a.limit,selected_task_ids)
-    except Exception as e:p.error(f"evaluation configuration not frozen: {e}")
+    try:
+        candidate,candidate_sha,snapshot=evaluation_gate.verify_candidate_record(a.candidate_record,a.model,a.revision)
+        inventory,inventory_sha256=package_inventory_snapshot()
+        authorization,authorization_sha256=evaluation_gate.verify_evaluation_authorization(a.authorization,candidate_sha,a.tasks,a.freeze_manifest,a.code_commit,inventory_sha256,len(tasks),a.max_new_tokens)
+        max_wall_seconds=authorization["budget"]["max_wall_seconds"]
+        if authorization.get("candidate_revision")!=a.revision:raise ValueError("authorization candidate revision mismatch")
+        freeze_sha=verify_frozen_config(a.freeze_manifest,a.model,a.revision,a.tasks,a.seed,a.max_new_tokens,a.temperature,a.trust_remote_code,bool(a.qwen3_thinking),a.limit,selected_task_ids,candidate_sha,a.code_commit,inventory_sha256,max_wall_seconds)
+    except Exception as e:p.error(f"evaluation permission/reproducibility gate blocked: {e}")
     a.output.mkdir(parents=True,exist_ok=True);task_hash=sha256_file(a.tasks)
     run_id=new_run_id()
     raw=a.output/f"{run_id}-raw.jsonl";summary_file=a.output/f"{run_id}-summary.json"
@@ -109,7 +119,7 @@ def main()->int:
     try:
         import torch
         import transformers
-        from transformers import AutoModelForCausalLM,AutoTokenizer
+        from transformers import AutoModelForCausalLM,AutoTokenizer,StoppingCriteria
     except Exception as e:
         records=initialization_failure_records(run_id,tasks,e,status="dependency_blocked")
         write_jsonl(raw,records)
@@ -128,8 +138,8 @@ def main()->int:
     try:
         device="cuda" if torch.cuda.is_available() else "cpu"
         hardware=torch.cuda.get_device_name(0) if device=="cuda" else (platform.processor() or platform.machine())
-        tokenizer=AutoTokenizer.from_pretrained(a.model,revision=a.revision,trust_remote_code=a.trust_remote_code)
-        model=AutoModelForCausalLM.from_pretrained(a.model,revision=a.revision,trust_remote_code=a.trust_remote_code,
+        tokenizer=AutoTokenizer.from_pretrained(str(snapshot),local_files_only=True,trust_remote_code=False)
+        model=AutoModelForCausalLM.from_pretrained(str(snapshot),local_files_only=True,trust_remote_code=False,
             torch_dtype="auto",device_map="auto" if device=="cuda" else None)
         if device=="cpu":model.to(device)
         model.eval()
@@ -138,7 +148,12 @@ def main()->int:
         errors=len(tasks)
         records=initialization_failure_records(run_id,tasks,e)
     if model is not None and tokenizer is not None:
-        for task in tasks:
+        class WallBudgetStoppingCriteria(StoppingCriteria):
+            def __call__(self,input_ids,scores,**kwargs):return time.time()-started>=max_wall_seconds
+        for task_index,task in enumerate(tasks):
+            if time.time()-started>=max_wall_seconds:
+                records.extend({"run_id":run_id,"task_id":remaining["task_id"],"category":remaining["category"],"split":remaining["split"],"prompt_sha256":sha256_text(remaining["prompt"]),"status":"budget_exhausted"} for remaining in tasks[task_index:])
+                break
             prompt=task["prompt"];t0=time.perf_counter()
             try:
                 if getattr(tokenizer,"chat_template",None):
@@ -155,15 +170,17 @@ def main()->int:
                 inputs={k:v.to(model_device) for k,v in inputs.items()}
                 input_tokens=int(inputs["input_ids"].shape[-1])
                 if device=="cuda":torch.cuda.synchronize()
-                generation={"max_new_tokens":a.max_new_tokens,"do_sample":a.temperature>0}
+                generation={"max_new_tokens":a.max_new_tokens,"do_sample":a.temperature>0,"stopping_criteria":[WallBudgetStoppingCriteria()]}
                 if a.temperature>0:generation["temperature"]=a.temperature
                 with torch.inference_mode():out=model.generate(**inputs,**generation)
                 if device=="cuda":torch.cuda.synchronize()
                 elapsed=time.perf_counter()-t0;new=out[0][input_tokens:];response=tokenizer.decode(new,skip_special_tokens=True)
-                records.append({"run_id":run_id,"task_id":task["task_id"],"category":task["category"],"split":task["split"],
+                record={"run_id":run_id,"task_id":task["task_id"],"category":task["category"],"split":task["split"],
                     "prompt_sha256":sha256_text(prompt),"prompt":prompt,"response":response,"response_sha256":sha256_text(response),
                     "input_tokens":input_tokens,"output_tokens":int(new.shape[-1]),"generation_seconds":elapsed,
-                    "tokens_per_second":int(new.shape[-1])/elapsed if elapsed else None,"status":"completed"})
+                    "tokens_per_second":int(new.shape[-1])/elapsed if elapsed else None,"status":"completed"}
+                if time.time()-started>=max_wall_seconds:record["status"]="budget_exhausted"
+                records.append(record)
             except Exception as e:
                 errors+=1
                 records.append({"run_id":run_id,"task_id":task["task_id"],"category":task["category"],"split":task["split"],
@@ -196,7 +213,7 @@ def main()->int:
         "model_config_sha256":config_hash,"chat_template_sha256":template_hash,"capture_warnings":capture_warnings,
         "started_at_epoch":started,"duration_seconds":time.time()-started,"max_new_tokens":a.max_new_tokens,
         "temperature":a.temperature,"qwen3_thinking":bool(a.qwen3_thinking),"trust_remote_code":a.trust_remote_code,
-        "freeze_manifest":str(a.freeze_manifest.resolve()),"freeze_manifest_sha256":freeze_sha,"raw_file":str(raw),"raw_file_sha256":sha256_file(raw)}
+        "freeze_manifest":str(a.freeze_manifest.resolve()),"freeze_manifest_sha256":freeze_sha,"candidate_record_sha256":candidate_sha,"authorization_sha256":authorization_sha256,"code_commit":a.code_commit,"max_wall_seconds":max_wall_seconds,"raw_file":str(raw),"raw_file_sha256":sha256_file(raw)}
     summary_file.write_text(json.dumps(summary,indent=2),encoding="utf-8");print(json.dumps(summary,indent=2))
     return 0 if status=="completed" else 1
 if __name__=="__main__":raise SystemExit(main())

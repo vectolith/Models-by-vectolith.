@@ -1,0 +1,22 @@
+{
+  "approval": "pending",
+  "candidate_record_sha256": null,
+  "candidate_revision": null,
+  "tasks_sha256": null,
+  "freeze_manifest_sha256": null,
+  "code_commit": null,
+  "package_inventory_sha256": null,
+  "hardware": {
+    "verified_free_budget": false,
+    "provider": null,
+    "session_id": null,
+    "evidence_path": null,
+    "evidence_sha256": null
+  },
+  "budget": {
+    "max_task_count": 0,
+    "max_new_tokens": 0,
+    "max_wall_seconds": 0
+  },
+  "holdout_access": "sealed"
+}

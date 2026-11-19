@@ -45,3 +45,8 @@ python experiments/core-prime/001/verify_release_bundle.py path/to/release-manif
 ```
 
 The verifier intentionally cannot make an experiment release-qualified by filling in status fields; every referenced evidence file must exist and match its hash, and substantive reviews remain human responsibilities.
+
+
+## Evaluation authorization and local snapshot
+
+Baseline inference is blocked until the candidate record is verified, written output-training permission and independent legal review are approved, all candidate evidence hashes and the staged snapshot inventory pass, the task file is development-only, and an evaluation authorization binds the exact freeze manifest, candidate record, task file, Git HEAD, package inventory, free-compute evidence and bounded budget. The evaluator loads the verified local snapshot with network access disabled. Use `evaluation-freeze.template.json` and `evaluation-authorization.template.json` as pending structures; they are not approvals. Holdout inference is not supported.
