@@ -41,6 +41,10 @@ class Tests(unittest.TestCase):
   source=(ROOT/"train_lora.py").read_text(encoding="utf-8")
   self.assertIn("labels[i,:int(prefix_len)]=-100",source)
   self.assertIn("validate_checkpoint(resume)",source)
+ def test_wall_budget_stop_requests_checkpoint(self):
+  source=(ROOT/"train_lora.py").read_text(encoding="utf-8")
+  self.assertIn("control.should_training_stop=True",source)
+  self.assertIn("control.should_save=True",source)
  def test_build_sequence_masks_prefix_boundary(self):
   class Tok:
    eos_token="<eos>"
