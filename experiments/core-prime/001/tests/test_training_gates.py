@@ -125,4 +125,20 @@ class Tests(unittest.TestCase):
    eos_token="<eos>"
    def __call__(self,text,add_special_tokens=True):return {"input_ids":text.split()}
   with self.assertRaisesRegex(ValueError,"no response tokens"):trainer.build_sequence(Tok(),"very long prefix words","answer",max_length=3)
+ def test_build_sequence_uses_chat_template_prefix(self):
+  class Tok:
+   eos_token="<eos>"
+   chat_template="fixture"
+   def apply_chat_template(self,messages,tokenize=False,add_generation_prompt=False,enable_thinking=False):
+    self.kw={"messages":messages,"add_generation_prompt":add_generation_prompt,"enable_thinking":enable_thinking}
+    return "templated-prefix"
+   def __call__(self,text,add_special_tokens=True):
+    return {"input_ids":text.split()}
+  tok=Tok()
+  ids,prefix=trainer.build_sequence(tok,"question","answer",max_length=30)
+  self.assertEqual(tok.kw["messages"],[{"role":"user","content":"question"}])
+  self.assertTrue(tok.kw["add_generation_prompt"])
+  self.assertFalse(tok.kw["enable_thinking"])
+  self.assertEqual(ids[:prefix],["templated-prefix"])
+  self.assertEqual(ids[prefix:],["answer<eos>"])
 if __name__=="__main__":unittest.main()
