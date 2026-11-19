@@ -1,1 +1,5 @@
-torch\ntransformers\naccelerate\nsafetensors\npeft\n
+torch
+transformers
+accelerate
+safetensors
+peft
