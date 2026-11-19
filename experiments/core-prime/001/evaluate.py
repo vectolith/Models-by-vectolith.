@@ -148,7 +148,9 @@ def main()->int:
                         template_kwargs["enable_thinking"]=bool(a.qwen3_thinking)
                     encoded=tokenizer.apply_chat_template(messages,**template_kwargs)
                     inputs=tokenizer(encoded,return_tensors="pt",add_special_tokens=False)
-                else:\n                    encoded=f"User:\\n{prompt}\\nAssistant:\\n"\n                    inputs=tokenizer(encoded,return_tensors="pt",add_special_tokens=False)
+                else:
+                    encoded=f"User:\n{prompt}\nAssistant:\n"
+                    inputs=tokenizer(encoded,return_tensors="pt",add_special_tokens=False)
                 model_device=model.get_input_embeddings().weight.device
                 inputs={k:v.to(model_device) for k,v in inputs.items()}
                 input_tokens=int(inputs["input_ids"].shape[-1])
