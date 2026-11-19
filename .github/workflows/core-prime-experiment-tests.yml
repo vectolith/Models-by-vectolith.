@@ -22,3 +22,7 @@ jobs:
         run: python -m unittest discover -s experiments/core-prime/001/tests -v
       - name: Validate example tasks
         run: python experiments/core-prime/001/validate_tasks.py experiments/core-prime/001/tasks.example.jsonl
+      - name: Validate development dataset
+        run: python experiments/core-prime/001/validate_tasks.py experiments/core-prime/001/tasks.dev.jsonl
+      - name: Validate pending candidate record
+        run: python experiments/core-prime/001/validate_candidate.py experiments/core-prime/001/candidate-qwen3-0.6b.json
