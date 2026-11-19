@@ -86,6 +86,8 @@ def main()->int:
     if any(t["split"]=="holdout" for t in tasks):p.error("holdout inference blocked; this evaluator has no reviewed holdout authorization mechanism")
     if a.limit>0:tasks=tasks[:a.limit]
     if not tasks:p.error("no tasks")
+    try: freeze_sha=verify_frozen_config(a.freeze_manifest,a.model,a.revision,a.tasks,a.seed,a.max_new_tokens,a.temperature,a.trust_remote_code,bool(a.qwen3_thinking))
+    except Exception as e:p.error(f"evaluation configuration not frozen: {e}")
     a.output.mkdir(parents=True,exist_ok=True);task_hash=sha256_file(a.tasks)
     run_id=new_run_id()
     raw=a.output/f"{run_id}-raw.jsonl";summary_file=a.output/f"{run_id}-summary.json"
