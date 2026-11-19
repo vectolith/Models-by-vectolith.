@@ -55,6 +55,12 @@ class Tests(unittest.TestCase):
   (bad/"trainer_state.json").write_text(json.dumps({"global_step":9}))
   (bad/"adapter_model.safetensors").write_bytes(b"weights")
   self.assertEqual(trainer.select_recovery_checkpoint(root),good)
+ def test_recovery_ignores_malformed_checkpoint_names(self):
+  root=self.d/"checkpoints";root.mkdir()
+  good=self.make_checkpoint(root,"checkpoint-2",2)
+  (root/"checkpoint-not-a-step").mkdir()
+  (root/"checkpoint-").mkdir()
+  self.assertEqual(trainer.select_recovery_checkpoint(root),good)
  def test_checkpoint_validation(self):
   ck=self.make_checkpoint(self.d,"checkpoint-3",3)
   self.assertEqual(trainer.validate_checkpoint(ck),3)
