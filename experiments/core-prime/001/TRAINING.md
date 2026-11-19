@@ -1,6 +1,6 @@
 # Guarded LoRA trainer
 
-Training is intentionally blocked unless the candidate manifest and independent authorization evidence pass. Candidate status must be verified; output-training permission verified; human legal review approved; compatibility compatible. Authorization must match exact candidate revision, dataset SHA-256 and code commit, document verified free GPU provider/session and budgets, and keep holdout sealed/denied. Operator must also pass --authorize-training. No CPU or paid compute.
+Training is intentionally blocked unless the candidate manifest and independent authorization evidence pass. Candidate status must be verified; output-training permission verified; human legal review approved; compatibility compatible. Authorization must match exact candidate revision, dataset SHA-256 and code commit, include hashed evidence files for license, written output permission, independent legal review, model config, chat template, dataset provenance and free-compute session, document budgets, and keep holdout sealed/denied. Preflight checks evidence file hashes and confines relative paths to the evidence directories. Operator must also pass --authorize-training. No CPU or paid compute.
 
 Dataset is a separate JSONL file of records with task_id, prompt, response, provenance and split=train only. Development/holdout records are rejected. Do not reuse the development evaluation set as training material.
 
