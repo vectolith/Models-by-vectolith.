@@ -147,7 +147,7 @@ def main()->int:
                     if "qwen3" in str(getattr(model.config,"model_type","")).lower():
                         template_kwargs["enable_thinking"]=bool(a.qwen3_thinking)
                     encoded=tokenizer.apply_chat_template(messages,**template_kwargs)
-                    inputs=tokenizer(encoded,return_tensors="pt")
+                    inputs=tokenizer(encoded,return_tensors="pt",add_special_tokens=False)
                 else:inputs=tokenizer(prompt,return_tensors="pt")
                 model_device=model.get_input_embeddings().weight.device
                 inputs={k:v.to(model_device) for k,v in inputs.items()}
