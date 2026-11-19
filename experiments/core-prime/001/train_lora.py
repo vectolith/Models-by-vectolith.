@@ -95,9 +95,7 @@ def main():
  if telemetry_path.exists():
   try:
    records=[json.loads(line) for line in telemetry_path.read_text(encoding="utf-8").splitlines() if line.strip()]
-   by_session={}
-   for rec in records: by_session[rec.get("session_id","unknown")]=max(by_session.get(rec.get("session_id","unknown"),0.0),float(rec.get("session_elapsed_seconds",rec.get("elapsed_seconds",0.0))))
-   prior_elapsed=sum(by_session.values())
+   prior_elapsed=telemetry_elapsed(records)
   except Exception as e:p.error(f"telemetry history invalid; recovery blocked: {e}")
  if prior_elapsed>=x.max_wall_seconds:p.error("cumulative wall-time budget already exhausted")
  tok=AutoTokenizer.from_pretrained(c["repository_id"],revision=c["revision"]);model=AutoModelForCausalLM.from_pretrained(c["repository_id"],revision=c["revision"],torch_dtype=torch.float16,device_map="auto")
