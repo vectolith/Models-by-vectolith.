@@ -15,6 +15,7 @@ This is an evidence checklist, not an approval. Do not mark a gate passed based 
 - [ ] Written output-generation permission is explicit and applicable to this candidate and use; its artifact path/hash is recorded and verified at preflight.
 - [ ] Independent human legal review records its reviewer, date, scope, sources and decision.
 - [ ] The weight license and generated-output training permission are evaluated separately.
+- [ ] Every teacher used for data generation has a separate terms/rights record covering output collection and student distillation; a teacher's weights license alone is not a permission to train on its outputs.
 - [ ] Do not infer permission from an open weights license or model-card statement alone.
 
 ## Data provenance
