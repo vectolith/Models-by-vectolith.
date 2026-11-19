@@ -27,7 +27,7 @@ def verify(root,manifest):
     errors.append(f"gate {name} lacks approved status and evidence hash/path")
    else:
     if "holdout" in item["evidence_path"].lower():
-     errors.append(f"gate {name}: holdout evidence forbidden: {item[\"evidence_path\"]}")
+     errors.append(f"gate {name}: holdout evidence forbidden: {item['evidence_path']}")
      continue
     try:verify_file(root,item["evidence_path"],item["sha256"])
     except ValueError as e:errors.append(f"gate {name}: {e}")
