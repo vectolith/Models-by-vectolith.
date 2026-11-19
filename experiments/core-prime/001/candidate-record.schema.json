@@ -26,7 +26,7 @@
     "tokenizer_revision": {"type": ["string", "null"]},
     "chat_template_evidence_path": {"type": ["string", "null"]},
     "chat_template_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
-    "weight_inventory": {"type": "array", "items": {"type": "object", "required": ["path", "sha256"], "properties": {"path": {"type": "string"}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}, "additionalProperties": false},
+    "weight_inventory": {"type": "array", "items": {"type": "object", "required": ["path", "sha256"], "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}, "additionalProperties": false}},
     "architecture": {"type": ["string", "null"]},
     "parameter_count": {"type": ["integer", "null"], "minimum": 1},
     "context_length": {"type": ["integer", "null"], "minimum": 1},
