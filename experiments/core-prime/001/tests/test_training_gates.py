@@ -1,5 +1,7 @@
 import importlib.util,json,tempfile,unittest
 from pathlib import Path
+import sys
+sys.path.insert(0,str(Path(__file__).resolve().parents[1])
 ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location("trainer",ROOT/"train_lora.py");trainer=importlib.util.module_from_spec(spec);spec.loader.exec_module(trainer)
 class Tests(unittest.TestCase):
@@ -7,13 +9,19 @@ class Tests(unittest.TestCase):
   self.tmp=tempfile.TemporaryDirectory();self.d=Path(self.tmp.name);self.dataset=self.d/"train.jsonl";self.dataset.write_text(json.dumps({"task_id":"x","prompt":"p","response":"r","provenance":"authored","split":"train"})+"\n")
   self.candidate_path=self.d/"candidate.json";self.authorization_path=self.d/"authorization.json"
   self.x=type("X",(),{"dataset":self.dataset,"candidate":self.candidate_path,"authorization":self.authorization_path,"max_steps":10,"max_wall_seconds":60,"code_commit":"c"*40})()
-  weights=self.d/"weights.bin";weights.write_bytes(b"candidate weight fixture")
-  self.c={"status":"verified","output_training_permission":"verified","human_legal_review":"approved","compatibility_status":"compatible","revision":"a"*40,"license_identifier":"Apache-2.0","tokenizer_revision":"a"*40,"weight_inventory":[{"path":"weights.bin","sha256":trainer.sha256_file(weights)}]}
-  for path_key,hash_key,filename,content in (("license_evidence_path","license_evidence_sha256","license.txt","license fixture"),("output_training_permission_evidence_path","output_training_permission_evidence_sha256","permission.txt","permission fixture"),("human_legal_review_evidence_path","human_legal_review_evidence_sha256","review.txt","review fixture"),("model_config_evidence_path","model_config_sha256","config.json","config fixture"),("chat_template_evidence_path","chat_template_sha256","template.txt","template fixture")):
+  snapshot=self.d/"snapshot";snapshot.mkdir()
+  weights=snapshot/"weights.bin";weights.write_bytes(b"candidate weight fixture")
+  config=snapshot/"config.json";config.write_text("{}")
+  template=snapshot/"chat_template.txt";template.write_text("template")
+  inventory=[{"path":"snapshot/weights.bin","sha256":trainer.sha256_file(weights)},{"path":"snapshot/config.json","sha256":trainer.sha256_file(config)},{"path":"snapshot/chat_template.txt","sha256":trainer.sha256_file(template)}]
+  self.c={"status":"verified","output_training_permission":"verified","human_legal_review":"approved","compatibility_status":"compatible","revision":"a"*40,"license_identifier":"Apache-2.0","tokenizer_revision":"a"*40,"model_snapshot_path":"snapshot","weight_inventory":inventory,"model_config_evidence_path":"snapshot/config.json","model_config_sha256":trainer.sha256_file(config),"chat_template_evidence_path":"snapshot/chat_template.txt","chat_template_sha256":trainer.sha256_file(template)}
+  for path_key,hash_key,filename,content in (("license_evidence_path","license_evidence_sha256","license.txt","license fixture"),("output_training_permission_evidence_path","output_training_permission_evidence_sha256","permission.txt","permission fixture"),("human_legal_review_evidence_path","human_legal_review_evidence_sha256","review.txt","review fixture")):
    path=self.d/filename;path.write_text(content);self.c[path_key]=filename;self.c[hash_key]=trainer.sha256_file(path)
+  self.c["weight_inventory"]=[{"path":i["path"],"sha256":i["sha256"]} for i in inventory]
+  self.candidate_path.write_text(json.dumps(self.c,sort_keys=True),encoding="utf-8")
   compute=self.d/"compute.json";compute.write_text("compute fixture")
   provenance=self.d/"provenance.json";provenance.write_text("provenance fixture")
-  self.a={"approval":"approved","candidate_revision":"a"*40,"dataset_sha256":trainer.sha256_file(self.dataset),"code_commit":"c"*40,"hardware":{"verified_free_budget":True,"provider":"p","session_id":"s","evidence_path":"compute.json","evidence_sha256":trainer.sha256_file(compute)},"dataset_provenance":{"status":"reviewed","evidence_path":"provenance.json","evidence_sha256":trainer.sha256_file(provenance)},"budget":{"max_steps":10,"max_wall_seconds":60},"holdout_access":"sealed"}
+  self.a={"approval":"approved","candidate_revision":"a"*40,"candidate_record_sha256":trainer.sha256_file(self.candidate_path),"environment_package_inventory_sha256":trainer.package_inventory_sha256(),"dataset_sha256":trainer.sha256_file(self.dataset),"code_commit":"c"*40,"hardware":{"verified_free_budget":True,"provider":"p","session_id":"s","evidence_path":"compute.json","evidence_sha256":trainer.sha256_file(compute)},"dataset_provenance":{"status":"reviewed","evidence_path":"provenance.json","evidence_sha256":trainer.sha256_file(provenance)},"budget":{"max_steps":10,"max_wall_seconds":60},"holdout_access":"sealed"}
  def tearDown(self):self.tmp.cleanup()
  def test_all_gates_pass(self):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_pending_permission_blocked(self):self.c["output_training_permission"]="pending";self.assertRaisesRegex(ValueError,"output_training_permission",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
@@ -29,11 +37,20 @@ class Tests(unittest.TestCase):
   (self.d/"license.txt").write_text("tampered")
   with self.assertRaisesRegex(ValueError,"license evidence hash mismatch"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_candidate_weight_hash_mismatch(self):
-  (self.d/"weights.bin").write_bytes(b"tampered candidate weight")
-  with self.assertRaisesRegex(ValueError,"candidate weight evidence hash mismatch"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
+  (self.d/"snapshot"/"weights.bin").write_bytes(b"tampered candidate weight")
+  with self.assertRaisesRegex(ValueError,"candidate snapshot evidence hash mismatch"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_candidate_weight_missing(self):
-  (self.d/"weights.bin").unlink()
-  with self.assertRaisesRegex(ValueError,"candidate weight evidence file missing"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
+  (self.d/"snapshot"/"weights.bin").unlink()
+  with self.assertRaisesRegex(ValueError,"candidate snapshot evidence file missing"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
+ def test_snapshot_inventory_incomplete(self):
+  (self.d/"snapshot"/"extra.bin").write_bytes(b"unlisted")
+  with self.assertRaisesRegex(ValueError,"inventory incomplete"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
+ def test_candidate_record_hash_mismatch(self):
+  self.candidate_path.write_text("tampered")
+  with self.assertRaisesRegex(ValueError,"candidate record hash mismatch"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
+ def test_environment_package_inventory_mismatch(self):
+  self.a["environment_package_inventory_sha256"]="0"*64
+  with self.assertRaisesRegex(ValueError,"environment package inventory hash"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_compute_evidence_missing(self):
   (self.d/"compute.json").unlink()
   with self.assertRaisesRegex(ValueError,"free compute evidence file missing"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)

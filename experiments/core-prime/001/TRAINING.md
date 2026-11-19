@@ -16,3 +16,6 @@ The training loop starts its wall-clock budget before model/tokenizer initializa
 ## Evaluation configuration freeze
 
 Before baseline or post-training evaluation, prepare an evaluation freeze manifest based on `evaluation-freeze.template.json`. Bind the exact immutable model revision, exact task-file SHA-256, seed, generation settings, remote-code policy, limit and selected-task IDs hash/count. The evaluator requires `--freeze-manifest` and compares all bound fields before model initialization. It records the manifest SHA-256 and selected-task hash/count in the run summary, including dependency-blocked runs. Negative limits and non-finite temperatures are rejected. Holdout split is blocked regardless of the deprecated `--allow-holdout` option. Do not evaluate protected holdout with this runner.
+
+
+Candidate preflight now binds the SHA-256 of the exact candidate-record file and the pre-import installed package inventory, checks that the `--code-commit` matches the Git checkout, and requires a fully hash-verified staged model snapshot. Training uses that local snapshot only (`local_files_only=True`, remote code disabled); it does not fetch model files during the authorized run. The snapshot inventory must enumerate every file in the staged snapshot. Authorization is pending until those values and evidence are independently verified.

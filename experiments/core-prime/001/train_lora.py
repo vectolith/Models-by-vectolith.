@@ -2,11 +2,16 @@
 """Guarded LoRA training runner; authorization/evidence checks precede ML imports."""
 import argparse,hashlib,json,platform,sys,time,uuid,math,os,importlib.metadata
 from pathlib import Path
+import evaluation_gate
 def sha256_file(p):
  h=hashlib.sha256()
  with p.open("rb") as f:
   for c in iter(lambda:f.read(1048576),b""):h.update(c)
  return h.hexdigest()
+def package_inventory():
+ return sorted([{"name":d.metadata.get("Name") or d.name or "unknown","version":d.version} for d in importlib.metadata.distributions()],key=lambda q:(q["name"].lower(),q["version"]))
+def package_inventory_sha256():
+ return evaluation_gate.sha256_serialized(package_inventory())
 def load_rows(p):
  rows=[];ids=set()
  for n,line in enumerate(p.read_text(encoding="utf-8").splitlines(),1):
@@ -118,23 +123,21 @@ def make_labels(input_ids, attention_mask, prompt_lengths):
  return labels
 def verify_evidence_file(base,relative_path,digest,label):
  if not isinstance(relative_path,str) or not relative_path.strip():raise ValueError(f"{label} evidence path missing")
+ rel=Path(relative_path)
+ if rel.is_absolute() or ".." in rel.parts:raise ValueError(f"{label} evidence path must be relative and confined")
  if not isinstance(digest,str) or len(digest)!=64 or any(ch not in "0123456789abcdef" for ch in digest):raise ValueError(f"{label} evidence SHA-256 invalid")
  root=Path(base).resolve();target=(root/relative_path).resolve()
  try:target.relative_to(root)
  except ValueError:raise ValueError(f"{label} evidence path escapes evidence root")
  if not target.is_file():raise ValueError(f"{label} evidence file missing")
  if sha256_file(target)!=digest:raise ValueError(f"{label} evidence hash mismatch")
+ return target
 def gates(c,a,rows,x):
- for k,v in (("status","verified"),("output_training_permission","verified"),("human_legal_review","approved"),("compatibility_status","compatible")):
-  if c.get(k)!=v:raise ValueError(f"candidate gate {k} not {v}")
- if not c.get("license_identifier") or c.get("tokenizer_revision")!=c.get("revision"):raise ValueError("candidate license/tokenizer evidence missing or revision mismatch")
- for path_key,hash_key,label in (("license_evidence_path","license_evidence_sha256","license"),("output_training_permission_evidence_path","output_training_permission_evidence_sha256","output training permission"),("human_legal_review_evidence_path","human_legal_review_evidence_sha256","legal review"),("model_config_evidence_path","model_config_sha256","model config"),("chat_template_evidence_path","chat_template_sha256","chat template")):
-  verify_evidence_file(x.candidate.parent,c.get(path_key),c.get(hash_key),label)
- inv=c.get("weight_inventory")
- if not isinstance(inv,list) or not inv:raise ValueError("candidate weight inventory missing")
- for item in inv:
-  if not isinstance(item,dict) or not isinstance(item.get("path"),str) or not item.get("path") or not isinstance(item.get("sha256"),str) or len(item["sha256"])!=64 or any(ch not in "0123456789abcdef" for ch in item["sha256"]):raise ValueError("candidate weight inventory malformed")
-  verify_evidence_file(x.candidate.parent,item["path"],item["sha256"],"candidate weight")
+ candidate,candidate_sha,snapshot=evaluation_gate.verify_candidate_record(x.candidate,c.get("repository_id"),c.get("revision"))
+ if candidate!=c:raise ValueError("candidate record content mismatch")
+ if not isinstance(x.code_commit,str) or not evaluation_gate.SHA40.fullmatch(x.code_commit):raise ValueError("code commit must be a 40-character lowercase SHA")
+ if a.get("candidate_record_sha256")!=candidate_sha:raise ValueError("candidate record hash mismatch")
+ if a.get("environment_package_inventory_sha256")!=package_inventory_sha256():raise ValueError("environment package inventory hash mismatch")
  if a.get("approval")!="approved":raise ValueError("training approval not approved")
  if a.get("candidate_revision")!=c.get("revision"):raise ValueError("candidate revision mismatch")
  if a.get("dataset_sha256")!=sha256_file(x.dataset):raise ValueError("dataset hash mismatch")
@@ -149,11 +152,15 @@ def gates(c,a,rows,x):
  for k,v in (("max_steps",x.max_steps),("max_wall_seconds",x.max_wall_seconds)):
   if isinstance(b.get(k),bool) or not isinstance(b.get(k),int) or b[k]<=0 or v>b[k]:raise ValueError(f"{k} exceeds or lacks approved budget")
  if a.get("holdout_access") not in ("sealed","denied"):raise ValueError("holdout must remain sealed")
+ return snapshot
 def main():
  p=argparse.ArgumentParser();p.add_argument("--candidate",type=Path,required=True);p.add_argument("--authorization",type=Path,required=True);p.add_argument("--dataset",type=Path,required=True);p.add_argument("--output",type=Path,required=True);p.add_argument("--max-steps",type=int,required=True);p.add_argument("--max-wall-seconds",type=int,required=True);p.add_argument("--code-commit",required=True);p.add_argument("--authorize-training",action="store_true");p.add_argument("--resume",action="store_true",help="resume from latest Trainer checkpoint");p.add_argument("--rank",type=int,default=8);p.add_argument("--alpha",type=int,default=16);p.add_argument("--target-modules",default="q_proj,k_proj,v_proj,o_proj");x=p.parse_args()
  if not x.authorize_training:p.error("explicit acknowledgement required after gates cleared")
  if min(x.max_steps,x.max_wall_seconds,x.rank,x.alpha)<=0:p.error("steps, time budget, rank and alpha must be positive")
- try:c=json.loads(x.candidate.read_text());a=json.loads(x.authorization.read_text());rows=load_rows(x.dataset);gates(c,a,rows,x)
+ try:
+  actual_code_commit=evaluation_gate.git_head()
+  if actual_code_commit!=x.code_commit:p.error("--code-commit does not match training runner checkout HEAD")
+  c=json.loads(x.candidate.read_text());a=json.loads(x.authorization.read_text());rows=load_rows(x.dataset);snapshot=gates(c,a,rows,x)
  except Exception as e:p.error(f"preflight blocked: {e}")
  try:import torch
  except Exception as e:p.error(f"torch unavailable: {e}")
@@ -170,7 +177,7 @@ def main():
   except Exception as e:p.error(f"telemetry history invalid; recovery blocked: {e}")
  if prior_elapsed>=x.max_wall_seconds:p.error("cumulative wall-time budget already exhausted")
  run_started_monotonic=time.monotonic()
- tok=AutoTokenizer.from_pretrained(c["repository_id"],revision=c["revision"]);model=AutoModelForCausalLM.from_pretrained(c["repository_id"],revision=c["revision"],torch_dtype=torch.float16,device_map="auto")
+ tok=AutoTokenizer.from_pretrained(str(snapshot),local_files_only=True,trust_remote_code=False);model=AutoModelForCausalLM.from_pretrained(str(snapshot),local_files_only=True,trust_remote_code=False,torch_dtype=torch.float16,device_map="auto")
  model=get_peft_model(model,LoraConfig(r=x.rank,lora_alpha=x.alpha,target_modules=[s.strip() for s in x.target_modules.split(",") if s.strip()],lora_dropout=0,bias="none",task_type="CAUSAL_LM"))
  if tok.pad_token is None:tok.pad_token=tok.eos_token
  class DS(torch.utils.data.Dataset):
@@ -212,7 +219,7 @@ def main():
   if resume is None:p.error("--resume requested but no checkpoint exists")
  trainer.train(resume_from_checkpoint=str(resume) if resume else None)
  model.save_pretrained(x.output/"adapter");tok.save_pretrained(x.output/"adapter")
- packages=sorted([{"name":d.metadata.get("Name") or d.name or "unknown","version":d.version} for d in importlib.metadata.distributions()],key=lambda q:(q["name"].lower(),q["version"]))
- manifest={"candidate_id":c["candidate_id"],"candidate_repository":c["repository_id"],"candidate_revision":c["revision"],"dataset_path":str(x.dataset.resolve()),"dataset_sha256":sha256_file(x.dataset),"code_commit":x.code_commit,"run_id":run_id,"provider_session_id":session_id,"steps_limit":x.max_steps,"wall_limit_seconds":x.max_wall_seconds,"rank":x.rank,"alpha":x.alpha,"target_modules":[s.strip() for s in x.target_modules.split(",") if s.strip()],"learning_rate":2e-4,"batch_size":1,"gradient_accumulation_steps":4,"seed":42,"data_seed":42,"max_sequence_length":2048,"duration_seconds":time.time()-started,"prior_session_elapsed_seconds":prior_elapsed,"cumulative_wall_seconds":prior_elapsed+time.time()-started,"gpu":torch.cuda.get_device_name(0),"gpu_memory_total_bytes":torch.cuda.get_device_properties(0).total_memory,"cuda_version":torch.version.cuda,"python":sys.version,"platform":platform.platform(),"torch":torch.__version__,"transformers_version":__import__("transformers").__version__,"peft_version":__import__("peft").__version__,"package_inventory":packages,"package_inventory_sha256":hashlib.sha256(json.dumps(packages,sort_keys=True,separators=(",",":")).encode("utf-8")).hexdigest(),"adapter_sha256_inventory":[{"path":str(f.relative_to(x.output)),"sha256":sha256_file(f)} for f in sorted((x.output/"adapter").rglob("*")) if f.is_file()],"status":"trained_pending_evaluation","holdout_evaluated":False}
+ packages=package_inventory()
+ manifest={"candidate_id":c["candidate_id"],"candidate_repository":c["repository_id"],"candidate_revision":c["revision"],"dataset_path":str(x.dataset.resolve()),"dataset_sha256":sha256_file(x.dataset),"code_commit":x.code_commit,"run_id":run_id,"provider_session_id":session_id,"steps_limit":x.max_steps,"wall_limit_seconds":x.max_wall_seconds,"rank":x.rank,"alpha":x.alpha,"target_modules":[s.strip() for s in x.target_modules.split(",") if s.strip()],"learning_rate":2e-4,"batch_size":1,"gradient_accumulation_steps":4,"seed":42,"data_seed":42,"max_sequence_length":2048,"duration_seconds":time.time()-started,"prior_session_elapsed_seconds":prior_elapsed,"cumulative_wall_seconds":prior_elapsed+time.time()-started,"gpu":torch.cuda.get_device_name(0),"gpu_memory_total_bytes":torch.cuda.get_device_properties(0).total_memory,"cuda_version":torch.version.cuda,"python":sys.version,"platform":platform.platform(),"torch":torch.__version__,"transformers_version":__import__("transformers").__version__,"peft_version":__import__("peft").__version__,"package_inventory":packages,"package_inventory_sha256":package_inventory_sha256(),"environment_package_inventory_sha256":package_inventory_sha256(),"candidate_record_sha256":sha256_file(x.candidate),"model_snapshot_path":str(snapshot.resolve()),"model_snapshot_inventory_sha256":evaluation_gate.sha256_serialized(c["weight_inventory"]),"adapter_sha256_inventory":[{"path":str(f.relative_to(x.output)),"sha256":sha256_file(f)} for f in sorted((x.output/"adapter").rglob("*")) if f.is_file()],"status":"trained_pending_evaluation","holdout_evaluated":False}
  (x.output/"training-manifest.json").write_text(json.dumps(manifest,indent=2));print(json.dumps(manifest,indent=2))
 if __name__=="__main__":main()
