@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Guarded LoRA training runner; authorization/evidence checks precede ML imports."""
-import argparse,hashlib,json,platform,sys,time
+import argparse,hashlib,json,platform,sys,time,uuid,math
 from pathlib import Path
 def sha256_file(p):
  h=hashlib.sha256()
@@ -20,6 +20,31 @@ def load_rows(p):
   ids.add(r["task_id"]);rows.append(r)
  if not rows:raise ValueError("empty dataset")
  return rows
+def telemetry_elapsed(records):
+ by_run={}
+ legacy={}
+ for n,r in enumerate(records,1):
+  if not isinstance(r,dict):raise ValueError(f"telemetry record {n} must be an object")
+  elapsed=r.get("session_elapsed_seconds",r.get("elapsed_seconds"))
+  if not isinstance(elapsed,(int,float)) or isinstance(elapsed,bool) or not math.isfinite(elapsed) or elapsed<0:raise ValueError(f"telemetry record {n} has invalid elapsed time")
+  run_id=r.get("run_id")
+  session=r.get("session_id","unknown")
+  if run_id:
+   if not isinstance(run_id,str) or not run_id:raise ValueError(f"telemetry record {n} has invalid run_id")
+   by_run[run_id]=max(by_run.get(run_id,0.0),float(elapsed))
+  else:
+   legacy[session]=max(legacy.get(session,0.0),float(elapsed))
+ return sum(by_run.values())+sum(legacy.values())
+def validate_checkpoint(path):
+ state=path/"trainer_state.json"
+ if not path.is_dir() or not state.is_file():raise ValueError("checkpoint missing trainer_state.json")
+ try:record=json.loads(state.read_text(encoding="utf-8"))
+ except Exception as e:raise ValueError(f"checkpoint trainer state invalid: {e}")
+ try:step=int(path.name.removeprefix("checkpoint-"))
+ except Exception:raise ValueError("checkpoint directory name invalid")
+ if record.get("global_step")!=step:raise ValueError("checkpoint step mismatch")
+ if not any((path/"adapter_model.safetensors").exists() for _ in [0]) and not (path/"adapter_model.bin").exists() and not (path/"model.safetensors").exists() and not (path/"pytorch_model.bin").exists():raise ValueError("checkpoint weights missing")
+ return step
 def make_labels(input_ids, attention_mask):
  labels=input_ids.clone()
  labels[attention_mask==0]=-100
@@ -50,7 +75,7 @@ def main():
  try:from peft import LoraConfig,get_peft_model
  except Exception as e:p.error(f"peft unavailable: {e}")
  if not torch.cuda.is_available():p.error("free-GPU requirement not met; CPU training blocked")
- started=time.time();x.output.mkdir(parents=True,exist_ok=True);telemetry_path=x.output/"telemetry.jsonl";session_id=str(a.get("hardware",{}).get("session_id"));prior_elapsed=0.0
+ started=time.time();x.output.mkdir(parents=True,exist_ok=True);telemetry_path=x.output/"telemetry.jsonl";session_id=str(a.get("hardware",{}).get("session_id"));run_id=str(uuid.uuid4());prior_elapsed=0.0
  if telemetry_path.exists():
   try:
    records=[json.loads(line) for line in telemetry_path.read_text(encoding="utf-8").splitlines() if line.strip()]
@@ -75,7 +100,7 @@ def main():
  class TelemetryAndBudget(TrainerCallback):
   def __init__(self):self.started=time.monotonic();self.telemetry=telemetry_path
   def on_log(self,args,state,control,logs=None,**kwargs):
-   record={"timestamp":time.time(),"step":state.global_step,"session_id":session_id,"session_elapsed_seconds":time.monotonic()-self.started,"cumulative_elapsed_seconds":prior_elapsed+time.monotonic()-self.started,"logs":logs or {}}
+   record={"timestamp":time.time(),"step":state.global_step,"session_id":session_id,"run_id":run_id,"session_elapsed_seconds":time.monotonic()-self.started,"cumulative_elapsed_seconds":prior_elapsed+time.monotonic()-self.started,"logs":logs or {}}
    with self.telemetry.open("a",encoding="utf-8") as f:f.write(json.dumps(record,default=str)+"\n")
    return control
   def on_step_end(self,args,state,control,**kwargs):
