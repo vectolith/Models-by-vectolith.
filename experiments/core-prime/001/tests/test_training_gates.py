@@ -18,4 +18,20 @@ class Tests(unittest.TestCase):
  def test_dev_split_rejected(self):self.dataset.write_text(json.dumps({"task_id":"x","prompt":"p","response":"r","provenance":"authored","split":"development"}));self.assertRaisesRegex(ValueError,"split must be train",trainer.load_rows,self.dataset)
  def test_empty_data_rejected(self):self.dataset.write_text("");self.assertRaisesRegex(ValueError,"empty",trainer.load_rows,self.dataset)
  def test_duplicate_ids_rejected(self):r={"task_id":"x","prompt":"p","response":"r","provenance":"a","split":"train"};self.dataset.write_text(json.dumps(r)+"\n"+json.dumps(r));self.assertRaisesRegex(ValueError,"duplicate",trainer.load_rows,self.dataset)
+ def test_telemetry_run_cumulative_accounting(self):
+  rows=[{"run_id":"r1","session_elapsed_seconds":12},{"run_id":"r1","session_elapsed_seconds":8},{"run_id":"r2","session_elapsed_seconds":5}]
+  self.assertEqual(trainer.telemetry_elapsed(rows),17)
+ def test_telemetry_invalid_elapsed_rejected(self):
+  with self.assertRaises(ValueError):trainer.telemetry_elapsed([{"run_id":"x","session_elapsed_seconds":float("nan")}])
+ def test_telemetry_negative_elapsed_rejected(self):
+  with self.assertRaises(ValueError):trainer.telemetry_elapsed([{"run_id":"x","session_elapsed_seconds":-1}])
+ def test_checkpoint_validation(self):
+  ck=self.d/"checkpoint-3";ck.mkdir();(ck/"trainer_state.json").write_text(json.dumps({"global_step":3}));(ck/"adapter_model.safetensors").write_bytes(b"weights")
+  self.assertEqual(trainer.validate_checkpoint(ck),3)
+ def test_checkpoint_step_mismatch(self):
+  ck=self.d/"checkpoint-3";ck.mkdir();(ck/"trainer_state.json").write_text(json.dumps({"global_step":2}));(ck/"adapter_model.safetensors").write_bytes(b"weights")
+  with self.assertRaisesRegex(ValueError,"step mismatch"):trainer.validate_checkpoint(ck)
+ def test_checkpoint_missing_weights_rejected(self):
+  ck=self.d/"checkpoint-3";ck.mkdir();(ck/"trainer_state.json").write_text(json.dumps({"global_step":3}))
+  with self.assertRaisesRegex(ValueError,"weights missing"):trainer.validate_checkpoint(ck)
 if __name__=="__main__":unittest.main()
