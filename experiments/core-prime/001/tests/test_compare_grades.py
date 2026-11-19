@@ -26,4 +26,12 @@ class ComparisonTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/"x";p.write_text('{"task_id":"1","candidate_id":"b","scores":{"x":1}}\n{"task_id":"2","candidate_id":"a","scores":{"x":2}}\n')
    with self.assertRaisesRegex(ValueError,"consistent"):m.load(p)
+ def test_whitespace_criterion_rejected(self):
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d)/"x";p.write_text('{"task_id":"1","candidate_id":"b","scores":{"   ":1}}\\n')
+   with self.assertRaisesRegex(ValueError,"finite numeric"):m.load(p)
+ def test_notes_must_be_text(self):
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d)/"x";p.write_text('{"task_id":"1","candidate_id":"b","scores":{"x":1},"notes":[]}\\n')
+   with self.assertRaisesRegex(ValueError,"notes must be text"):m.load(p)
 if __name__=="__main__":unittest.main()
