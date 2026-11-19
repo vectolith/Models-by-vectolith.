@@ -12,6 +12,9 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda:f.read(1024*1024),b""): h.update(chunk)
     return h.hexdigest()
 def sha256_text(s: str) -> str: return hashlib.sha256(s.encode("utf-8")).hexdigest()
+def sha256_serialized(value: Any) -> str:
+    text=value if isinstance(value,str) else json.dumps(value,sort_keys=True,ensure_ascii=False,separators=(",",":"))
+    return sha256_text(text)
 def seed_python(seed: int) -> None: random.seed(seed)
 def write_jsonl(path: Path, records: list[dict[str,Any]]) -> None:
     with path.open("w",encoding="utf-8") as f:
@@ -115,7 +118,7 @@ def main()->int:
                     encoded=tokenizer.apply_chat_template(messages,**template_kwargs)
                     inputs=tokenizer(encoded,return_tensors="pt")
                 else:inputs=tokenizer(prompt,return_tensors="pt")
-                model_device=next(model.parameters()).device
+                model_device=model.get_input_embeddings().weight.device
                 inputs={k:v.to(model_device) for k,v in inputs.items()}
                 input_tokens=int(inputs["input_ids"].shape[-1])
                 if device=="cuda":torch.cuda.synchronize()
@@ -146,7 +149,7 @@ def main()->int:
         "python":sys.version,"platform":platform.platform(),"torch_version":torch.__version__,"transformers_version":transformers.__version__,
         "accelerate_version":package_version("accelerate"),"safetensors_version":package_version("safetensors"),
         "seed":a.seed,"seed_scope":"Python and PyTorch CPU/CUDA RNGs; deterministic kernels are not guaranteed",
-        "model_config_sha256":sha256_text(config_text),"chat_template_sha256":sha256_text(template_text) if template_text else None,
+        "model_config_sha256":sha256_text(config_text),"chat_template_sha256":sha256_serialized(template_text) if template_text else None,
         "started_at_epoch":started,"duration_seconds":time.time()-started,"max_new_tokens":a.max_new_tokens,
         "temperature":a.temperature,"qwen3_thinking":bool(a.qwen3_thinking),"trust_remote_code":a.trust_remote_code,
         "raw_file":str(raw),"raw_file_sha256":sha256_file(raw)}
