@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Reproducible baseline evaluator; outputs raw per-task records and integrity summary."""
 from __future__ import annotations
-import argparse, hashlib, json, platform, sys, time
+import argparse, hashlib, json, platform, random, sys, time, uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -28,10 +28,13 @@ def load_jsonl(path: Path) -> list[dict[str,Any]]:
     if len(ids)!=len(set(ids)): raise ValueError("task_id values must be unique")
     return rows
 
-def initialization_failure_records(run_id: str, tasks: list[dict[str,Any]], error: Exception) -> list[dict[str,Any]]:
+def initialization_failure_records(run_id: str, tasks: list[dict[str,Any]], error: Exception, status: str="initialization_failed") -> list[dict[str,Any]]:
     return [{"run_id":run_id,"task_id":task["task_id"],"category":task["category"],"split":task["split"],
-        "prompt_sha256":sha256_text(task["prompt"]),"status":"initialization_failed","error":repr(error)}
+        "prompt_sha256":sha256_text(task["prompt"]),"status":status,"error":repr(error)}
         for task in tasks]
+
+def new_run_id() -> str:
+    return "cp001-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:12]
 
 def main()->int:
     p=argparse.ArgumentParser(description=__doc__)
@@ -39,25 +42,37 @@ def main()->int:
     p.add_argument("--tasks",required=True,type=Path);p.add_argument("--output",required=True,type=Path)
     p.add_argument("--max-new-tokens",type=int,default=256);p.add_argument("--temperature",type=float,default=0.0)
     p.add_argument("--limit",type=int,default=0);p.add_argument("--trust-remote-code",action="store_true")
+    p.add_argument("--seed",type=int,default=42,help="Seed for Python and PyTorch RNGs (default: 42)")
     p.add_argument("--allow-holdout",action="store_true")
     p.add_argument("--qwen3-thinking",action="store_true",help="Enable Qwen3 thinking mode; default disabled when template supports it")
     a=p.parse_args()
     if a.max_new_tokens<=0:p.error("--max-new-tokens must be positive")
     if a.temperature<0:p.error("--temperature cannot be negative")
+    if a.seed<0:p.error("--seed must be non-negative")
     tasks=load_jsonl(a.tasks)
     if any(t["split"]=="holdout" for t in tasks) and not a.allow_holdout:p.error("holdout inference blocked")
     if a.limit>0:tasks=tasks[:a.limit]
     if not tasks:p.error("no tasks")
     a.output.mkdir(parents=True,exist_ok=True);task_hash=sha256_file(a.tasks)
-    run_id=datetime.now(timezone.utc).strftime("cp001-%Y%m%dT%H%M%SZ")
+    run_id=new_run_id()
     raw=a.output/f"{run_id}-raw.jsonl";summary_file=a.output/f"{run_id}-summary.json"
+    started=time.time()
     try:
         import torch
+        import transformers
         from transformers import AutoModelForCausalLM,AutoTokenizer
     except Exception as e:
-        summary={"run_id":run_id,"status":"blocked","error":repr(e),"task_file_sha256":task_hash,"model":a.model,"revision":a.revision}
+        records=initialization_failure_records(run_id,tasks,e,status="dependency_blocked")
+        with raw.open("w",encoding="utf-8") as f:
+            for r in records:f.write(json.dumps(r,ensure_ascii=False)+"\\n")
+        summary={"run_id":run_id,"status":"blocked","error":repr(e),"task_file_sha256":task_hash,
+            "task_count":len(tasks),"completed_count":0,"failed_count":len(tasks),"raw_file":str(raw),
+            "raw_file_sha256":sha256_file(raw),"model":a.model,"revision":a.revision,"seed":a.seed}
         summary_file.write_text(json.dumps(summary,indent=2),encoding="utf-8");print(json.dumps(summary,indent=2));return 2
-    started=time.time();records=[];errors=0
+    random.seed(a.seed)
+    torch.manual_seed(a.seed)
+    if torch.cuda.is_available():torch.cuda.manual_seed_all(a.seed)
+    records=[];errors=0
     device="cuda" if torch.cuda.is_available() else "cpu"
     hardware=torch.cuda.get_device_name(0) if device=="cuda" else (platform.processor() or platform.machine())
     try:
@@ -104,10 +119,14 @@ def main()->int:
     completed=sum(r.get("status")=="completed" for r in records)
     status="completed" if completed==len(tasks) else ("failed" if completed==0 else "partial")
     peak_memory=torch.cuda.max_memory_allocated() if device=="cuda" else None
+    config_text=model.config.to_json_string() if hasattr(model.config,"to_json_string") else json.dumps(model.config.to_dict(),sort_keys=True)
+    template_text=getattr(tokenizer,"chat_template",None)
     summary={"run_id":run_id,"status":status,"model":a.model,"revision":a.revision,"task_file":str(a.tasks),
         "task_file_sha256":task_hash,"task_count":len(tasks),"completed_count":completed,"failed_count":errors,
         "device":device,"hardware":hardware,"peak_cuda_memory_allocated_bytes":peak_memory,
-        "python":sys.version,"platform":platform.platform(),"torch_version":torch.__version__,
+        "python":sys.version,"platform":platform.platform(),"torch_version":torch.__version__,"transformers_version":transformers.__version__,
+        "seed":a.seed,"seed_scope":"Python and PyTorch CPU/CUDA RNGs; deterministic kernels are not guaranteed",
+        "model_config_sha256":sha256_text(config_text),"chat_template_sha256":sha256_text(template_text) if template_text else None,
         "started_at_epoch":started,"duration_seconds":time.time()-started,"max_new_tokens":a.max_new_tokens,
         "temperature":a.temperature,"qwen3_thinking":bool(a.qwen3_thinking),"trust_remote_code":a.trust_remote_code,
         "raw_file":str(raw),"raw_file_sha256":sha256_file(raw)}
