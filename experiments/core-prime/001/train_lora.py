@@ -23,7 +23,8 @@ def load_rows(p):
 def make_labels(input_ids, attention_mask):
  labels=input_ids.clone()
  labels[attention_mask==0]=-100
- return labels\ndef gates(c,a,rows,x):
+ return labels
+def gates(c,a,rows,x):
  for k,v in (("status","verified"),("output_training_permission","verified"),("human_legal_review","approved"),("compatibility_status","compatible")):
   if c.get(k)!=v:raise ValueError(f"candidate gate {k} not {v}")
  if a.get("approval")!="approved":raise ValueError("training approval not approved")
