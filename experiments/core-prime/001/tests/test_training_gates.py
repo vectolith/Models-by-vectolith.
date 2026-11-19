@@ -25,6 +25,16 @@ class Tests(unittest.TestCase):
   with self.assertRaises(ValueError):trainer.telemetry_elapsed([{"run_id":"x","session_elapsed_seconds":float("nan")}])
  def test_telemetry_negative_elapsed_rejected(self):
   with self.assertRaises(ValueError):trainer.telemetry_elapsed([{"run_id":"x","session_elapsed_seconds":-1}])
+ def test_recovery_selection_falls_back_to_valid_checkpoint(self):
+  root=self.d/"checkpoints";root.mkdir()
+  good=root/"checkpoint-2";good.mkdir()
+  (good/"trainer_state.json").write_text(json.dumps({"global_step":2}))
+  (good/"adapter_model.safetensors").write_bytes(b"weights")
+  (good/"optimizer.pt").write_bytes(b"opt");(good/"scheduler.pt").write_bytes(b"sched");(good/"rng_state.pth").write_bytes(b"rng")
+  bad=root/"checkpoint-9";bad.mkdir()
+  (bad/"trainer_state.json").write_text(json.dumps({"global_step":9}))
+  (bad/"adapter_model.safetensors").write_bytes(b"weights")
+  self.assertEqual(trainer.select_recovery_checkpoint(root),good)
  def test_checkpoint_validation(self):
   ck=self.d/"checkpoint-3";ck.mkdir();(ck/"trainer_state.json").write_text(json.dumps({"global_step":3}));(ck/"adapter_model.safetensors").write_bytes(b"weights");(ck/"optimizer.pt").write_bytes(b"opt");(ck/"scheduler.pt").write_bytes(b"sched");(ck/"rng_state.pth").write_bytes(b"rng")
   self.assertEqual(trainer.validate_checkpoint(ck),3)
@@ -40,7 +50,7 @@ class Tests(unittest.TestCase):
  def test_runner_masks_prompt_and_validates_recovery(self):
   source=(ROOT/"train_lora.py").read_text(encoding="utf-8")
   self.assertIn("labels[i,:int(prefix_len)]=-100",source)
-  self.assertIn("validate_checkpoint(resume)",source)
+  self.assertIn("select_recovery_checkpoint",source)
  def test_wall_budget_stop_requests_checkpoint(self):
   source=(ROOT/"train_lora.py").read_text(encoding="utf-8")
   self.assertIn("control.should_training_stop=True",source)
