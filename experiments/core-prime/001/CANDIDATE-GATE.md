@@ -4,14 +4,15 @@ This is an evidence checklist, not an approval. Do not mark a gate passed based 
 
 ## Candidate identity and artifacts
 - [ ] Confirm exact upstream repository and immutable commit SHA against upstream API.
-- [ ] Capture license text at the pinned revision; hash the actual downloaded license bytes.
+- [ ] Capture license text at the pinned revision; hash the actual downloaded license bytes; store a relative evidence path and match the hash during preflight.
+- [ ] Capture separate written output-training/distillation permission and independent legal-review artifacts, paths and SHA-256 hashes.
 - [ ] Capture model configuration, tokenizer files and chat template hashes.
 - [ ] Record the complete model artifact inventory; record hashes where obtainable.
 - [ ] Review remote code and dependency requirements. Avoid remote-code execution unless explicitly reviewed and approved.
 - [ ] Confirm architecture and target module compatibility with the intended LoRA implementation using a non-training inspection process.
 
 ## Permission and independent review
-- [ ] Written output-generation permission is explicit and applicable to this candidate and use.
+- [ ] Written output-generation permission is explicit and applicable to this candidate and use; its artifact path/hash is recorded and verified at preflight.
 - [ ] Independent human legal review records its reviewer, date, scope, sources and decision.
 - [ ] The weight license and generated-output training permission are evaluated separately.
 - [ ] Do not infer permission from an open weights license or model-card statement alone.
