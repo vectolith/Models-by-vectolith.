@@ -20,7 +20,7 @@ def load_rows(p):
   ids.add(r["task_id"]);rows.append(r)
  if not rows:raise ValueError("empty dataset")
  return rows
-def gates(c,a,rows,x):
+def make_labels(input_ids, attention_mask):\n labels=input_ids.clone()\n labels[attention_mask==0]=-100\n return labels\ndef gates(c,a,rows,x):
  for k,v in (("status","verified"),("output_training_permission","verified"),("human_legal_review","approved"),("compatibility_status","compatible")):
   if c.get(k)!=v:raise ValueError(f"candidate gate {k} not {v}")
  if a.get("approval")!="approved":raise ValueError("training approval not approved")
