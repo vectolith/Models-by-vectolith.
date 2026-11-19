@@ -46,7 +46,16 @@ def main():
  try:from peft import LoraConfig,get_peft_model
  except Exception as e:p.error(f"peft unavailable: {e}")
  if not torch.cuda.is_available():p.error("free-GPU requirement not met; CPU training blocked")
- started=time.time();x.output.mkdir(parents=True,exist_ok=True);telemetry_path=x.output/"telemetry.jsonl";session_id=str(a.get("hardware",{}).get("session_id"));prior_elapsed=0.0\n if telemetry_path.exists():\n  try:\n   records=[json.loads(line) for line in telemetry_path.read_text(encoding="utf-8").splitlines() if line.strip()]\n   by_session={}\n   for rec in records: by_session[rec.get("session_id","unknown")]=max(by_session.get(rec.get("session_id","unknown"),0.0),float(rec.get("session_elapsed_seconds",rec.get("elapsed_seconds",0.0))))\n   prior_elapsed=sum(by_session.values())\n  except Exception as e:p.error(f"telemetry history invalid; recovery blocked: {e}")\n if prior_elapsed>=x.max_wall_seconds:p.error("cumulative wall-time budget already exhausted")\n tok=AutoTokenizer.from_pretrained(c["repository_id"],revision=c["revision"]);model=AutoModelForCausalLM.from_pretrained(c["repository_id"],revision=c["revision"],torch_dtype=torch.float16,device_map="auto")
+ started=time.time();x.output.mkdir(parents=True,exist_ok=True);telemetry_path=x.output/"telemetry.jsonl";session_id=str(a.get("hardware",{}).get("session_id"));prior_elapsed=0.0
+ if telemetry_path.exists():
+  try:
+   records=[json.loads(line) for line in telemetry_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+   by_session={}
+   for rec in records: by_session[rec.get("session_id","unknown")]=max(by_session.get(rec.get("session_id","unknown"),0.0),float(rec.get("session_elapsed_seconds",rec.get("elapsed_seconds",0.0))))
+   prior_elapsed=sum(by_session.values())
+  except Exception as e:p.error(f"telemetry history invalid; recovery blocked: {e}")
+ if prior_elapsed>=x.max_wall_seconds:p.error("cumulative wall-time budget already exhausted")
+ tok=AutoTokenizer.from_pretrained(c["repository_id"],revision=c["revision"]);model=AutoModelForCausalLM.from_pretrained(c["repository_id"],revision=c["revision"],torch_dtype=torch.float16,device_map="auto")
  model=get_peft_model(model,LoraConfig(r=x.rank,lora_alpha=x.alpha,target_modules=[s.strip() for s in x.target_modules.split(",") if s.strip()],lora_dropout=0,bias="none",task_type="CAUSAL_LM"))
  if tok.pad_token is None:tok.pad_token=tok.eos_token
  class DS(torch.utils.data.Dataset):
