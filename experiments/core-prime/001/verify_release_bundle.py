@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+"""Verify a release evidence bundle's manifest, hashes, and required qualification gates.
+
+This verifier only checks evidence integrity/completeness; it does not attest truth,
+legal permission, reviewer independence, or model quality.
+"""
+import argparse, hashlib, json, re
+from pathlib import Path
+SHA=re.compile(r"^[a-f0-9]{64}$")
+REQUIRED_GATES=("legal_review","data_provenance","baseline_evaluation","post_training_evaluation","independent_human_grading","safety_review","reproducibility_review","release_approval")
+def sha256(path):
+ h=hashlib.sha256()
+ with path.open("rb") as f:
+  for chunk in iter(lambda:f.read(1024*1024),b""):h.update(chunk)
+ return h.hexdigest()
+def verify(root,manifest):
+ errors=[]
+ if not isinstance(manifest,dict):return ["manifest must be a JSON object"]
+ if not isinstance(manifest.get("release_version"),str) or not manifest["release_version"].strip():errors.append("release_version required")
+ if manifest.get("model_name")!="Core Prime":errors.append("model_name must be Core Prime")
+ gates=manifest.get("gates")
+ if not isinstance(gates,dict):errors.append("gates object required")
+ else:
+  for name in REQUIRED_GATES:
+   item=gates.get(name)
+   if not isinstance(item,dict) or item.get("status")!="approved" or not isinstance(item.get("evidence_path"),str) or not isinstance(item.get("sha256"),str) or not SHA.fullmatch(item["sha256"]):
+    errors.append(f"gate {name} lacks approved status and evidence hash/path")
+   else:
+    try:verify_file(root,item["evidence_path"],item["sha256"])
+    except ValueError as e:errors.append(f"gate {name}: {e}")
+ artifacts=manifest.get("artifacts")
+ if not isinstance(artifacts,list) or not artifacts:errors.append("non-empty artifacts array required")
+ else:
+  seen=set()
+  for i,item in enumerate(artifacts):
+   if not isinstance(item,dict) or not isinstance(item.get("path"),str) or not isinstance(item.get("sha256"),str) or not SHA.fullmatch(item["sha256"]):
+    errors.append(f"artifact {i} malformed");continue
+   if item["path"] in seen:errors.append(f"duplicate artifact path: {item['path']}")
+   seen.add(item["path"])
+   if "holdout" in item["path"].lower():errors.append(f"holdout artifact forbidden in release bundle: {item['path']}")
+   try:verify_file(root,item["path"],item["sha256"])
+   except ValueError as e:errors.append(f"artifact {item['path']}: {e}")
+ if manifest.get("holdout_included") is not False:errors.append("holdout_included must be explicitly false")
+ if manifest.get("release_status")!="qualified":errors.append("release_status must be qualified")
+ return errors
+def verify_file(root,relative,digest):
+ base=Path(root).resolve();p=(base/relative).resolve()
+ try:p.relative_to(base)
+ except ValueError:raise ValueError("path escapes evidence root")
+ if not p.is_file():raise ValueError("evidence file missing")
+ if sha256(p)!=digest:raise ValueError("SHA-256 mismatch")
+def main():
+ p=argparse.ArgumentParser();p.add_argument("manifest",type=Path);a=p.parse_args()
+ try:m=json.loads(a.manifest.read_text(encoding="utf-8"))
+ except Exception as e:p.error(f"manifest read/parse failed: {e}")
+ errors=verify(a.manifest.parent,m)
+ if errors:print("\n".join(errors));return 1
+ print("Release bundle evidence integrity/completeness passed. Independent substantive qualification remains outside this verifier.")
+ return 0
+if __name__=="__main__":raise SystemExit(main())
