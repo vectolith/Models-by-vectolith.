@@ -15,7 +15,7 @@ def sha256_text(s: str) -> str: return hashlib.sha256(s.encode("utf-8")).hexdige
 def seed_python(seed: int) -> None: random.seed(seed)
 def write_jsonl(path: Path, records: list[dict[str,Any]]) -> None:
     with path.open("w",encoding="utf-8") as f:
-        for record in records: f.write(json.dumps(record,ensure_ascii=False)+"\\n")
+        for record in records: f.write(json.dumps(record,ensure_ascii=False)+"\n")
 def package_version(name: str) -> str | None:
     try: return importlib.metadata.version(name)
     except importlib.metadata.PackageNotFoundError: return None
