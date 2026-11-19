@@ -43,6 +43,12 @@ def initialization_failure_records(run_id: str, tasks: list[dict[str,Any]], erro
 def new_run_id() -> str:
     return "cp001-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:12]
 
+def tally_records(records: list[dict[str,Any]], task_count: int) -> tuple[int,int,str]:
+    completed=sum(record.get("status")=="completed" for record in records)
+    failed=sum(record.get("status")!="completed" for record in records)
+    status="completed" if completed==task_count and failed==0 else ("failed" if completed==0 else "partial")
+    return completed,failed,status
+
 def main()->int:
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument("--model",required=True);p.add_argument("--revision",required=True)
@@ -121,9 +127,7 @@ def main()->int:
         errors += len(tasks)
         records.extend(initialization_failure_records(run_id,tasks,e))
     write_jsonl(raw,records)
-    completed=sum(r.get("status")=="completed" for r in records)
-    failed=sum(r.get("status")!="completed" for r in records)
-    status="completed" if completed==len(tasks) else ("failed" if completed==0 else "partial")
+    completed,failed,status=tally_records(records,len(tasks))
     peak_memory=torch.cuda.max_memory_allocated() if device=="cuda" else None
     config_text=model.config.to_json_string() if hasattr(model.config,"to_json_string") else json.dumps(model.config.to_dict(),sort_keys=True)
     template_text=getattr(tokenizer,"chat_template",None)
