@@ -38,4 +38,19 @@ class EvaluatorTests(unittest.TestCase):
   self.assertTrue(all(r["status"]=="initialization_failed" for r in records))
   self.assertTrue(all(r["prompt_sha256"] for r in records))
   self.assertTrue(all("load failed" in r["error"] for r in records))
+ def test_run_ids_are_unique(self):
+  self.assertNotEqual(evaluator.new_run_id(),evaluator.new_run_id())
+ def test_python_rng_seed_is_repeatable(self):
+  import random
+  evaluator.seed_python(123);first=random.random()
+  evaluator.seed_python(123);second=random.random()
+  self.assertEqual(first,second)
+ def test_jsonl_writer_writes_parseable_lines_and_hash(self):
+  with tempfile.TemporaryDirectory() as directory:
+   path=Path(directory)/"out.jsonl"
+   records=[{"task_id":"1","response":"a"},{"task_id":"2","response":"b"}]
+   evaluator.write_jsonl(path,records)
+   lines=path.read_text(encoding="utf-8").splitlines()
+   self.assertEqual([json.loads(line) for line in lines],records)
+   self.assertEqual(evaluator.sha256_file(path),evaluator.sha256_text(path.read_text(encoding="utf-8")))
 if __name__=="__main__":unittest.main()
