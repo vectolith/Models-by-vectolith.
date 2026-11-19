@@ -28,6 +28,11 @@ def load_jsonl(path: Path) -> list[dict[str,Any]]:
     if len(ids)!=len(set(ids)): raise ValueError("task_id values must be unique")
     return rows
 
+def initialization_failure_records(run_id: str, tasks: list[dict[str,Any]], error: Exception) -> list[dict[str,Any]]:
+    return [{"run_id":run_id,"task_id":task["task_id"],"category":task["category"],"split":task["split"],
+        "prompt_sha256":sha256_text(task["prompt"]),"status":"initialization_failed","error":repr(error)}
+        for task in tasks]
+
 def main()->int:
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument("--model",required=True);p.add_argument("--revision",required=True)
@@ -93,10 +98,7 @@ def main()->int:
                     "prompt_sha256":sha256_text(prompt),"status":"failed","error":repr(e),"generation_seconds":time.perf_counter()-t0})
     except Exception as e:
         errors += len(tasks)
-        # Preserve one failure record per task so partial-run accounting is auditable.
-        for task in tasks:
-            records.append({"run_id":run_id,"task_id":task["task_id"],"category":task["category"],"split":task["split"],
-                "prompt_sha256":sha256_text(task["prompt"]),"status":"initialization_failed","error":repr(e)})
+        records.extend(initialization_failure_records(run_id,tasks,e))
     with raw.open("w",encoding="utf-8") as f:
         for r in records:f.write(json.dumps(r,ensure_ascii=False)+"\n")
     completed=sum(r.get("status")=="completed" for r in records)
