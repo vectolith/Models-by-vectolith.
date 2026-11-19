@@ -34,7 +34,7 @@ def gates(c,a,rows,x):
   if not isinstance(b.get(k),int) or b[k]<=0 or v>b[k]:raise ValueError(f"{k} exceeds or lacks approved budget")
  if a.get("holdout_access") not in ("sealed","denied"):raise ValueError("holdout must remain sealed")
 def main():
- p=argparse.ArgumentParser();p.add_argument("--candidate",type=Path,required=True);p.add_argument("--authorization",type=Path,required=True);p.add_argument("--dataset",type=Path,required=True);p.add_argument("--output",type=Path,required=True);p.add_argument("--max-steps",type=int,required=True);p.add_argument("--max-wall-seconds",type=int,required=True);p.add_argument("--code-commit",required=True);p.add_argument("--authorize-training",action="store_true");p.add_argument("--resume",action="store_true",help="resume from latest valid Trainer checkpoint");p.add_argument("--rank,type=int,default=8);p.add_argument("--alpha",type=int,default=16);p.add_argument("--target-modules",default="q_proj,k_proj,v_proj,o_proj");x=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument("--candidate",type=Path,required=True);p.add_argument("--authorization",type=Path,required=True);p.add_argument("--dataset",type=Path,required=True);p.add_argument("--output",type=Path,required=True);p.add_argument("--max-steps",type=int,required=True);p.add_argument("--max-wall-seconds",type=int,required=True);p.add_argument("--code-commit",required=True);p.add_argument("--authorize-training",action="store_true");p.add_argument("--resume",action="store_true",help="resume from latest Trainer checkpoint");p.add_argument("--rank",type=int,default=8);p.add_argument("--alpha",type=int,default=16);p.add_argument("--target-modules",default="q_proj,k_proj,v_proj,o_proj");x=p.parse_args()
  if not x.authorize_training:p.error("explicit acknowledgement required after gates cleared")
  if min(x.max_steps,x.max_wall_seconds,x.rank,x.alpha)<=0:p.error("steps, time budget, rank and alpha must be positive")
  try:c=json.loads(x.candidate.read_text());a=json.loads(x.authorization.read_text());rows=load_rows(x.dataset);gates(c,a,rows,x)
@@ -59,13 +59,22 @@ def main():
  def collate(batch):
   z=torch.nn.utils.rnn.pad_sequence([torch.tensor(i) for i in batch],batch_first=True,padding_value=tok.pad_token_id);labels=z.clone();labels[z==tok.pad_token_id]=-100
   return {"input_ids":z,"attention_mask":(z!=tok.pad_token_id).long(),"labels":labels}
- class WallBudget(TrainerCallback):
-  def __init__(self):self.started=time.monotonic()
+ class TelemetryAndBudget(TrainerCallback):
+  def __init__(self):self.started=time.monotonic();self.telemetry=x.output/"telemetry.jsonl"
+  def on_log(self,args,state,control,logs=None,**kwargs):
+   record={"timestamp":time.time(),"step":state.global_step,"elapsed_seconds":time.monotonic()-self.started,"logs":logs or {}}
+   with self.telemetry.open("a",encoding="utf-8") as f:f.write(json.dumps(record,default=str)+"\n")
+   return control
   def on_step_end(self,args,state,control,**kwargs):
    if time.monotonic()-self.started>=x.max_wall_seconds:control.should_training_stop=True
    return control
  args=TrainingArguments(output_dir=str(x.output/"checkpoints"),max_steps=x.max_steps,per_device_train_batch_size=1,gradient_accumulation_steps=4,learning_rate=2e-4,logging_steps=1,save_steps=max(1,min(25,x.max_steps)),save_total_limit=2,fp16=True,report_to=[],seed=42,data_seed=42)
- trainer=Trainer(model=model,args=args,train_dataset=DS(),data_collator=collate,callbacks=[WallBudget()]);checkpoints=sorted((x.output/"checkpoints").glob("checkpoint-*"),key=lambda q:int(q.name.split("-")[-1])) if x.resume else [];resume=checkpoints[-1] if checkpoints else None\n if x.resume and resume is None:p.error("--resume requested but no checkpoint exists")\n trainer.train(resume_from_checkpoint=str(resume) if resume else None);model.save_pretrained(x.output/"adapter");tok.save_pretrained(x.output/"adapter")
+ trainer=Trainer(model=model,args=args,train_dataset=DS(),data_collator=collate,callbacks=[TelemetryAndBudget()])
+ checkpoints=sorted((x.output/"checkpoints").glob("checkpoint-*"),key=lambda q:int(q.name.split("-")[-1])) if x.resume else []
+ resume=checkpoints[-1] if checkpoints else None
+ if x.resume and resume is None:p.error("--resume requested but no checkpoint exists")
+ trainer.train(resume_from_checkpoint=str(resume) if resume else None)
+ model.save_pretrained(x.output/"adapter");tok.save_pretrained(x.output/"adapter")
  manifest={"candidate_id":c["candidate_id"],"candidate_revision":c["revision"],"dataset_sha256":sha256_file(x.dataset),"code_commit":x.code_commit,"steps_limit":x.max_steps,"wall_limit_seconds":x.max_wall_seconds,"duration_seconds":time.time()-started,"gpu":torch.cuda.get_device_name(0),"python":sys.version,"platform":platform.platform(),"torch":torch.__version__,"adapter_sha256_inventory":[{"path":str(f.relative_to(x.output)),"sha256":sha256_file(f)} for f in sorted((x.output/"adapter").rglob("*")) if f.is_file()],"status":"trained_pending_evaluation","holdout_evaluated":False}
  (x.output/"training-manifest.json").write_text(json.dumps(manifest,indent=2));print(json.dumps(manifest,indent=2))
 if __name__=="__main__":main()
