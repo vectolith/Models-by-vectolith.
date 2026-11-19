@@ -22,6 +22,7 @@ class CandidateTests(unittest.TestCase):
  def record(self):return {"record_version":"1","candidate_id":"c1","repository_id":"org/model","revision":"a"*40,"status":"pending","output_training_permission":"pending","human_legal_review":"pending","compatibility_status":"pending"}
  def test_minimal_valid(self):self.assertEqual(candidate.validate(self.record()),[])
  def test_unpinned_revision(self):r=self.record();r["revision"]="main";self.assertTrue(any("revision" in e for e in candidate.validate(r)))
+ def test_null_revision_rejected(self):r=self.record();r["revision"]=None;self.assertTrue(any("non-null" in e for e in candidate.validate(r)))
  def test_verified_gate(self):r=self.record();r["status"]="verified";self.assertTrue(any("verified status requires" in e for e in candidate.validate(r)))
  def test_hash_validation(self):r=self.record();r["license_evidence_sha256"]="z"*64;self.assertTrue(any("license_evidence" in e for e in candidate.validate(r)))
  def test_extra_fields(self):r=self.record();r["arbitrary"]=1;self.assertTrue(any("unexpected fields" in e for e in candidate.validate(r)))
