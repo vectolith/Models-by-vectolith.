@@ -9,3 +9,6 @@ Install PEFT alongside the harness dependencies in the verified environment. Exa
 python experiments/core-prime/001/train_lora.py --candidate candidate.json --authorization training-authorization.json --dataset train.jsonl --output /kaggle/working/cp001-adapter --max-steps 100 --max-wall-seconds 1800 --code-commit FULL_SHA --authorize-training
 ```
 The authorization file is controlled evidence, not a generated approval. Example pending fields are intentionally insufficient. The runner emits an adapter and SHA-256 inventory. Evaluation, holdout use, grading, and promotion are separate.
+
+
+The training loop also installs a wall-clock callback and stops at the approved runtime ceiling (or earlier if the step budget is reached).
