@@ -43,7 +43,7 @@ def validate_checkpoint(path):
  try:step=int(path.name.removeprefix("checkpoint-"))
  except Exception:raise ValueError("checkpoint directory name invalid")
  if record.get("global_step")!=step:raise ValueError("checkpoint step mismatch")
- if not any((path/"adapter_model.safetensors").exists() for _ in [0]) and not (path/"adapter_model.bin").exists() and not (path/"model.safetensors").exists() and not (path/"pytorch_model.bin").exists():raise ValueError("checkpoint weights missing")
+ if not (path/"adapter_model.safetensors").exists() and not (path/"adapter_model.bin").exists() and not (path/"model.safetensors").exists() and not (path/"pytorch_model.bin").exists():raise ValueError("checkpoint weights missing")\n for required in ("optimizer.pt","scheduler.pt"):\n  if not (path/required).is_file():raise ValueError(f"checkpoint missing {required}")\n if not any(path.glob("rng_state*.pth")):raise ValueError("checkpoint RNG state missing")
  return step
 def make_labels(input_ids, attention_mask):
  labels=input_ids.clone()
