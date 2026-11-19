@@ -120,7 +120,9 @@ def main():
    with self.telemetry.open("a",encoding="utf-8") as f:f.write(json.dumps(record,default=str)+"\n")
    return control
   def on_step_end(self,args,state,control,**kwargs):
-   if prior_elapsed+time.monotonic()-self.started>=x.max_wall_seconds:control.should_training_stop=True
+   if prior_elapsed+time.monotonic()-self.started>=x.max_wall_seconds:
+    control.should_training_stop=True
+    control.should_save=True
    return control
  args=TrainingArguments(output_dir=str(x.output/"checkpoints"),max_steps=x.max_steps,per_device_train_batch_size=1,gradient_accumulation_steps=4,learning_rate=2e-4,logging_steps=1,save_steps=max(1,min(25,x.max_steps)),save_total_limit=2,fp16=True,report_to=[],seed=42,data_seed=42)
  trainer=Trainer(model=model,args=args,train_dataset=DS(),data_collator=collate,callbacks=[TelemetryAndBudget()])
