@@ -59,7 +59,12 @@ def main():
  def collate(batch):
   z=torch.nn.utils.rnn.pad_sequence([torch.tensor(i) for i in batch],batch_first=True,padding_value=tok.pad_token_id);labels=z.clone();labels[z==tok.pad_token_id]=-100
   return {"input_ids":z,"attention_mask":(z!=tok.pad_token_id).long(),"labels":labels}
- class WallBudget(TrainerCallback):\n  def __init__(self):self.started=time.monotonic()\n  def on_step_end(self,args,state,control,**kwargs):\n   if time.monotonic()-self.started>=x.max_wall_seconds:control.should_training_stop=True\n   return control\n args=TrainingArguments(output_dir=str(x.output/"checkpoints"),max_steps=x.max_steps,per_device_train_batch_size=1,gradient_accumulation_steps=4,learning_rate=2e-4,logging_steps=1,save_steps=max(1,min(25,x.max_steps)),save_total_limit=2,fp16=True,report_to=[],seed=42,data_seed=42)
+ class WallBudget(TrainerCallback):
+  def __init__(self):self.started=time.monotonic()
+  def on_step_end(self,args,state,control,**kwargs):
+   if time.monotonic()-self.started>=x.max_wall_seconds:control.should_training_stop=True
+   return control
+ args=TrainingArguments(output_dir=str(x.output/"checkpoints"),max_steps=x.max_steps,per_device_train_batch_size=1,gradient_accumulation_steps=4,learning_rate=2e-4,logging_steps=1,save_steps=max(1,min(25,x.max_steps)),save_total_limit=2,fp16=True,report_to=[],seed=42,data_seed=42)
  Trainer(model=model,args=args,train_dataset=DS(),data_collator=collate,callbacks=[WallBudget()]).train();model.save_pretrained(x.output/"adapter");tok.save_pretrained(x.output/"adapter")
  manifest={"candidate_id":c["candidate_id"],"candidate_revision":c["revision"],"dataset_sha256":sha256_file(x.dataset),"code_commit":x.code_commit,"steps_limit":x.max_steps,"wall_limit_seconds":x.max_wall_seconds,"duration_seconds":time.time()-started,"gpu":torch.cuda.get_device_name(0),"python":sys.version,"platform":platform.platform(),"torch":torch.__version__,"adapter_sha256_inventory":[{"path":str(f.relative_to(x.output)),"sha256":sha256_file(f)} for f in sorted((x.output/"adapter").rglob("*")) if f.is_file()],"status":"trained_pending_evaluation","holdout_evaluated":False}
  (x.output/"training-manifest.json").write_text(json.dumps(manifest,indent=2));print(json.dumps(manifest,indent=2))
