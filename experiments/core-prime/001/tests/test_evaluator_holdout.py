@@ -1,11 +1,13 @@
-import json,subprocess,sys,tempfile,unittest,hashlib\nimport importlib.util
+import json,subprocess,sys,tempfile,unittest
+import importlib.util
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
-EVALUATOR=ROOT/"evaluate.py"\nspec=importlib.util.spec_from_file_location("evaluator",EVALUATOR);evaluator=importlib.util.module_from_spec(spec);spec.loader.exec_module(evaluator)
+EVALUATOR=ROOT/"evaluate.py"
+spec=importlib.util.spec_from_file_location("evaluator",EVALUATOR);evaluator=importlib.util.module_from_spec(spec);spec.loader.exec_module(evaluator)
 class HoldoutTests(unittest.TestCase):
  def test_frozen_manifest_exact_match_and_hash(self):
   with tempfile.TemporaryDirectory() as tmp:
-   tasks=Path(tmp)/"tasks.jsonl";tasks.write_text('{"task_id":"a","prompt":"p","category":"c","split":"development"}\\n',encoding="utf-8")
+   tasks=Path(tmp)/"tasks.jsonl";tasks.write_text('{"task_id":"a","prompt":"p","category":"c","split":"development"}'+chr(10),encoding="utf-8")
    manifest=Path(tmp)/"freeze.json";values={"model":"m","revision":"r","tasks_sha256":evaluator.sha256_file(tasks),"seed":7,"max_new_tokens":20,"temperature":0.0,"trust_remote_code":False,"qwen3_thinking":False}
    manifest.write_text(json.dumps(values),encoding="utf-8")
    digest=evaluator.verify_frozen_config(manifest,"m","r",tasks,7,20,0.0,False,False)
@@ -14,7 +16,7 @@ class HoldoutTests(unittest.TestCase):
  def test_holdout_rejected_even_with_deprecated_flag(self):
   with tempfile.TemporaryDirectory() as tmp:
    tasks=Path(tmp)/"holdout.jsonl"
-   tasks.write_text(json.dumps({"task_id":"h1","prompt":"private","category":"test","split":"holdout"})+"\\n",encoding="utf-8")
+   tasks.write_text(json.dumps({"task_id":"h1","prompt":"private","category":"test","split":"holdout"})+chr(10),encoding="utf-8")
    result=subprocess.run([sys.executable,str(EVALUATOR),"--model","unused","--revision","unused","--tasks",str(tasks),"--output",str(Path(tmp)/"out"),"--allow-holdout"],capture_output=True,text=True)
    self.assertNotEqual(result.returncode,0)
    self.assertIn("holdout inference blocked",result.stderr)
