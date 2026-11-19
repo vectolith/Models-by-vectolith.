@@ -84,6 +84,18 @@ class Tests(unittest.TestCase):
   ck=self.make_checkpoint(self.d,"checkpoint-5",5)
   (ck/"optimizer.pt").write_bytes(b"tampered")
   with self.assertRaisesRegex(ValueError,"integrity hash mismatch"):trainer.validate_checkpoint(ck)
+ def test_checkpoint_manifest_duplicate_paths_rejected(self):
+  ck=self.make_checkpoint(self.d,"checkpoint-7",7)
+  manifest=json.loads((ck/"checkpoint-integrity.json").read_text())
+  manifest["files"].append(manifest["files"][0])
+  (ck/"checkpoint-integrity.json").write_text(json.dumps(manifest))
+  with self.assertRaisesRegex(ValueError,"duplicate paths"):trainer.validate_checkpoint(ck)
+ def test_checkpoint_manifest_malformed_entry_rejected(self):
+  ck=self.make_checkpoint(self.d,"checkpoint-8",8)
+  manifest=json.loads((ck/"checkpoint-integrity.json").read_text())
+  manifest["files"][0]["sha256"]="invalid"
+  (ck/"checkpoint-integrity.json").write_text(json.dumps(manifest))
+  with self.assertRaisesRegex(ValueError,"entries malformed"):trainer.validate_checkpoint(ck)
  def test_checkpoint_manifest_required(self):
   ck=self.d/"checkpoint-6";ck.mkdir();(ck/"trainer_state.json").write_text(json.dumps({"global_step":6}));(ck/"adapter_model.safetensors").write_bytes(b"weights");(ck/"optimizer.pt").write_bytes(b"opt");(ck/"scheduler.pt").write_bytes(b"sched");(ck/"rng_state.pth").write_bytes(b"rng")
   with self.assertRaisesRegex(ValueError,"manifest missing"):trainer.validate_checkpoint(ck)
