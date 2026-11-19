@@ -1,0 +1,24 @@
+name: Core Prime Experiment 001 harness tests
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "experiments/core-prime/001/**"
+      - ".github/workflows/core-prime-experiment-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "experiments/core-prime/001/**"
+      - ".github/workflows/core-prime-experiment-tests.yml"
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run deterministic validator tests
+        run: python -m unittest discover -s experiments/core-prime/001/tests -v
+      - name: Validate example tasks
+        run: python experiments/core-prime/001/validate_tasks.py experiments/core-prime/001/tasks.example.jsonl
