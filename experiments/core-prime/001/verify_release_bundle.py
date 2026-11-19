@@ -26,6 +26,9 @@ def verify(root,manifest):
    if not isinstance(item,dict) or item.get("status")!="approved" or not isinstance(item.get("evidence_path"),str) or not isinstance(item.get("sha256"),str) or not SHA.fullmatch(item["sha256"]):
     errors.append(f"gate {name} lacks approved status and evidence hash/path")
    else:
+    if "holdout" in item["evidence_path"].lower():
+     errors.append(f"gate {name}: holdout evidence forbidden: {item[\"evidence_path\"]}")
+     continue
     try:verify_file(root,item["evidence_path"],item["sha256"])
     except ValueError as e:errors.append(f"gate {name}: {e}")
  artifacts=manifest.get("artifacts")
