@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Reproducible baseline evaluator; outputs raw per-task records and integrity summary."""
 from __future__ import annotations
-import argparse, hashlib, json, platform, random, sys, time, uuid, importlib.metadata
+import argparse, hashlib, json, math, platform, random, sys, time, uuid, importlib.metadata
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -22,6 +22,12 @@ def write_jsonl(path: Path, records: list[dict[str,Any]]) -> None:
 def package_version(name: str) -> str | None:
     try: return importlib.metadata.version(name)
     except importlib.metadata.PackageNotFoundError: return None
+def package_inventory() -> list[dict[str,str]]:
+    items=[]
+    for dist in importlib.metadata.distributions():
+        name=dist.metadata.get("Name") or dist.name or "unknown"
+        items.append({"name":name,"version":dist.version})
+    return sorted(items,key=lambda item:(item["name"].lower(),item["version"]))
 def load_jsonl(path: Path) -> list[dict[str,Any]]:
     rows=[]
     with path.open(encoding="utf-8") as f:
@@ -38,10 +44,10 @@ def load_jsonl(path: Path) -> list[dict[str,Any]]:
     if len(ids)!=len(set(ids)): raise ValueError("task_id values must be unique")
     return rows
 
-def verify_frozen_config(manifest_path: Path, model: str, revision: str, tasks_path: Path, seed: int, max_new_tokens: int, temperature: float, trust_remote_code: bool, qwen3_thinking: bool) -> str:
+def verify_frozen_config(manifest_path: Path, model: str, revision: str, tasks_path: Path, seed: int, max_new_tokens: int, temperature: float, trust_remote_code: bool, qwen3_thinking: bool, limit: int, selected_task_ids: list[str]) -> str:
     try: manifest=json.loads(manifest_path.read_text(encoding="utf-8"))
     except Exception as e: raise ValueError(f"freeze manifest invalid: {e}") from e
-    expected={"model":model,"revision":revision,"tasks_sha256":sha256_file(tasks_path),"seed":seed,"max_new_tokens":max_new_tokens,"temperature":temperature,"trust_remote_code":trust_remote_code,"qwen3_thinking":qwen3_thinking}
+    expected={"model":model,"revision":revision,"tasks_sha256":sha256_file(tasks_path),"seed":seed,"max_new_tokens":max_new_tokens,"temperature":temperature,"trust_remote_code":trust_remote_code,"qwen3_thinking":qwen3_thinking,"limit":limit,"selected_task_count":len(selected_task_ids),"selected_task_ids_sha256":sha256_serialized(selected_task_ids)}
     for key,value in expected.items():
         if manifest.get(key)!=value: raise ValueError(f"freeze manifest mismatch: {key}")
     return sha256_file(manifest_path)
@@ -81,13 +87,17 @@ def main()->int:
     p.add_argument("--qwen3-thinking",action="store_true",help="Enable Qwen3 thinking mode; default disabled when template supports it")
     a=p.parse_args()
     if a.max_new_tokens<=0:p.error("--max-new-tokens must be positive")
+    if not math.isfinite(a.temperature):p.error("--temperature must be finite")
     if a.temperature<0:p.error("--temperature cannot be negative")
     if a.seed<0:p.error("--seed must be non-negative")
+    if a.limit<0:p.error("--limit must be non-negative")
     tasks=load_jsonl(a.tasks)
     if any(t["split"]=="holdout" for t in tasks):p.error("holdout inference blocked; this evaluator has no reviewed holdout authorization mechanism")
     if a.limit>0:tasks=tasks[:a.limit]
     if not tasks:p.error("no tasks")
-    try: freeze_sha=verify_frozen_config(a.freeze_manifest,a.model,a.revision,a.tasks,a.seed,a.max_new_tokens,a.temperature,a.trust_remote_code,bool(a.qwen3_thinking))
+    selected_task_ids=[t["task_id"] for t in tasks]
+    selected_task_ids_sha256=sha256_serialized(selected_task_ids)
+    try: freeze_sha=verify_frozen_config(a.freeze_manifest,a.model,a.revision,a.tasks,a.seed,a.max_new_tokens,a.temperature,a.trust_remote_code,bool(a.qwen3_thinking),a.limit,selected_task_ids)
     except Exception as e:p.error(f"evaluation configuration not frozen: {e}")
     a.output.mkdir(parents=True,exist_ok=True);task_hash=sha256_file(a.tasks)
     run_id=new_run_id()
@@ -100,9 +110,13 @@ def main()->int:
     except Exception as e:
         records=initialization_failure_records(run_id,tasks,e,status="dependency_blocked")
         write_jsonl(raw,records)
+        inventory=package_inventory()
         summary={"run_id":run_id,"status":"blocked","error":repr(e),"task_file_sha256":task_hash,
             "task_count":len(tasks),"completed_count":0,"failed_count":len(tasks),"raw_file":str(raw),
-            "raw_file_sha256":sha256_file(raw),"model":a.model,"revision":a.revision,"seed":a.seed}
+            "raw_file_sha256":sha256_file(raw),"model":a.model,"revision":a.revision,"seed":a.seed,
+            "effective_limit":a.limit,"selected_task_count":len(selected_task_ids),"selected_task_ids_sha256":selected_task_ids_sha256,
+            "freeze_manifest":str(a.freeze_manifest.resolve()),"freeze_manifest_sha256":freeze_sha,
+            "package_inventory":inventory,"package_inventory_sha256":sha256_serialized(inventory)}
         summary_file.write_text(json.dumps(summary,indent=2),encoding="utf-8");print(json.dumps(summary,indent=2));return 2
     seed_python(a.seed)
     torch.manual_seed(a.seed)
@@ -171,6 +185,8 @@ def main()->int:
         "python":sys.version,"platform":platform.platform(),"torch_version":torch.__version__,"transformers_version":transformers.__version__,
         "accelerate_version":package_version("accelerate"),"safetensors_version":package_version("safetensors"),
         "seed":a.seed,"seed_scope":"Python and PyTorch CPU/CUDA RNGs; deterministic kernels are not guaranteed",
+        "effective_limit":a.limit,"selected_task_count":len(selected_task_ids),"selected_task_ids_sha256":selected_task_ids_sha256,
+        "package_inventory":package_inventory(),"package_inventory_sha256":sha256_serialized(package_inventory()),
         "model_config_sha256":config_hash,"chat_template_sha256":template_hash,"capture_warnings":capture_warnings,
         "started_at_epoch":started,"duration_seconds":time.time()-started,"max_new_tokens":a.max_new_tokens,
         "temperature":a.temperature,"qwen3_thinking":bool(a.qwen3_thinking),"trust_remote_code":a.trust_remote_code,
