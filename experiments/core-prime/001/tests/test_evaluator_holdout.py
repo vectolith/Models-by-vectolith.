@@ -17,7 +17,7 @@ class HoldoutTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as tmp:
    tasks=Path(tmp)/"holdout.jsonl"
    tasks.write_text(json.dumps({"task_id":"h1","prompt":"private","category":"test","split":"holdout"})+chr(10),encoding="utf-8")
-   result=subprocess.run([sys.executable,str(EVALUATOR),"--model","unused","--revision","unused","--tasks",str(tasks),"--output",str(Path(tmp)/"out"),"--allow-holdout"],capture_output=True,text=True)
+   result=subprocess.run([sys.executable,str(EVALUATOR),"--model","unused","--revision","unused","--tasks",str(tasks),"--output",str(Path(tmp)/"out"),"--freeze-manifest",str(Path(tmp)/"freeze.json"),"--allow-holdout"],capture_output=True,text=True)
    self.assertNotEqual(result.returncode,0)
    self.assertIn("holdout inference blocked",result.stderr)
    self.assertFalse((Path(tmp)/"out").exists())
