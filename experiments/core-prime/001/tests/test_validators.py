@@ -57,4 +57,13 @@ class EvaluatorTests(unittest.TestCase):
  def test_dependency_block_records_status(self):
   records=evaluator.initialization_failure_records("run",[row("1","p")],RuntimeError("missing"),status="dependency_blocked")
   self.assertEqual(records[0]["status"],"dependency_blocked")
+ def test_task_result_tally_partial_and_failure(self):
+  records=[{"status":"completed"},{"status":"failed"},{"status":"initialization_failed"}]
+  self.assertEqual(evaluator.tally_records(records,3),(1,2,"partial"))
+ def test_task_result_tally_initialization_failure(self):
+  records=[{"status":"initialization_failed"},{"status":"initialization_failed"}]
+  self.assertEqual(evaluator.tally_records(records,2),(0,2,"failed"))
+ def test_task_result_tally_complete(self):
+  records=[{"status":"completed"},{"status":"completed"}]
+  self.assertEqual(evaluator.tally_records(records,2),(2,0,"completed"))
 if __name__=="__main__":unittest.main()
