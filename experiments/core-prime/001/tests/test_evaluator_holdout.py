@@ -1,8 +1,16 @@
-import json,subprocess,sys,tempfile,unittest
+import json,subprocess,sys,tempfile,unittest,hashlib\nimport importlib.util
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
-EVALUATOR=ROOT/"evaluate.py"
+EVALUATOR=ROOT/"evaluate.py"\nspec=importlib.util.spec_from_file_location("evaluator",EVALUATOR);evaluator=importlib.util.module_from_spec(spec);spec.loader.exec_module(evaluator)
 class HoldoutTests(unittest.TestCase):
+ def test_frozen_manifest_exact_match_and_hash(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   tasks=Path(tmp)/"tasks.jsonl";tasks.write_text('{"task_id":"a","prompt":"p","category":"c","split":"development"}\\n',encoding="utf-8")
+   manifest=Path(tmp)/"freeze.json";values={"model":"m","revision":"r","tasks_sha256":evaluator.sha256_file(tasks),"seed":7,"max_new_tokens":20,"temperature":0.0,"trust_remote_code":False,"qwen3_thinking":False}
+   manifest.write_text(json.dumps(values),encoding="utf-8")
+   digest=evaluator.verify_frozen_config(manifest,"m","r",tasks,7,20,0.0,False,False)
+   self.assertEqual(digest,evaluator.sha256_file(manifest))
+   with self.assertRaisesRegex(ValueError,"revision"):evaluator.verify_frozen_config(manifest,"m","other",tasks,7,20,0.0,False,False)
  def test_holdout_rejected_even_with_deprecated_flag(self):
   with tempfile.TemporaryDirectory() as tmp:
    tasks=Path(tmp)/"holdout.jsonl"
