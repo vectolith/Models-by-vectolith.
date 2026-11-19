@@ -5,7 +5,14 @@ spec=importlib.util.spec_from_file_location("trainer",ROOT/"train_lora.py");trai
 class Tests(unittest.TestCase):
  def setUp(self):
   self.tmp=tempfile.TemporaryDirectory();self.d=Path(self.tmp.name);self.dataset=self.d/"train.jsonl";self.dataset.write_text(json.dumps({"task_id":"x","prompt":"p","response":"r","provenance":"authored","split":"train"})+"\n")
-  self.x=type("X",(),{"dataset":self.dataset,"max_steps":10,"max_wall_seconds":60,"code_commit":"c"*40})();self.c={"status":"verified","output_training_permission":"verified","human_legal_review":"approved","compatibility_status":"compatible","revision":"a"*40};self.a={"approval":"approved","candidate_revision":"a"*40,"dataset_sha256":trainer.sha256_file(self.dataset),"code_commit":"c"*40,"hardware":{"verified_free_budget":True,"provider":"p","session_id":"s"},"budget":{"max_steps":10,"max_wall_seconds":60},"holdout_access":"sealed"}
+  self.candidate_path=self.d/"candidate.json";self.authorization_path=self.d/"authorization.json"
+  self.x=type("X",(),{"dataset":self.dataset,"candidate":self.candidate_path,"authorization":self.authorization_path,"max_steps":10,"max_wall_seconds":60,"code_commit":"c"*40})()
+  self.c={"status":"verified","output_training_permission":"verified","human_legal_review":"approved","compatibility_status":"compatible","revision":"a"*40,"license_identifier":"Apache-2.0","tokenizer_revision":"a"*40,"weight_inventory":[{"path":"weights.bin","sha256":"f"*64}]}
+  for path_key,hash_key,filename,content in (("license_evidence_path","license_evidence_sha256","license.txt","license fixture"),("output_training_permission_evidence_path","output_training_permission_evidence_sha256","permission.txt","permission fixture"),("human_legal_review_evidence_path","human_legal_review_evidence_sha256","review.txt","review fixture"),("model_config_evidence_path","model_config_sha256","config.json","config fixture"),("chat_template_evidence_path","chat_template_sha256","template.txt","template fixture")):
+   path=self.d/filename;path.write_text(content);self.c[path_key]=filename;self.c[hash_key]=trainer.sha256_file(path)
+  compute=self.d/"compute.json";compute.write_text("compute fixture")
+  provenance=self.d/"provenance.json";provenance.write_text("provenance fixture")
+  self.a={"approval":"approved","candidate_revision":"a"*40,"dataset_sha256":trainer.sha256_file(self.dataset),"code_commit":"c"*40,"hardware":{"verified_free_budget":True,"provider":"p","session_id":"s","evidence_path":"compute.json","evidence_sha256":trainer.sha256_file(compute)},"dataset_provenance":{"status":"reviewed","evidence_path":"provenance.json","evidence_sha256":trainer.sha256_file(provenance)},"budget":{"max_steps":10,"max_wall_seconds":60},"holdout_access":"sealed"}
  def tearDown(self):self.tmp.cleanup()
  def test_all_gates_pass(self):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_pending_permission_blocked(self):self.c["output_training_permission"]="pending";self.assertRaisesRegex(ValueError,"output_training_permission",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
@@ -17,6 +24,15 @@ class Tests(unittest.TestCase):
  def test_holdout_access_blocked(self):self.a["holdout_access"]="open";self.assertRaisesRegex(ValueError,"holdout",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_dev_split_rejected(self):self.dataset.write_text(json.dumps({"task_id":"x","prompt":"p","response":"r","provenance":"authored","split":"development"}));self.assertRaisesRegex(ValueError,"split must be train",trainer.load_rows,self.dataset)
  def test_empty_data_rejected(self):self.dataset.write_text("");self.assertRaisesRegex(ValueError,"empty",trainer.load_rows,self.dataset)
+ def test_candidate_evidence_hash_mismatch(self):
+  (self.d/"license.txt").write_text("tampered")
+  with self.assertRaisesRegex(ValueError,"license evidence hash mismatch"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
+ def test_compute_evidence_missing(self):
+  (self.d/"compute.json").unlink()
+  with self.assertRaisesRegex(ValueError,"free compute evidence file missing"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
+ def test_dataset_provenance_missing(self):
+  (self.d/"provenance.json").unlink()
+  with self.assertRaisesRegex(ValueError,"dataset provenance evidence file missing"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_duplicate_ids_rejected(self):r={"task_id":"x","prompt":"p","response":"r","provenance":"a","split":"train"};self.dataset.write_text(json.dumps(r)+"\n"+json.dumps(r));self.assertRaisesRegex(ValueError,"duplicate",trainer.load_rows,self.dataset)
  def test_telemetry_run_cumulative_accounting(self):
   rows=[{"run_id":"r1","session_elapsed_seconds":12},{"run_id":"r1","session_elapsed_seconds":8},{"run_id":"r2","session_elapsed_seconds":5}]
