@@ -92,7 +92,11 @@ def main()->int:
                 records.append({"run_id":run_id,"task_id":task["task_id"],"category":task["category"],"split":task["split"],
                     "prompt_sha256":sha256_text(prompt),"status":"failed","error":repr(e),"generation_seconds":time.perf_counter()-t0})
     except Exception as e:
-        errors+=1;records.append({"run_id":run_id,"status":"initialization_failed","error":repr(e)})
+        errors += len(tasks)
+        # Preserve one failure record per task so partial-run accounting is auditable.
+        for task in tasks:
+            records.append({"run_id":run_id,"task_id":task["task_id"],"category":task["category"],"split":task["split"],
+                "prompt_sha256":sha256_text(task["prompt"]),"status":"initialization_failed","error":repr(e)})
     with raw.open("w",encoding="utf-8") as f:
         for r in records:f.write(json.dumps(r,ensure_ascii=False)+"\n")
     completed=sum(r.get("status")=="completed" for r in records)
