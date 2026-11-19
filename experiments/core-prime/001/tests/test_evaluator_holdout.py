@@ -8,11 +8,12 @@ class HoldoutTests(unittest.TestCase):
  def test_frozen_manifest_exact_match_and_hash(self):
   with tempfile.TemporaryDirectory() as tmp:
    tasks=Path(tmp)/"tasks.jsonl";tasks.write_text('{"task_id":"a","prompt":"p","category":"c","split":"development"}'+chr(10),encoding="utf-8")
-   manifest=Path(tmp)/"freeze.json";values={"model":"m","revision":"r","tasks_sha256":evaluator.sha256_file(tasks),"seed":7,"max_new_tokens":20,"temperature":0.0,"trust_remote_code":False,"qwen3_thinking":False}
+   manifest=Path(tmp)/"freeze.json";values={"model":"m","revision":"r","tasks_sha256":evaluator.sha256_file(tasks),"seed":7,"max_new_tokens":20,"temperature":0.0,"trust_remote_code":False,"qwen3_thinking":False,"limit":1,"selected_task_count":1,"selected_task_ids_sha256":evaluator.sha256_serialized(["a"])}
    manifest.write_text(json.dumps(values),encoding="utf-8")
-   digest=evaluator.verify_frozen_config(manifest,"m","r",tasks,7,20,0.0,False,False)
+   digest=evaluator.verify_frozen_config(manifest,"m","r",tasks,7,20,0.0,False,False,1,["a"])
    self.assertEqual(digest,evaluator.sha256_file(manifest))
-   with self.assertRaisesRegex(ValueError,"revision"):evaluator.verify_frozen_config(manifest,"m","other",tasks,7,20,0.0,False,False)
+   with self.assertRaisesRegex(ValueError,"revision"):evaluator.verify_frozen_config(manifest,"m","other",tasks,7,20,0.0,False,False,1,["a"])
+   with self.assertRaisesRegex(ValueError,"limit"):evaluator.verify_frozen_config(manifest,"m","r",tasks,7,20,0.0,False,False,0,["a"])
  def test_holdout_rejected_even_with_deprecated_flag(self):
   with tempfile.TemporaryDirectory() as tmp:
    tasks=Path(tmp)/"holdout.jsonl"
