@@ -31,4 +31,11 @@ class EvaluatorTests(unittest.TestCase):
  def test_task_load_valid(self):self.assertEqual(len(evaluator.load_jsonl(file_rows([row("1","prompt")]))),1)
  def test_duplicate_task_id_rejected(self):
   with self.assertRaises(ValueError):evaluator.load_jsonl(file_rows([row("1","a"),row("1","b")]))
+ def test_initialization_failure_records_cover_every_task(self):
+  tasks=[row("1","first"),row("2","second")]
+  records=evaluator.initialization_failure_records("run",tasks,RuntimeError("load failed"))
+  self.assertEqual([r["task_id"] for r in records],["1","2"])
+  self.assertTrue(all(r["status"]=="initialization_failed" for r in records))
+  self.assertTrue(all(r["prompt_sha256"] for r in records))
+  self.assertTrue(all("load failed" in r["error"] for r in records))
 if __name__=="__main__":unittest.main()
