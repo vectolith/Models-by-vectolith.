@@ -13,8 +13,11 @@ def load(path):
         if not line.strip(): continue
         try:r=json.loads(line)
         except Exception as e:raise ValueError(f"{path}:{n}: invalid JSON: {e}")
-        if not isinstance(r,dict) or not isinstance(r.get("task_id"),str) or not r["task_id"]:
+        if not isinstance(r,dict) or not isinstance(r.get("task_id"),str) or not r["task_id"].strip():
             raise ValueError(f"{path}:{n}: task_id required")
+        candidate_id=r.get("candidate_id")
+        if not isinstance(candidate_id,str) or not candidate_id.strip():
+            raise ValueError(f"{path}:{n}: candidate_id required")
         if r["task_id"] in rows:raise ValueError(f"{path}:{n}: duplicate task_id")
         scores=r.get("scores")
         if not isinstance(scores,dict) or not scores:raise ValueError(f"{path}:{n}: nonempty scores object required")
@@ -23,9 +26,17 @@ def load(path):
                 raise ValueError(f"{path}:{n}: scores must be finite numeric values")
         rows[r["task_id"]]=r
     if not rows:raise ValueError(f"{path}: no grades")
+    candidate_ids={r["candidate_id"] for r in rows.values()}
+    if len(candidate_ids)!=1:raise ValueError(f"{path}: candidate_id must be consistent across all grade records")
     return rows
 
 def compare(base,trained):
+    for label,records in (("baseline",base),("adapter",trained)):
+        ids={r.get("candidate_id") for r in records.values()}
+        if not ids or len(ids)!=1 or not isinstance(next(iter(ids)),str) or not next(iter(ids)).strip():
+            raise ValueError(f"{label} grades require one consistent non-empty candidate_id")
+    baseline_candidate_id=next(iter({r["candidate_id"] for r in base.values()}))
+    adapter_candidate_id=next(iter({r["candidate_id"] for r in trained.values()}))
     if set(base)!=set(trained):
         missing=sorted(set(base)-set(trained));extra=sorted(set(trained)-set(base))
         raise ValueError(f"task set mismatch; missing adapter={missing}, extra adapter={extra}")
@@ -43,7 +54,7 @@ def compare(base,trained):
                       "adapter_mean":sum(trained[t]["scores"][c] for t in trained)/len(trained),
                       "mean_delta":sum(values)/len(values),"improved":sum(v>0 for v in values),
                       "regressed":sum(v<0 for v in values),"unchanged":sum(v==0 for v in values)}
-    return {"task_count":len(out),"criteria":aggregate,"paired_records":out,
+    return {"task_count":len(out),"baseline_candidate_id":baseline_candidate_id,"adapter_candidate_id":adapter_candidate_id,"criteria":aggregate,"paired_records":out,
             "interpretation":"descriptive paired comparison; no statistical significance or release qualification implied"}
 
 def main():
