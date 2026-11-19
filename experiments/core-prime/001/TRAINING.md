@@ -12,3 +12,7 @@ The authorization file is controlled evidence, not a generated approval. Example
 
 
 The training loop also installs a wall-clock callback and stops at the approved runtime ceiling (or earlier if the step budget is reached).
+
+## Evaluation configuration freeze
+
+Before baseline or post-training evaluation, prepare an evaluation freeze manifest based on `evaluation-freeze.template.json`. Bind the exact immutable model revision, exact task-file SHA-256, seed, generation settings and remote-code policy. The evaluator requires `--freeze-manifest` and compares all bound fields before model initialization. It records the manifest SHA-256 in its summary. Holdout split is blocked regardless of the deprecated `--allow-holdout` option. Do not evaluate protected holdout with this runner.
