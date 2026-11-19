@@ -11,7 +11,7 @@ python experiments/core-prime/001/train_lora.py --candidate candidate.json --aut
 The authorization file is controlled evidence, not a generated approval. Example pending fields are intentionally insufficient. The runner emits an adapter and SHA-256 inventory. Evaluation, holdout use, grading, and promotion are separate.
 
 
-The training loop also installs a wall-clock callback and stops at the approved runtime ceiling (or earlier if the step budget is reached).
+The training loop starts its wall-clock budget before model/tokenizer initialization, refuses to start training if that budget has already expired, and stops at the approved ceiling (or earlier if the step budget is reached). Every Trainer checkpoint is sealed with an SHA-256 inventory after saving; recovery requires the manifest, exact file inventory and hashes and falls back only to a valid sealed checkpoint. Training manifests capture a sorted full package/version inventory and its hash.
 
 ## Evaluation configuration freeze
 
