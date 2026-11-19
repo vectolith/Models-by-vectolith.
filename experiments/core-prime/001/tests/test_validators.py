@@ -28,6 +28,8 @@ class CandidateTests(unittest.TestCase):
  def test_extra_fields(self):r=self.record();r["arbitrary"]=1;self.assertTrue(any("unexpected fields" in e for e in candidate.validate(r)))
 class EvaluatorTests(unittest.TestCase):
  def test_hash_text(self):self.assertEqual(evaluator.sha256_text("abc"),"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")
+ def test_serialized_hash_stable_for_object(self):
+  self.assertEqual(evaluator.sha256_serialized({"b":2,"a":1}),evaluator.sha256_serialized({"a":1,"b":2}))
  def test_task_load_valid(self):self.assertEqual(len(evaluator.load_jsonl(file_rows([row("1","prompt")]))),1)
  def test_duplicate_task_id_rejected(self):
   with self.assertRaises(ValueError):evaluator.load_jsonl(file_rows([row("1","a"),row("1","b")]))
