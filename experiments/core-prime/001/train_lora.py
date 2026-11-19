@@ -49,9 +49,11 @@ def validate_checkpoint(path):
   if not (path/required).is_file():raise ValueError(f"checkpoint missing {required}")
  if not any(path.glob("rng_state*.pth")):raise ValueError("checkpoint RNG state missing")
  return step
-def make_labels(input_ids, attention_mask):
+def make_labels(input_ids, attention_mask, prompt_lengths):
  labels=input_ids.clone()
  labels[attention_mask==0]=-100
+ for i,prefix_len in enumerate(prompt_lengths):
+  labels[i,:int(prefix_len)]=-100
  return labels
 def gates(c,a,rows,x):
  for k,v in (("status","verified"),("output_training_permission","verified"),("human_legal_review","approved"),("compatibility_status","compatible")):
@@ -95,12 +97,18 @@ def main():
   def __init__(self):
    self.items=[]
    for r in rows:
-    ids=tok(f"User:\n{r['prompt']}\nAssistant:\n{r['response']}"+tok.eos_token,truncation=True,max_length=2048)["input_ids"];self.items.append(ids)
+    prefix=f"User:\n{r['prompt']}\nAssistant:\n"
+    full=prefix+r['response']+tok.eos_token
+    ids=tok(full,truncation=True,max_length=2048)["input_ids"]
+    prefix_len=len(tok(prefix,add_special_tokens=False)["input_ids"])
+    prefix_len=min(prefix_len,len(ids))
+    if prefix_len>=len(ids):raise ValueError(f"task {r['task_id']}: truncation left no response tokens")
+    self.items.append((ids,prefix_len))
   def __len__(self):return len(self.items)
   def __getitem__(self,i):return self.items[i]
  def collate(batch):
-  tensors=[torch.tensor(i) for i in batch];lengths=torch.tensor([len(i) for i in tensors]);z=torch.nn.utils.rnn.pad_sequence(tensors,batch_first=True,padding_value=tok.pad_token_id);mask=(torch.arange(z.shape[1])[None,:]<lengths[:,None]).long()
-  return {"input_ids":z,"attention_mask":mask,"labels":make_labels(z,mask)}
+  items=[torch.tensor(i[0]) for i in batch];prefix_lengths=[i[1] for i in batch];lengths=torch.tensor([len(i) for i in items]);z=torch.nn.utils.rnn.pad_sequence(items,batch_first=True,padding_value=tok.pad_token_id);mask=(torch.arange(z.shape[1])[None,:]<lengths[:,None]).long()
+  return {"input_ids":z,"attention_mask":mask,"labels":make_labels(z,mask,prefix_lengths)}
  class TelemetryAndBudget(TrainerCallback):
   def __init__(self):self.started=time.monotonic();self.telemetry=telemetry_path
   def on_log(self,args,state,control,logs=None,**kwargs):
@@ -115,6 +123,9 @@ def main():
  checkpoints=sorted((x.output/"checkpoints").glob("checkpoint-*"),key=lambda q:int(q.name.split("-")[-1])) if x.resume else []
  resume=checkpoints[-1] if checkpoints else None
  if x.resume and resume is None:p.error("--resume requested but no checkpoint exists")
+ if resume is not None:
+  try:validate_checkpoint(resume)
+  except Exception as e:p.error(f"selected recovery checkpoint invalid: {e}")
  trainer.train(resume_from_checkpoint=str(resume) if resume else None)
  model.save_pretrained(x.output/"adapter");tok.save_pretrained(x.output/"adapter")
  manifest={"candidate_id":c["candidate_id"],"candidate_repository":c["repository_id"],"candidate_revision":c["revision"],"dataset_path":str(x.dataset.resolve()),"dataset_sha256":sha256_file(x.dataset),"code_commit":x.code_commit,"run_id":run_id,"provider_session_id":session_id,"steps_limit":x.max_steps,"wall_limit_seconds":x.max_wall_seconds,"rank":x.rank,"alpha":x.alpha,"target_modules":[s.strip() for s in x.target_modules.split(",") if s.strip()],"learning_rate":2e-4,"batch_size":1,"gradient_accumulation_steps":4,"seed":42,"data_seed":42,"max_sequence_length":2048,"duration_seconds":time.time()-started,"prior_session_elapsed_seconds":prior_elapsed,"cumulative_wall_seconds":prior_elapsed+time.time()-started,"gpu":torch.cuda.get_device_name(0),"gpu_memory_total_bytes":torch.cuda.get_device_properties(0).total_memory,"cuda_version":torch.version.cuda,"python":sys.version,"platform":platform.platform(),"torch":torch.__version__,"transformers_version":__import__("transformers").__version__,"peft_version":__import__("peft").__version__,"adapter_sha256_inventory":[{"path":str(f.relative_to(x.output)),"sha256":sha256_file(f)} for f in sorted((x.output/"adapter").rglob("*")) if f.is_file()],"status":"trained_pending_evaluation","holdout_evaluated":False}
