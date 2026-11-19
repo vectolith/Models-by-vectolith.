@@ -98,9 +98,11 @@ def main():
    self.items=[]
    for r in rows:
     prefix=f"User:\n{r['prompt']}\nAssistant:\n"
-    full=prefix+r['response']+tok.eos_token
-    ids=tok(full,truncation=True,max_length=2048)["input_ids"]
-    prefix_len=len(tok(prefix)["input_ids"])
+    prefix_ids=tok(prefix)["input_ids"]
+    response_ids=tok(r["response"]+tok.eos_token,add_special_tokens=False)["input_ids"]
+    if not response_ids:raise ValueError(f"task {r['task_id']}: empty tokenized response")
+    prefix_len=len(prefix_ids)
+    ids=(prefix_ids+response_ids)[:2048]
     prefix_len=min(prefix_len,len(ids))
     if prefix_len>=len(ids):raise ValueError(f"task {r['task_id']}: truncation left no response tokens")
     self.items.append((ids,prefix_len))
