@@ -16,7 +16,10 @@ class ReleaseVerifierTests(unittest.TestCase):
  def test_holdout_artifact_forbidden(self):
   m={"model_name":"Core Prime","release_version":"x","release_status":"qualified","holdout_included":False,"artifacts":[{"path":"holdout-results.json","sha256":"0"*64}],"gates":{}}
   self.assertTrue(any("holdout artifact forbidden" in e for e in v.verify(Path("."),m)))
- def test_holdout_gate_evidence_path_rejected(self):\n  m={"model_name":"Core Prime","release_version":"x","release_status":"qualified","holdout_included":False,"artifacts":[{"path":"a","sha256":"0"*64}],"gates":{k:{"status":"approved","evidence_path":"holdout-proof.json","sha256":"0"*64} for k in v.REQUIRED_GATES}}\n  self.assertTrue(any("holdout evidence forbidden" in e for e in v.verify(Path("."),m)))\n def test_path_traversal_rejected(self):
+ def test_holdout_gate_evidence_path_rejected(self):
+  m={"model_name":"Core Prime","release_version":"x","release_status":"qualified","holdout_included":False,"artifacts":[{"path":"a","sha256":"0"*64}],"gates":{k:{"status":"approved","evidence_path":"holdout-proof.json","sha256":"0"*64} for k in v.REQUIRED_GATES}}
+  self.assertTrue(any("holdout evidence forbidden" in e for e in v.verify(Path("."),m)))
+ def test_path_traversal_rejected(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);outside=root.parent/"outside-cp-release-test";outside.write_bytes(b"test")
    try:
