@@ -62,3 +62,27 @@ License metadata alone is not output-training permission. Neither candidate has 
 - Artifact verification attempt: direct download/hash capture was attempted from this environment but outbound DNS/network access failed. Therefore no local license bytes or SHA-256 were captured, and no model/config/tokenizer/weight hashes are claimed. The manifest remains pending.
 - Legal review: not completed. No inference or training performed.
 - Research references: revision-specific LICENSE page (above); Apache License text shown on the upstream page; PyPI/Hugging Face package documentation used only to assess environment compatibility, not to select an untested lockfile.
+
+
+## Separate model-output / distillation rights screening (2026-11-19)
+
+This screening is discovery only; no teacher is approved and no generated teacher outputs have been collected.
+
+| Family / artifact | Upstream license/terms observed | Output-to-training status for this project |
+|---|---|---|
+| Qwen3-0.6B at `c1899de289a04d12100db370d81485cdf75e47ca` | Revision-specific LICENSE page shows Apache-2.0. | The weight license is not a separate explicit grant to use generated outputs from this or other models as distillation data. Unresolved; no legal approval. |
+| SmolLM2-360M-Instruct | Model card identifies Apache-2.0. | No explicit output-training permission located in this screening; unresolved. |
+| Phi-4-mini-instruct | Model card metadata identifies MIT; 3.8B parameter model. | No separate explicit output-distillation permission located; unresolved. |
+| Granite 4.2 | IBM documentation describes Apache-2.0 models, including 8B/30B variants. | No separate output-distillation permission located; unresolved. Larger variant is not a lightweight compute assumption. |
+| Gemma | Terms define a Model Derivative to include models transferred from Gemma outputs, including synthetic-output distillation; Outputs are not themselves deemed Model Derivatives. | Must assess terms for the resulting student and enforce applicable restrictions; do not treat output ownership statement as unrestricted distillation authorization. Unresolved. |
+| MiniCPM-V 2.6 (not a text shortlist choice) | Model card refers to a separate model license and registration/questionnaire for commercial-use access. | Demonstrates that weight terms may differ from code license; not selected or used. |
+
+Sources for this screening (discovery references, not legal opinions):
+- Qwen3-0.6B pinned LICENSE: https://huggingface.co/Qwen/Qwen3-0.6B/blob/c1899de289a04d12100db370d81485cdf75e47ca/LICENSE
+- SmolLM2-360M-Instruct model card: https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct
+- Phi-4-mini-instruct model card: https://huggingface.co/microsoft/Phi-4-mini-instruct
+- IBM Granite 4.2 documentation: https://www.ibm.com/granite/docs/models/granite4-2
+- Gemma Terms of Use: https://ai.google.dev/gemma/terms
+- MiniCPM-V 2.6 model card: https://huggingface.co/openbmb/MiniCPM-V-2_6
+
+For teacher outputs, each teacher's exact revision, license, provider/model terms, permitted collection method, privacy and output-to-training/distillation scope must be separately documented and reviewed. Do not collect or train on teacher outputs from hosted services or open-weight models until those permissions and any restrictions are genuinely cleared. This screening found no basis to mark any teacher output permission verified.
