@@ -16,3 +16,15 @@ These are authored scoring references for the development tasks only. They are n
 - **cp001-dev-code-002:** Prints 2, 4, 6 on separate lines; three iterations (range start 2, stop 7 exclusive, step 2).
 
 References are guidance, not an automatic substitute for evidence-based scoring.
+- **cp001-dev-instruct-003:** Exactly two sentences on backup benefits (recoverability/rollback, risk mitigation), relevant and accurate.
+- **cp001-dev-instruct-004:** Exactly three numbered diagnostic steps; includes measurement and reversible intervention.
+- **cp001-dev-comp-005:** Departed Tuesday; arrived Thursday; 14 boxes; 2 damaged.
+- **cp001-dev-comp-006:** Refund eligibility within 21 days for unused items; clearance items excluded.
+- **cp001-dev-reason-007:** Access denied; both conditions required and token is expired.
+- **cp001-dev-reason-008:** Device K is offline; no conclusions about non-red devices follow.
+- **cp001-dev-arith-009:** 12 / 3 = 4 minutes.
+- **cp001-dev-arith-010:** 18/24 = 75%; 6 tasks remain.
+- **cp001-dev-struct-011:** Valid JSON exactly {"ok":true,"count":5}.
+- **cp001-dev-struct-012:** Valid JSON exactly {"labels":["alpha","beta"]}.
+- **cp001-dev-code-013:** [1,4,9], as range(1,4) yields 1,2,3 and each is squared.
+- **cp001-dev-code-014:** True; reversing 'level' produces the same string.
