@@ -64,6 +64,12 @@ class EvaluatorTests(unittest.TestCase):
   records=[{"status":"initialization_failed"},{"status":"initialization_failed"}]
   self.assertEqual(evaluator.tally_records(records,2),(0,2,"failed"))
  def test_task_result_tally_complete(self):
-  records=[{"status":"completed"},{"status":"completed"}]
+  records=[{"task_id":"1","status":"completed"},{"task_id":"2","status":"completed"}]
   self.assertEqual(evaluator.tally_records(records,2),(2,0,"completed"))
+ def test_task_result_tally_missing_record(self):
+  records=[{"task_id":"1","status":"completed"}]
+  self.assertEqual(evaluator.tally_records(records,2),(1,1,"partial"))
+ def test_task_result_tally_duplicate_record(self):
+  records=[{"task_id":"1","status":"completed"},{"task_id":"1","status":"completed"}]
+  self.assertEqual(evaluator.tally_records(records,2),(0,2,"failed"))
 if __name__=="__main__":unittest.main()
