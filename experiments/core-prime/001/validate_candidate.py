@@ -19,9 +19,12 @@ def validate(record):
  if record.get("output_training_permission") not in {"pending","verified","denied","unclear"}:errors.append("invalid output_training_permission")
  if record.get("human_legal_review") not in {"pending","approved","rejected"}:errors.append("invalid human_legal_review")
  if record.get("compatibility_status") not in {"pending","compatible","incompatible","blocked"}:errors.append("invalid compatibility_status")
- for k in ("license_evidence_sha256","model_config_sha256","chat_template_sha256"):
+ for k in ("license_evidence_sha256","model_config_sha256","chat_template_sha256","output_training_permission_evidence_sha256","human_legal_review_evidence_sha256"):
   v=record.get(k)
   if v is not None and not SHA64.fullmatch(str(v)):errors.append(f"{k} must be null or a 64-character lowercase SHA-256")
+ for k in ("license_evidence_path","output_training_permission_evidence_path","human_legal_review_evidence_path","model_config_evidence_path","chat_template_evidence_path"):
+  v=record.get(k)
+  if v is not None and (not isinstance(v,str) or not v.strip()):errors.append(f"{k} must be null or a non-empty path string")
  inv=record.get("weight_inventory",[])
  if not isinstance(inv,list):errors.append("weight_inventory must be an array")
  else:
@@ -31,10 +34,14 @@ def validate(record):
  for k in ("parameter_count","context_length"):
   v=record.get(k)
   if v is not None and(not isinstance(v,int)or isinstance(v,bool)or v<=0):errors.append(f"{k} must be a positive integer or null")
- allowed={"record_version","candidate_id","repository_id","revision","status","license_identifier","license_evidence_sha256","output_training_permission","human_legal_review","model_config_sha256","tokenizer_revision","chat_template_sha256","weight_inventory","architecture","parameter_count","context_length","compatibility_status","compute_evidence","notes","publisher"}
+ allowed={"record_version","candidate_id","repository_id","revision","status","license_identifier","license_evidence_path","license_evidence_sha256","output_training_permission","output_training_permission_evidence_path","output_training_permission_evidence_sha256","human_legal_review","human_legal_review_evidence_path","human_legal_review_evidence_sha256","model_config_evidence_path","model_config_sha256","tokenizer_revision","chat_template_evidence_path","chat_template_sha256","weight_inventory","architecture","parameter_count","context_length","compatibility_status","compute_evidence","notes","publisher"}
  extra=set(record)-allowed
  if extra:errors.append("unexpected fields: "+", ".join(sorted(extra)))
- if record.get("status")=="verified" and(record.get("output_training_permission")!="verified"or record.get("human_legal_review")!="approved"or record.get("compatibility_status")!="compatible"):errors.append("verified status requires verified output permission, approved human legal review, and compatible status")
+ if record.get("status")=="verified":
+  required_evidence=("license_identifier","license_evidence_path","license_evidence_sha256","output_training_permission_evidence_path","output_training_permission_evidence_sha256","human_legal_review_evidence_path","human_legal_review_evidence_sha256","model_config_evidence_path","model_config_sha256","tokenizer_revision","chat_template_evidence_path","chat_template_sha256")
+  missing=[k for k in required_evidence if not record.get(k)]
+  if record.get("output_training_permission")!="verified"or record.get("human_legal_review")!="approved"or record.get("compatibility_status")!="compatible"or record.get("tokenizer_revision")!=revision or not inv or missing:
+   errors.append("verified status requires complete license, output permission, legal review, model config, tokenizer/template and weight inventory evidence; verified output permission, approved human legal review and compatible status")
  return errors
 def main():
  p=argparse.ArgumentParser();p.add_argument("file",type=Path);a=p.parse_args()
