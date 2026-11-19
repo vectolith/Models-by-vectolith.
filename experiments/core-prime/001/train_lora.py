@@ -66,8 +66,8 @@ def main():
   def __len__(self):return len(self.items)
   def __getitem__(self,i):return self.items[i]
  def collate(batch):
-  z=torch.nn.utils.rnn.pad_sequence([torch.tensor(i) for i in batch],batch_first=True,padding_value=tok.pad_token_id);labels=z.clone();labels[z==tok.pad_token_id]=-100
-  return {"input_ids":z,"attention_mask":(z!=tok.pad_token_id).long(),"labels":labels}
+  tensors=[torch.tensor(i) for i in batch];lengths=torch.tensor([len(i) for i in tensors]);z=torch.nn.utils.rnn.pad_sequence(tensors,batch_first=True,padding_value=tok.pad_token_id);mask=(torch.arange(z.shape[1])[None,:]<lengths[:,None]).long()
+  return {"input_ids":z,"attention_mask":mask,"labels":make_labels(z,mask)}
  class TelemetryAndBudget(TrainerCallback):
   def __init__(self):self.started=time.monotonic();self.telemetry=telemetry_path
   def on_log(self,args,state,control,logs=None,**kwargs):
