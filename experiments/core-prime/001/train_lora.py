@@ -72,8 +72,11 @@ def validate_checkpoint(path):
  except Exception as e:raise ValueError(f"checkpoint integrity manifest invalid: {e}")
  if manifest.get("schema_version")!=1 or manifest.get("step")!=step:raise ValueError("checkpoint integrity manifest step/schema mismatch")
  actual=checkpoint_inventory(path);expected=manifest.get("files")
- if not isinstance(expected,list) or {i.get("path") for i in expected if isinstance(i,dict)}!={i["path"] for i in actual}:raise ValueError("checkpoint integrity file inventory mismatch")
- by_path={i["path"]:i["sha256"] for i in expected if isinstance(i,dict)}
+ if not isinstance(expected,list) or not all(isinstance(i,dict) and set(i)=={"path","sha256"} and isinstance(i["path"],str) and isinstance(i["sha256"],str) and len(i["sha256"])==64 and all(ch in "0123456789abcdef" for ch in i["sha256"]) for i in expected):raise ValueError("checkpoint integrity manifest file entries malformed")
+ expected_paths=[i["path"] for i in expected]
+ if len(expected_paths)!=len(set(expected_paths)):raise ValueError("checkpoint integrity manifest has duplicate paths")
+ if set(expected_paths)!={i["path"] for i in actual}:raise ValueError("checkpoint integrity file inventory mismatch")
+ by_path={i["path"]:i["sha256"] for i in expected}
  for item in actual:
   if by_path.get(item["path"])!=item["sha256"]:raise ValueError(f"checkpoint integrity hash mismatch: {item['path']}")
  return step
