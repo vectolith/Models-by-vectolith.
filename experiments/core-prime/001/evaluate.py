@@ -122,12 +122,13 @@ def main()->int:
         records.extend(initialization_failure_records(run_id,tasks,e))
     write_jsonl(raw,records)
     completed=sum(r.get("status")=="completed" for r in records)
+    failed=sum(r.get("status")!="completed" for r in records)
     status="completed" if completed==len(tasks) else ("failed" if completed==0 else "partial")
     peak_memory=torch.cuda.max_memory_allocated() if device=="cuda" else None
     config_text=model.config.to_json_string() if hasattr(model.config,"to_json_string") else json.dumps(model.config.to_dict(),sort_keys=True)
     template_text=getattr(tokenizer,"chat_template",None)
     summary={"run_id":run_id,"status":status,"model":a.model,"revision":a.revision,"task_file":str(a.tasks),
-        "task_file_sha256":task_hash,"task_count":len(tasks),"completed_count":completed,"failed_count":errors,
+        "task_file_sha256":task_hash,"task_count":len(tasks),"completed_count":completed,"failed_count":failed,
         "device":device,"hardware":hardware,"peak_cuda_memory_allocated_bytes":peak_memory,
         "python":sys.version,"platform":platform.platform(),"torch_version":torch.__version__,"transformers_version":transformers.__version__,
         "accelerate_version":package_version("accelerate"),"safetensors_version":package_version("safetensors"),
