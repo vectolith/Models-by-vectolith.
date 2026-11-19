@@ -19,6 +19,9 @@ class TaskTests(unittest.TestCase):
   f=tempfile.NamedTemporaryFile(mode="w",delete=False);f.write("{bad\n");f.close();self.assertTrue(any("JSON parse" in e for e in tasks.validate([Path(f.name)])[1]))
  def test_normalization(self):self.assertEqual(tasks.normalized_prompt("A  B\nC"),"a b c")
 class CandidateTests(unittest.TestCase):
+ def test_candidate_json_schema_is_valid_json(self):
+  schema=json.loads((ROOT/"candidate-record.schema.json").read_text(encoding="utf-8"))
+  self.assertEqual(schema["properties"]["weight_inventory"]["type"],"array")
  def record(self):return {"record_version":"1","candidate_id":"c1","repository_id":"org/model","revision":"a"*40,"status":"pending","output_training_permission":"pending","human_legal_review":"pending","compatibility_status":"pending"}
  def test_minimal_valid(self):self.assertEqual(candidate.validate(self.record()),[])
  def test_unpinned_revision(self):r=self.record();r["revision"]="main";self.assertTrue(any("revision" in e for e in candidate.validate(r)))
