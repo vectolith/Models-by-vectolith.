@@ -1,0 +1,10 @@
+{
+  "model": "REPLACE",
+  "revision": "REPLACE_WITH_IMMUTABLE_REVISION",
+  "tasks_sha256": "REPLACE_WITH_SHA256",
+  "seed": 42,
+  "max_new_tokens": 256,
+  "temperature": 0.0,
+  "trust_remote_code": false,
+  "qwen3_thinking": false
+}
