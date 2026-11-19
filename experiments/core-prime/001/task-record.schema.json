@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Experiment task record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task_id", "category", "prompt", "split", "rubric_id"],
+  "properties": {
+    "task_id": {"type": "string", "minLength": 1},
+    "category": {"type": "string", "minLength": 1},
+    "prompt": {"type": "string", "minLength": 1},
+    "split": {"enum": ["train", "development", "holdout"]},
+    "rubric_id": {"type": "string", "minLength": 1},
+    "reference_answer": {"type": ["string", "null"]},
+    "expected_constraints": {"type": "array", "items": {"type": "string"}},
+    "provenance": {"type": "string", "minLength": 1},
+    "content_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"}
+  }
+}
