@@ -26,7 +26,7 @@ class Tests(unittest.TestCase):
  def test_telemetry_negative_elapsed_rejected(self):
   with self.assertRaises(ValueError):trainer.telemetry_elapsed([{"run_id":"x","session_elapsed_seconds":-1}])
  def test_checkpoint_validation(self):
-  ck=self.d/"checkpoint-3";ck.mkdir();(ck/"trainer_state.json").write_text(json.dumps({"global_step":3}));(ck/"adapter_model.safetensors").write_bytes(b"weights")
+  ck=self.d/"checkpoint-3";ck.mkdir();(ck/"trainer_state.json").write_text(json.dumps({"global_step":3}));(ck/"adapter_model.safetensors").write_bytes(b"weights");(ck/"optimizer.pt").write_bytes(b"opt");(ck/"scheduler.pt").write_bytes(b"sched");(ck/"rng_state.pth").write_bytes(b"rng")
   self.assertEqual(trainer.validate_checkpoint(ck),3)
  def test_checkpoint_step_mismatch(self):
   ck=self.d/"checkpoint-3";ck.mkdir();(ck/"trainer_state.json").write_text(json.dumps({"global_step":2}));(ck/"adapter_model.safetensors").write_bytes(b"weights")
