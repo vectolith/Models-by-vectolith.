@@ -1,7 +1,7 @@
 import importlib.util,json,tempfile,unittest
 from pathlib import Path
 import sys
-sys.path.insert(0,str(Path(__file__).resolve().parents[1])
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location("trainer",ROOT/"train_lora.py");trainer=importlib.util.module_from_spec(spec);spec.loader.exec_module(trainer)
 class Tests(unittest.TestCase):
