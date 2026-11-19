@@ -23,10 +23,10 @@ class CandidateTests(unittest.TestCase):
  def test_minimal_valid(self):self.assertEqual(candidate.validate(self.record()),[])
  def test_unpinned_revision(self):r=self.record();r["revision"]="main";self.assertTrue(any("revision" in e for e in candidate.validate(r)))
  def test_null_revision_rejected(self):r=self.record();r["revision"]=None;self.assertTrue(any("non-null" in e for e in candidate.validate(r)))
- def test_verified_gate(self):r=self.record();r["status"]="verified";self.assertTrue(any("verified status requires" in e for e in candidate.validate(r))
+ def test_verified_gate(self):r=self.record();r["status"]="verified";self.assertTrue(any("verified status requires" in e for e in candidate.validate(r)))
  def test_verified_candidate_evidence_fields(self):
   r=self.record();r.update({"status":"verified","license_identifier":"Apache-2.0","license_evidence_path":"license.txt","license_evidence_sha256":"a"*64,"output_training_permission":"verified","output_training_permission_evidence_path":"permission.txt","output_training_permission_evidence_sha256":"b"*64,"human_legal_review":"approved","human_legal_review_evidence_path":"review.txt","human_legal_review_evidence_sha256":"c"*64,"model_config_evidence_path":"config.json","model_config_sha256":"d"*64,"tokenizer_revision":r["revision"],"chat_template_evidence_path":"template.txt","chat_template_sha256":"e"*64,"compatibility_status":"compatible","weight_inventory":[{"path":"weights.bin","sha256":"f"*64}]})
-  self.assertEqual(candidate.validate(r),[]))
+  self.assertEqual(candidate.validate(r),[])
  def test_hash_validation(self):r=self.record();r["license_evidence_sha256"]="z"*64;self.assertTrue(any("license_evidence" in e for e in candidate.validate(r)))
  def test_extra_fields(self):r=self.record();r["arbitrary"]=1;self.assertTrue(any("unexpected fields" in e for e in candidate.validate(r)))
 class EvaluatorTests(unittest.TestCase):
