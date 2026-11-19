@@ -1,0 +1,21 @@
+import importlib.util, tempfile, unittest
+from pathlib import Path
+spec=importlib.util.spec_from_file_location("compare",Path(__file__).parents[1]/"compare_grades.py");m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+class ComparisonTests(unittest.TestCase):
+ def test_paired_delta_and_counts(self):
+  a={"1":{"scores":{"quality":2,"format":1}},"2":{"scores":{"quality":1,"format":2}}}
+  b={"1":{"scores":{"quality":3,"format":1}},"2":{"scores":{"quality":0,"format":3}}}
+  r=m.compare(a,b);self.assertEqual(r["criteria"]["quality"]["mean_delta"],0);self.assertEqual(r["criteria"]["quality"]["improved"],1);self.assertEqual(r["criteria"]["quality"]["regressed"],1);self.assertEqual(r["criteria"]["format"]["mean_delta"],0.5)
+ def test_mismatch_ids_rejected(self):
+  with self.assertRaises(ValueError):m.compare({"1":{"scores":{"x":1}}},{"2":{"scores":{"x":1}}})
+ def test_mismatch_criteria_rejected(self):
+  with self.assertRaises(ValueError):m.compare({"1":{"scores":{"x":1}}},{"1":{"scores":{"y":1}}})
+ def test_load_duplicate_rejected(self):
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d)/"x";p.write_text('{"task_id":"1","scores":{"x":1}}\n{"task_id":"1","scores":{"x":2}}\n')
+   with self.assertRaises(ValueError):m.load(p)
+ def test_nonfinite_rejected(self):
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d)/"x";p.write_text('{"task_id":"1","scores":{"x":NaN}}\n')
+   with self.assertRaises(ValueError):m.load(p)
+if __name__=="__main__":unittest.main()
