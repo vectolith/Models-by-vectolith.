@@ -124,6 +124,7 @@ def gates(c,a,rows,x):
  if not isinstance(inv,list) or not inv:raise ValueError("candidate weight inventory missing")
  for item in inv:
   if not isinstance(item,dict) or not isinstance(item.get("path"),str) or not item.get("path") or not isinstance(item.get("sha256"),str) or len(item["sha256"])!=64 or any(ch not in "0123456789abcdef" for ch in item["sha256"]):raise ValueError("candidate weight inventory malformed")
+  verify_evidence_file(x.candidate.parent,item["path"],item["sha256"],"candidate weight")
  if a.get("approval")!="approved":raise ValueError("training approval not approved")
  if a.get("candidate_revision")!=c.get("revision"):raise ValueError("candidate revision mismatch")
  if a.get("dataset_sha256")!=sha256_file(x.dataset):raise ValueError("dataset hash mismatch")
