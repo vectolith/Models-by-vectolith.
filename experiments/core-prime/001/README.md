@@ -32,3 +32,16 @@ The first run is a bounded feasibility run, not a release training run. Before e
 
 ## Acceptance
 A tuned candidate is an experiment result only. It is not Core Prime or a release unless separate promotion gates are passed.
+
+
+## Release evidence bundle verification
+
+A separate release gate now verifies the release manifest, artifact inventory, evidence hashes and path confinement. It rejects missing gate evidence, hash mismatches, path traversal, and holdout artifacts in the release bundle. The verifier is integrity/completeness automation only: it does not determine whether legal approval, human grades, safety review or release approval are genuine or substantively adequate.
+
+Copy `release-manifest.template.json` only as a starting structure. Replace pending values with real reviewed evidence and artifact paths/hashes. Once all gates have been independently satisfied and the artifact inventory is complete, run:
+
+```bash
+python experiments/core-prime/001/verify_release_bundle.py path/to/release-manifest.json
+```
+
+The verifier intentionally cannot make an experiment release-qualified by filling in status fields; every referenced evidence file must exist and match its hash, and substantive reviews remain human responsibilities.
