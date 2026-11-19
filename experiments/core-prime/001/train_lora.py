@@ -101,18 +101,37 @@ def make_labels(input_ids, attention_mask, prompt_lengths):
  for i,prefix_len in enumerate(prompt_lengths):
   labels[i,:int(prefix_len)]=-100
  return labels
+def verify_evidence_file(base,relative_path,digest,label):
+ if not isinstance(relative_path,str) or not relative_path.strip():raise ValueError(f"{label} evidence path missing")
+ if not isinstance(digest,str) or len(digest)!=64 or any(ch not in "0123456789abcdef" for ch in digest):raise ValueError(f"{label} evidence SHA-256 invalid")
+ root=Path(base).resolve();target=(root/relative_path).resolve()
+ try:target.relative_to(root)
+ except ValueError:raise ValueError(f"{label} evidence path escapes evidence root")
+ if not target.is_file():raise ValueError(f"{label} evidence file missing")
+ if sha256_file(target)!=digest:raise ValueError(f"{label} evidence hash mismatch")
 def gates(c,a,rows,x):
  for k,v in (("status","verified"),("output_training_permission","verified"),("human_legal_review","approved"),("compatibility_status","compatible")):
   if c.get(k)!=v:raise ValueError(f"candidate gate {k} not {v}")
+ if not c.get("license_identifier") or c.get("tokenizer_revision")!=c.get("revision"):raise ValueError("candidate license/tokenizer evidence missing or revision mismatch")
+ for path_key,hash_key,label in (("license_evidence_path","license_evidence_sha256","license"),("output_training_permission_evidence_path","output_training_permission_evidence_sha256","output training permission"),("human_legal_review_evidence_path","human_legal_review_evidence_sha256","legal review"),("model_config_evidence_path","model_config_sha256","model config"),("chat_template_evidence_path","chat_template_sha256","chat template")):
+  verify_evidence_file(x.candidate.parent,c.get(path_key),c.get(hash_key),label)
+ inv=c.get("weight_inventory")
+ if not isinstance(inv,list) or not inv:raise ValueError("candidate weight inventory missing")
+ for item in inv:
+  if not isinstance(item,dict) or not isinstance(item.get("path"),str) or not item.get("path") or not isinstance(item.get("sha256"),str) or len(item["sha256"])!=64 or any(ch not in "0123456789abcdef" for ch in item["sha256"]):raise ValueError("candidate weight inventory malformed")
  if a.get("approval")!="approved":raise ValueError("training approval not approved")
  if a.get("candidate_revision")!=c.get("revision"):raise ValueError("candidate revision mismatch")
  if a.get("dataset_sha256")!=sha256_file(x.dataset):raise ValueError("dataset hash mismatch")
  if a.get("code_commit")!=x.code_commit:raise ValueError("code commit mismatch")
+ provenance=a.get("dataset_provenance",{})
+ if provenance.get("status")!="reviewed":raise ValueError("dataset provenance review missing")
+ verify_evidence_file(x.authorization.parent,provenance.get("evidence_path"),provenance.get("evidence_sha256"),"dataset provenance")
  h=a.get("hardware",{})
  if h.get("verified_free_budget") is not True or not h.get("provider") or not h.get("session_id"):raise ValueError("verified free compute/session evidence missing")
+ verify_evidence_file(x.authorization.parent,h.get("evidence_path"),h.get("evidence_sha256"),"free compute")
  b=a.get("budget",{})
  for k,v in (("max_steps",x.max_steps),("max_wall_seconds",x.max_wall_seconds)):
-  if not isinstance(b.get(k),int) or b[k]<=0 or v>b[k]:raise ValueError(f"{k} exceeds or lacks approved budget")
+  if isinstance(b.get(k),bool) or not isinstance(b.get(k),int) or b[k]<=0 or v>b[k]:raise ValueError(f"{k} exceeds or lacks approved budget")
  if a.get("holdout_access") not in ("sealed","denied"):raise ValueError("holdout must remain sealed")
 def main():
  p=argparse.ArgumentParser();p.add_argument("--candidate",type=Path,required=True);p.add_argument("--authorization",type=Path,required=True);p.add_argument("--dataset",type=Path,required=True);p.add_argument("--output",type=Path,required=True);p.add_argument("--max-steps",type=int,required=True);p.add_argument("--max-wall-seconds",type=int,required=True);p.add_argument("--code-commit",required=True);p.add_argument("--authorize-training",action="store_true");p.add_argument("--resume",action="store_true",help="resume from latest Trainer checkpoint");p.add_argument("--rank",type=int,default=8);p.add_argument("--alpha",type=int,default=16);p.add_argument("--target-modules",default="q_proj,k_proj,v_proj,o_proj");x=p.parse_args()
