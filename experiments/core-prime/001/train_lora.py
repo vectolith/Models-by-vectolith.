@@ -78,9 +78,14 @@ def validate_checkpoint(path):
   if by_path.get(item["path"])!=item["sha256"]:raise ValueError(f"checkpoint integrity hash mismatch: {item['path']}")
  return step
 def select_recovery_checkpoint(directory):
- candidates=sorted(directory.glob("checkpoint-*"),key=lambda q:int(q.name.split("-")[-1]),reverse=True)
+ candidates=[]
+ for path in directory.glob("checkpoint-*"):
+  suffix=path.name.removeprefix("checkpoint-")
+  if path.is_dir() and suffix.isdecimal():
+   candidates.append((int(suffix),path))
+ candidates.sort(key=lambda item:item[0],reverse=True)
  failures=[]
- for candidate in candidates:
+ for _,candidate in candidates:
   try:validate_checkpoint(candidate);return candidate
   except Exception as e:failures.append(f"{candidate.name}: {e}")
  if candidates:raise ValueError("no valid recovery checkpoint; "+ "; ".join(failures))
