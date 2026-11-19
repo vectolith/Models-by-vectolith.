@@ -10,9 +10,9 @@ This is a reproducible execution procedure, not evidence that a run occurred. It
 ## In a Kaggle notebook with an available free GPU
 1. Confirm GPU entitlement and remaining free quota in the account UI; do not assume.
 2. Clone this PR branch or download the repository files; use the code and data exactly at the documented commit.
-3. Install the pinned baseline dependencies listed in requirements.txt. Record session hardware and software versions in the manifest.
+3. Install dependencies from requirements.txt, then record the resolved versions. That file is not yet a verified lockfile; do not treat the environment as frozen until exact package versions and platform details are captured and reviewed.
 4. Run the validators on the development dataset and the candidate manifest.
-5. Run inference with a 256-token output cap and deterministic decoding. Save output artifacts outside git unless reviewed for publication.
+5. Run inference with a 256-token output cap and seeded decoding. Deterministic kernels are not guaranteed; record the seed and resolved software/hardware. Save output artifacts outside git unless reviewed for publication.
 6. Hash raw output and summary artifacts; preserve Kaggle session evidence and runtime measurements.
 
 Example commands from repo root:
