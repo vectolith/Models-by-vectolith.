@@ -94,8 +94,15 @@ def select_recovery_checkpoint(directory):
  if candidates:raise ValueError("no valid recovery checkpoint; "+ "; ".join(failures))
  return None
 def build_sequence(tok,prompt,response,max_length=2048):
- prefix=f"User:\n{prompt}\nAssistant:\n"
- prefix_ids=tok(prefix)["input_ids"]
+ if getattr(tok,"chat_template",None):
+  messages=[{"role":"user","content":prompt}]
+  try:
+   prefix=tok.apply_chat_template(messages,tokenize=False,add_generation_prompt=True,enable_thinking=False)
+  except TypeError:
+   prefix=tok.apply_chat_template(messages,tokenize=False,add_generation_prompt=True)
+ else:
+  prefix=f"User:\n{prompt}\nAssistant:\n"
+ prefix_ids=tok(prefix,add_special_tokens=False)["input_ids"]
  response_ids=tok(response+tok.eos_token,add_special_tokens=False)["input_ids"]
  if not response_ids:raise ValueError("empty tokenized response")
  prefix_len=len(prefix_ids)
