@@ -14,7 +14,11 @@ class HoldoutTests(unittest.TestCase):
    self.assertEqual(digest,evaluator.sha256_file(manifest))
    with self.assertRaisesRegex(ValueError,"revision"):evaluator.verify_frozen_config(manifest,"m","other",tasks,7,20,0.0,False,False,1,["a"])
    with self.assertRaisesRegex(ValueError,"limit"):evaluator.verify_frozen_config(manifest,"m","r",tasks,7,20,0.0,False,False,0,["a"])
- def test_fallback_prompt_tokenization_matches_training_template(self):\n  source=EVALUATOR.read_text(encoding="utf-8")\n  self.assertIn("encoded=f\\\"User:\\\\\\\\n{prompt}\\\\\\\\nAssistant:\\\\n\\\"",source)\n  self.assertIn("add_special_tokens=False",source)\n def test_holdout_rejected_even_with_deprecated_flag(self):
+ def test_fallback_prompt_tokenization_matches_training_template(self):
+  source=EVALUATOR.read_text(encoding="utf-8")
+  self.assertIn('encoded=f"User:\\n{prompt}\\nAssistant:\\n"',source)
+  self.assertIn("add_special_tokens=False",source)
+ def test_holdout_rejected_even_with_deprecated_flag(self):
   with tempfile.TemporaryDirectory() as tmp:
    tasks=Path(tmp)/"holdout.jsonl"
    tasks.write_text(json.dumps({"task_id":"h1","prompt":"private","category":"test","split":"holdout"})+chr(10),encoding="utf-8")
