@@ -49,6 +49,14 @@ def validate_checkpoint(path):
   if not (path/required).is_file():raise ValueError(f"checkpoint missing {required}")
  if not any(path.glob("rng_state*.pth")):raise ValueError("checkpoint RNG state missing")
  return step
+def select_recovery_checkpoint(directory):
+ candidates=sorted(directory.glob("checkpoint-*"),key=lambda q:int(q.name.split("-")[-1]),reverse=True)
+ failures=[]
+ for candidate in candidates:
+  try:validate_checkpoint(candidate);return candidate
+  except Exception as e:failures.append(f"{candidate.name}: {e}")
+ if candidates:raise ValueError("no valid recovery checkpoint; "+ "; ".join(failures))
+ return None
 def build_sequence(tok,prompt,response,max_length=2048):
  prefix=f"User:\n{prompt}\nAssistant:\n"
  prefix_ids=tok(prefix)["input_ids"]
@@ -126,12 +134,11 @@ def main():
    return control
  args=TrainingArguments(output_dir=str(x.output/"checkpoints"),max_steps=x.max_steps,per_device_train_batch_size=1,gradient_accumulation_steps=4,learning_rate=2e-4,logging_steps=1,save_steps=max(1,min(25,x.max_steps)),save_total_limit=2,fp16=True,report_to=[],seed=42,data_seed=42)
  trainer=Trainer(model=model,args=args,train_dataset=DS(),data_collator=collate,callbacks=[TelemetryAndBudget()])
- checkpoints=sorted((x.output/"checkpoints").glob("checkpoint-*"),key=lambda q:int(q.name.split("-")[-1])) if x.resume else []
- resume=checkpoints[-1] if checkpoints else None
- if x.resume and resume is None:p.error("--resume requested but no checkpoint exists")
- if resume is not None:
-  try:validate_checkpoint(resume)
-  except Exception as e:p.error(f"selected recovery checkpoint invalid: {e}")
+ resume=None
+ if x.resume:
+  try:resume=select_recovery_checkpoint(x.output/"checkpoints")
+  except Exception as e:p.error(f"recovery selection blocked: {e}")
+  if resume is None:p.error("--resume requested but no checkpoint exists")
  trainer.train(resume_from_checkpoint=str(resume) if resume else None)
  model.save_pretrained(x.output/"adapter");tok.save_pretrained(x.output/"adapter")
  manifest={"candidate_id":c["candidate_id"],"candidate_repository":c["repository_id"],"candidate_revision":c["revision"],"dataset_path":str(x.dataset.resolve()),"dataset_sha256":sha256_file(x.dataset),"code_commit":x.code_commit,"run_id":run_id,"provider_session_id":session_id,"steps_limit":x.max_steps,"wall_limit_seconds":x.max_wall_seconds,"rank":x.rank,"alpha":x.alpha,"target_modules":[s.strip() for s in x.target_modules.split(",") if s.strip()],"learning_rate":2e-4,"batch_size":1,"gradient_accumulation_steps":4,"seed":42,"data_seed":42,"max_sequence_length":2048,"duration_seconds":time.time()-started,"prior_session_elapsed_seconds":prior_elapsed,"cumulative_wall_seconds":prior_elapsed+time.time()-started,"gpu":torch.cuda.get_device_name(0),"gpu_memory_total_bytes":torch.cuda.get_device_properties(0).total_memory,"cuda_version":torch.version.cuda,"python":sys.version,"platform":platform.platform(),"torch":torch.__version__,"transformers_version":__import__("transformers").__version__,"peft_version":__import__("peft").__version__,"adapter_sha256_inventory":[{"path":str(f.relative_to(x.output)),"sha256":sha256_file(f)} for f in sorted((x.output/"adapter").rglob("*")) if f.is_file()],"status":"trained_pending_evaluation","holdout_evaluated":False}
