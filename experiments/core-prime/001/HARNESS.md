@@ -38,6 +38,6 @@ python experiments/core-prime/001/evaluate.py \
 ```
 Use a pinned revision. For local model paths, the revision string is only recorded and provenance is not automatically authenticated. Remote custom code should only be enabled after review with `--trust-remote-code`.
 
-Holdout inference is blocked by default; use `--allow-holdout` only after configuration freeze and proper access control. The evaluator records prompts/responses, hashes, tokens, timing, versions, device/hardware and run status. Raw data can be sensitive; avoid committing private content.
+Holdout inference is blocked by default; use `--allow-holdout` only after configuration freeze and proper access control. The evaluator records prompts/responses, hashes, token counts, timing, versions, device/hardware, CUDA peak allocated memory (when CUDA is used), and per-task failure outcomes. Qwen3 thinking mode is explicitly disabled by default (enable with --qwen3-thinking). Runs distinguish completed, partial and failed outcomes. Raw data can be sensitive; avoid committing private content.
 
 Remaining limitations: model-specific templates, multi-GPU benchmarking, independent grading, semantic leakage detection, GPU peak-memory instrumentation and statistical comparison.
