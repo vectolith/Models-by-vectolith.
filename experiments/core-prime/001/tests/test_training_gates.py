@@ -34,4 +34,11 @@ class Tests(unittest.TestCase):
  def test_checkpoint_missing_weights_rejected(self):
   ck=self.d/"checkpoint-3";ck.mkdir();(ck/"trainer_state.json").write_text(json.dumps({"global_step":3}))
   with self.assertRaisesRegex(ValueError,"weights missing"):trainer.validate_checkpoint(ck)
+ def test_checkpoint_requires_optimizer_scheduler_rng(self):
+  ck=self.d/"checkpoint-4";ck.mkdir();(ck/"trainer_state.json").write_text(json.dumps({"global_step":4}));(ck/"adapter_model.safetensors").write_bytes(b"weights")
+  with self.assertRaisesRegex(ValueError,"optimizer.pt"):trainer.validate_checkpoint(ck)
+ def test_runner_masks_prompt_and_validates_recovery(self):
+  source=(ROOT/"train_lora.py").read_text(encoding="utf-8")
+  self.assertIn("labels[i,:int(prefix_len)]=-100",source)
+  self.assertIn("validate_checkpoint(resume)",source)
 if __name__=="__main__":unittest.main()
