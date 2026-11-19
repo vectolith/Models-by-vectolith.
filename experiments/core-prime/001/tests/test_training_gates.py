@@ -41,4 +41,19 @@ class Tests(unittest.TestCase):
   source=(ROOT/"train_lora.py").read_text(encoding="utf-8")
   self.assertIn("labels[i,:int(prefix_len)]=-100",source)
   self.assertIn("validate_checkpoint(resume)",source)
+ def test_build_sequence_masks_prefix_boundary(self):
+  class Tok:
+   eos_token="<eos>"
+   def __call__(self,text,add_special_tokens=True):
+    parts=text.split()
+    if add_special_tokens:parts=["<s>"]+parts
+    return {"input_ids":parts}
+  ids,prefix=trainer.build_sequence(Tok(),"prompt words","answer words",max_length=30)
+  self.assertEqual(ids[prefix:],["answer","words<eos>"])
+  self.assertGreater(prefix,0)
+ def test_build_sequence_rejects_truncated_response(self):
+  class Tok:
+   eos_token="<eos>"
+   def __call__(self,text,add_special_tokens=True):return {"input_ids":text.split()}
+  with self.assertRaisesRegex(ValueError,"no response tokens"):trainer.build_sequence(Tok(),"very long prefix words","answer",max_length=3)
 if __name__=="__main__":unittest.main()
