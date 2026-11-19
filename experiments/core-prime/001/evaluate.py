@@ -140,16 +140,27 @@ def main()->int:
                     "prompt_sha256":sha256_text(prompt),"status":"failed","error":repr(e),"generation_seconds":time.perf_counter()-t0})
     write_jsonl(raw,records)
     completed,failed,status=tally_records(records,len(tasks))
-    peak_memory=torch.cuda.max_memory_allocated() if device=="cuda" else None
-    config_text=model.config.to_json_string() if hasattr(model.config,"to_json_string") else json.dumps(model.config.to_dict(),sort_keys=True)
-    template_text=getattr(tokenizer,"chat_template",None)
+    capture_warnings=[];peak_memory=None;config_hash=None;template_hash=None
+    if device=="cuda":
+        try:peak_memory=torch.cuda.max_memory_allocated()
+        except Exception as e:capture_warnings.append("CUDA peak memory capture failed: "+repr(e))
+    if model is not None:
+        try:
+            config_text=model.config.to_json_string() if hasattr(model.config,"to_json_string") else json.dumps(model.config.to_dict(),sort_keys=True)
+            config_hash=sha256_text(config_text)
+        except Exception as e:capture_warnings.append("Model config hash capture failed: "+repr(e))
+    if tokenizer is not None:
+        try:
+            template_text=getattr(tokenizer,"chat_template",None)
+            template_hash=sha256_serialized(template_text) if template_text else None
+        except Exception as e:capture_warnings.append("Chat-template hash capture failed: "+repr(e))
     summary={"run_id":run_id,"status":status,"model":a.model,"revision":a.revision,"task_file":str(a.tasks),
         "task_file_sha256":task_hash,"task_count":len(tasks),"completed_count":completed,"failed_count":failed,
         "device":device,"hardware":hardware,"peak_cuda_memory_allocated_bytes":peak_memory,
         "python":sys.version,"platform":platform.platform(),"torch_version":torch.__version__,"transformers_version":transformers.__version__,
         "accelerate_version":package_version("accelerate"),"safetensors_version":package_version("safetensors"),
         "seed":a.seed,"seed_scope":"Python and PyTorch CPU/CUDA RNGs; deterministic kernels are not guaranteed",
-        "model_config_sha256":sha256_text(config_text),"chat_template_sha256":sha256_serialized(template_text) if template_text else None,
+        "model_config_sha256":config_hash,"chat_template_sha256":template_hash,"capture_warnings":capture_warnings,
         "started_at_epoch":started,"duration_seconds":time.time()-started,"max_new_tokens":a.max_new_tokens,
         "temperature":a.temperature,"qwen3_thinking":bool(a.qwen3_thinking),"trust_remote_code":a.trust_remote_code,
         "raw_file":str(raw),"raw_file_sha256":sha256_file(raw)}
