@@ -28,6 +28,9 @@ def package_inventory() -> list[dict[str,str]]:
         name=dist.metadata.get("Name") or dist.name or "unknown"
         items.append({"name":name,"version":dist.version})
     return sorted(items,key=lambda item:(item["name"].lower(),item["version"]))
+def package_inventory_snapshot() -> tuple[list[dict[str,str]],str]:
+    inventory=package_inventory()
+    return inventory,sha256_serialized(inventory)
 def load_jsonl(path: Path) -> list[dict[str,Any]]:
     rows=[]
     with path.open(encoding="utf-8") as f:
@@ -110,13 +113,13 @@ def main()->int:
     except Exception as e:
         records=initialization_failure_records(run_id,tasks,e,status="dependency_blocked")
         write_jsonl(raw,records)
-        inventory=package_inventory()
+        inventory,inventory_sha256=package_inventory_snapshot()
         summary={"run_id":run_id,"status":"blocked","error":repr(e),"task_file_sha256":task_hash,
             "task_count":len(tasks),"completed_count":0,"failed_count":len(tasks),"raw_file":str(raw),
             "raw_file_sha256":sha256_file(raw),"model":a.model,"revision":a.revision,"seed":a.seed,
             "effective_limit":a.limit,"selected_task_count":len(selected_task_ids),"selected_task_ids_sha256":selected_task_ids_sha256,
             "freeze_manifest":str(a.freeze_manifest.resolve()),"freeze_manifest_sha256":freeze_sha,
-            "package_inventory":inventory,"package_inventory_sha256":sha256_serialized(inventory)}
+            "package_inventory":inventory,"package_inventory_sha256":inventory_sha256}
         summary_file.write_text(json.dumps(summary,indent=2),encoding="utf-8");print(json.dumps(summary,indent=2));return 2
     seed_python(a.seed)
     torch.manual_seed(a.seed)
@@ -186,7 +189,7 @@ def main()->int:
         "accelerate_version":package_version("accelerate"),"safetensors_version":package_version("safetensors"),
         "seed":a.seed,"seed_scope":"Python and PyTorch CPU/CUDA RNGs; deterministic kernels are not guaranteed",
         "effective_limit":a.limit,"selected_task_count":len(selected_task_ids),"selected_task_ids_sha256":selected_task_ids_sha256,
-        "package_inventory":package_inventory(),"package_inventory_sha256":sha256_serialized(package_inventory()),
+        "package_inventory":package_inventory_snapshot()[0],"package_inventory_sha256":package_inventory_snapshot()[1],
         "model_config_sha256":config_hash,"chat_template_sha256":template_hash,"capture_warnings":capture_warnings,
         "started_at_epoch":started,"duration_seconds":time.time()-started,"max_new_tokens":a.max_new_tokens,
         "temperature":a.temperature,"qwen3_thinking":bool(a.qwen3_thinking),"trust_remote_code":a.trust_remote_code,
