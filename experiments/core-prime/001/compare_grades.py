@@ -5,6 +5,7 @@ Grade JSONL rows: task_id, candidate_id, scores (criterion->number), optional no
 This script computes paired score deltas; it does not grade responses or invent scores.
 """
 import argparse, json, math, hashlib, os, tempfile
+import evaluation_gate
 from pathlib import Path
 
 
@@ -20,6 +21,7 @@ def atomic_write_json(path,record):
         with os.fdopen(fd,"w",encoding="utf-8") as f:
             f.write(json.dumps(record,indent=2,ensure_ascii=False)+"\n");f.flush();os.fsync(f.fileno())
         os.replace(temp,path)
+        evaluation_gate.fsync_directory(path.parent)
     except BaseException:
         try:os.unlink(temp)
         except FileNotFoundError:pass
