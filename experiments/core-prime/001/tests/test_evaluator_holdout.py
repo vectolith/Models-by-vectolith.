@@ -9,12 +9,20 @@ class HoldoutTests(unittest.TestCase):
  def test_frozen_manifest_exact_match_and_hash(self):
   with tempfile.TemporaryDirectory() as tmp:
    tasks=Path(tmp)/"tasks.jsonl";tasks.write_text('{"task_id":"a","prompt":"p","category":"c","split":"development"}'+chr(10),encoding="utf-8")
-   manifest=Path(tmp)/"freeze.json";values={"model":"m","revision":"r","tasks_sha256":evaluator.sha256_file(tasks),"seed":7,"max_new_tokens":20,"temperature":0.0,"trust_remote_code":False,"qwen3_thinking":False,"limit":1,"selected_task_count":1,"selected_task_ids_sha256":evaluator.sha256_serialized(["a"]),"candidate_record_sha256":"c"*64,"code_commit":"d"*40,"package_inventory_sha256":"e"*64,"max_wall_seconds":30}
+   manifest=Path(tmp)/"freeze.json";tasks_sha=evaluator.sha256_file(tasks);values={"model":"m","revision":"r","tasks_sha256":tasks_sha,"seed":7,"max_new_tokens":20,"temperature":0.0,"trust_remote_code":False,"qwen3_thinking":False,"limit":1,"selected_task_count":1,"selected_task_ids_sha256":evaluator.sha256_serialized(["a"]),"candidate_record_sha256":"c"*64,"code_commit":"d"*40,"package_inventory_sha256":"e"*64,"max_wall_seconds":30}
    manifest.write_text(json.dumps(values),encoding="utf-8")
-   digest=evaluator.verify_frozen_config(manifest,"m","r",tasks,7,20,0.0,False,False,1,["a"],"c"*64,"d"*40,"e"*64,30)
+   digest=evaluator.verify_frozen_config(manifest,"m","r",tasks_sha,7,20,0.0,False,False,1,["a"],"c"*64,"d"*40,"e"*64,30)
    self.assertEqual(digest,evaluator.sha256_file(manifest))
-   with self.assertRaisesRegex(ValueError,"revision"):evaluator.verify_frozen_config(manifest,"m","other",tasks,7,20,0.0,False,False,1,["a"],"c"*64,"d"*40,"e"*64,30)
-   with self.assertRaisesRegex(ValueError,"limit"):evaluator.verify_frozen_config(manifest,"m","r",tasks,7,20,0.0,False,False,0,["a"],"c"*64,"d"*40,"e"*64,30)
+   with self.assertRaisesRegex(ValueError,"revision"):evaluator.verify_frozen_config(manifest,"m","other",tasks_sha,7,20,0.0,False,False,1,["a"],"c"*64,"d"*40,"e"*64,30)
+   with self.assertRaisesRegex(ValueError,"limit"):evaluator.verify_frozen_config(manifest,"m","r",tasks_sha,7,20,0.0,False,False,0,["a"],"c"*64,"d"*40,"e"*64,30)
+ def test_task_snapshot_hash_is_bound_to_bytes_read(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   path=Path(tmp)/"tasks.jsonl";original='{"task_id":"a","prompt":"p","category":"c","split":"development"}'+chr(10);path.write_text(original,encoding="utf-8")
+   rows,digest=evaluator.load_jsonl_snapshot(path)
+   self.assertEqual(rows[0]["task_id"],"a")
+   self.assertEqual(digest,hashlib.sha256(original.encode("utf-8")).hexdigest())
+   path.write_text('{"task_id":"b","prompt":"changed","category":"c","split":"development"}'+chr(10),encoding="utf-8")
+   self.assertEqual(digest,hashlib.sha256(original.encode("utf-8")).hexdigest())
  def test_fallback_prompt_tokenization_matches_training_template(self):
   source=EVALUATOR.read_text(encoding="utf-8")
   self.assertIn('encoded=f"User:\\n{prompt}\\nAssistant:\\n"',source)
@@ -51,7 +59,7 @@ class HoldoutTests(unittest.TestCase):
    compute=root/"compute.json";compute.write_text("free",encoding="utf-8")
    auth={"approval":"approved","candidate_record_sha256":"c"*64,"candidate_revision":"a"*40,"tasks_sha256":evaluator.sha256_file(tasks),"freeze_manifest_sha256":evaluator.sha256_file(freeze),"code_commit":"d"*40,"package_inventory_sha256":"e"*64,"hardware":{"verified_free_budget":True,"provider":"free","session_id":"s","evidence_path":"compute.json","evidence_sha256":evaluator.sha256_file(compute)},"budget":{"max_task_count":1,"max_new_tokens":20,"max_wall_seconds":30},"holdout_access":"sealed"}
    authpath=root/"auth.json";authpath.write_text(json.dumps(auth),encoding="utf-8")
-   result,digest=evaluator.evaluation_gate.verify_evaluation_authorization(authpath,"c"*64,tasks,freeze,"d"*40,"e"*64,1,20)
+   result,digest=evaluator.evaluation_gate.verify_evaluation_authorization(authpath,"c"*64,evaluator.sha256_file(tasks),freeze,"d"*40,"e"*64,1,20)
    self.assertEqual(result,auth);self.assertEqual(digest,evaluator.evaluation_gate.sha256_file(authpath))
    auth["approval"]="pending";authpath.write_text(json.dumps(auth))
    with self.assertRaisesRegex(ValueError,"not approved"):evaluator.evaluation_gate.verify_evaluation_authorization(authpath,"c"*64,tasks,freeze,"d"*40,"e"*64,1,20)
@@ -61,7 +69,7 @@ class HoldoutTests(unittest.TestCase):
    compute=root/"compute";compute.write_text("free")
    auth={"approval":"approved","candidate_record_sha256":"c"*64,"candidate_revision":"a"*40,"tasks_sha256":evaluator.evaluation_gate.sha256_file(tasks),"freeze_manifest_sha256":evaluator.evaluation_gate.sha256_file(freeze),"code_commit":"d"*40,"package_inventory_sha256":"e"*64,"hardware":{"verified_free_budget":True,"provider":"free","session_id":"s","evidence_path":"compute","evidence_sha256":evaluator.evaluation_gate.sha256_file(compute)},"budget":{"max_task_count":1,"max_new_tokens":20,"max_wall_seconds":30},"holdout_access":"sealed"}
    path=root/"auth";path.write_text(json.dumps(auth))
-   with self.assertRaisesRegex(ValueError,"selected tasks exceed"):evaluator.evaluation_gate.verify_evaluation_authorization(path,"c"*64,tasks,freeze,"d"*40,"e"*64,2,20)
+   with self.assertRaisesRegex(ValueError,"selected tasks exceed"):evaluator.evaluation_gate.verify_evaluation_authorization(path,"c"*64,evaluator.sha256_file(tasks),freeze,"d"*40,"e"*64,2,20)
  def test_holdout_rejected_even_with_deprecated_flag(self):
   with tempfile.TemporaryDirectory() as tmp:
    tasks=Path(tmp)/"holdout.jsonl";tasks.write_text(json.dumps({"task_id":"h1","prompt":"private","category":"test","split":"holdout"})+chr(10),encoding="utf-8")
