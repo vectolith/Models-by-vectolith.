@@ -80,7 +80,9 @@ def safe_endpoint(base_url: str) -> str:
     """Return the normalized endpoint without credentials, query, or fragment."""
     try:
         supplied = urlsplit(base_url)
-        host = supplied.hostname or ""
+        if supplied.scheme.lower() not in {"http", "https"} or not supplied.hostname:
+            return "[invalid endpoint]"
+        host = supplied.hostname
         if ":" in host and not host.startswith("["):
             host = f"[{host}]"
         port = supplied.port
