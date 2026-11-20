@@ -85,14 +85,41 @@ def checkpoint_inventory(path):
  base=path.resolve();items=[]
  for f in sorted(path.rglob("*")):
   if f.is_symlink():raise ValueError("checkpoint contains symlinks")
-  if not f.is_file() or f.name in ("checkpoint-integrity.json","checkpoint-integrity.json.tmp"):continue
+  if not f.is_file() or f.name in ("checkpoint-integrity.json","checkpoint-integrity.json.tmp","checkpoint-budget.json.tmp"):continue
   resolved=f.resolve()
   try:resolved.relative_to(base)
   except ValueError:raise ValueError("checkpoint file escapes checkpoint directory")
   items.append({"path":str(f.relative_to(path)),"sha256":sha256_file(f)})
  return items
-def seal_checkpoint(path):
+def write_checkpoint_budget_state(path,step,cumulative_elapsed_seconds):
+ if isinstance(cumulative_elapsed_seconds,bool) or not isinstance(cumulative_elapsed_seconds,(int,float)) or not math.isfinite(cumulative_elapsed_seconds) or cumulative_elapsed_seconds<0:raise ValueError("checkpoint cumulative elapsed time must be finite and non-negative")
+ record={"schema_version":1,"global_step":step,"cumulative_elapsed_seconds":float(cumulative_elapsed_seconds)}
+ temp=path/"checkpoint-budget.json.tmp"
+ with temp.open("w",encoding="utf-8") as f:
+  f.write(json.dumps(record,sort_keys=True,indent=2)+"\n");f.flush();os.fsync(f.fileno())
+ os.replace(temp,path/"checkpoint-budget.json")
+ return record
+def checkpoint_budget_state(path):
+ target=path/"checkpoint-budget.json"
+ if target.is_symlink():raise ValueError("checkpoint budget state symlink is unsafe")
+ if not target.is_file():raise ValueError("checkpoint cumulative budget state missing")
+ try:record=json.loads(target.read_text(encoding="utf-8"))
+ except Exception as e:raise ValueError(f"checkpoint budget state invalid: {e}")
+ if not isinstance(record,dict) or record.get("schema_version")!=1 or record.get("global_step")!=checkpoint_step(path):raise ValueError("checkpoint budget state step/schema mismatch")
+ elapsed=record.get("cumulative_elapsed_seconds")
+ if isinstance(elapsed,bool) or not isinstance(elapsed,(int,float)) or not math.isfinite(elapsed) or elapsed<0:raise ValueError("checkpoint cumulative elapsed time invalid")
+ return record
+def recover_budget_from_checkpoint(prior_steps,prior_elapsed,path):
+ step=validate_checkpoint(path)
+ record=checkpoint_budget_state(path)
+ return max(prior_steps,step),max(prior_elapsed,float(record["cumulative_elapsed_seconds"]))
+def append_telemetry_record(path,record):
+ with Path(path).open("a",encoding="utf-8") as f:
+  f.write(json.dumps(record,default=str)+"\n")
+  f.flush();os.fsync(f.fileno())
+def seal_checkpoint(path,cumulative_elapsed_seconds=0.0):
  step=checkpoint_step(path)
+ write_checkpoint_budget_state(path,step,cumulative_elapsed_seconds)
  weights=("adapter_model.safetensors","adapter_model.bin","model.safetensors","pytorch_model.bin")
  if not any((path/name).is_file() and (path/name).stat().st_size>0 for name in weights):raise ValueError("checkpoint weights missing or empty")
  for required in ("optimizer.pt","scheduler.pt"):
@@ -116,6 +143,7 @@ def validate_checkpoint(path):
  try:manifest=json.loads(manifest_path.read_text(encoding="utf-8"))
  except Exception as e:raise ValueError(f"checkpoint integrity manifest invalid: {e}")
  if manifest.get("schema_version")!=1 or manifest.get("step")!=step:raise ValueError("checkpoint integrity manifest step/schema mismatch")
+ checkpoint_budget_state(path)
  actual=checkpoint_inventory(path);expected=manifest.get("files")
  if not isinstance(expected,list) or not all(isinstance(i,dict) and set(i)=={"path","sha256"} and isinstance(i["path"],str) and isinstance(i["sha256"],str) and len(i["sha256"])==64 and all(ch in "0123456789abcdef" for ch in i["sha256"]) for i in expected):raise ValueError("checkpoint integrity manifest file entries malformed")
  expected_paths=[i["path"] for i in expected]
@@ -228,7 +256,6 @@ def main():
    records=[json.loads(line) for line in telemetry_path.read_text(encoding="utf-8").splitlines() if line.strip()]
    prior_elapsed=telemetry_elapsed(records);prior_steps=telemetry_steps(records)
   except Exception as e:p.error(f"telemetry history invalid; recovery blocked: {e}")
- if prior_elapsed>=x.max_wall_seconds:p.error("cumulative wall-time budget already exhausted")
  resume=None
  checkpoint_dir=x.output/"checkpoints"
  if x.resume:
@@ -239,6 +266,10 @@ def main():
   if checkpoint_dir.is_dir() and any(p.is_dir() and p.name.startswith("checkpoint-") for p in checkpoint_dir.iterdir()):
    p.error("existing checkpoints require --resume; refusing to restart and overwrite recovery state")
  start_step=checkpoint_step(resume) if resume else 0
+ if resume:
+  try:prior_steps,prior_elapsed=recover_budget_from_checkpoint(prior_steps,prior_elapsed,resume)
+  except Exception as e:p.error(f"checkpoint budget recovery blocked: {e}")
+ if prior_elapsed>=x.max_wall_seconds:p.error("cumulative wall-time budget already exhausted")
  try:planned_cumulative_steps=check_step_budget(prior_steps,x.max_steps,start_step,a.get("budget",{}).get("max_steps"))
  except Exception as e:p.error(f"cumulative step budget blocked: {e}")
  run_started_monotonic=time.monotonic()
@@ -261,7 +292,7 @@ def main():
   def __init__(self):self.started=time.monotonic();self.telemetry=telemetry_path
   def on_log(self,args,state,control,logs=None,**kwargs):
    record={"timestamp":time.time(),"step":state.global_step,"start_global_step":start_step,"session_id":session_id,"run_id":run_id,"session_elapsed_seconds":time.monotonic()-run_started_monotonic,"cumulative_elapsed_seconds":prior_elapsed+time.monotonic()-run_started_monotonic,"logs":logs or {}}
-   with self.telemetry.open("a",encoding="utf-8") as f:f.write(json.dumps(record,default=str)+"\n")
+   append_telemetry_record(self.telemetry,record)
    return control
   def on_step_end(self,args,state,control,**kwargs):
    if prior_elapsed+time.monotonic()-run_started_monotonic>=x.max_wall_seconds:
@@ -270,7 +301,7 @@ def main():
    return control
   def on_save(self,args,state,control,**kwargs):
    checkpoint=Path(args.output_dir)/f"checkpoint-{state.global_step}"
-   seal_checkpoint(checkpoint)
+   seal_checkpoint(checkpoint,cumulative_elapsed_seconds=prior_elapsed+time.monotonic()-run_started_monotonic)
    if prior_elapsed+time.monotonic()-run_started_monotonic>=x.max_wall_seconds:
     control.should_training_stop=True
    return control
