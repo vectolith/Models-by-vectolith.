@@ -332,12 +332,20 @@ async def generate_teaching_corpus(
             ])
             try:
                 review_data = json.loads(review)
-                score = float(review_data["score"])
-                verdict = review_data["verdict"] == "accept"
-                issues = review_data.get("issues", [])
+                raw_score = review_data["score"]
+                raw_verdict = review_data["verdict"]
+                raw_issues = review_data["issues"]
+                if (isinstance(raw_score, bool) or not isinstance(raw_score, (int, float))
+                        or not 0 <= raw_score <= 1 or raw_verdict not in {"accept", "reject"}
+                        or not isinstance(raw_issues, list)
+                        or any(not isinstance(issue, str) for issue in raw_issues)):
+                    raise ValueError("invalid peer review fields")
+                score = float(raw_score)
+                verdict = raw_verdict == "accept"
+                issues = raw_issues
             except (ValueError, TypeError, KeyError, json.JSONDecodeError):
                 score, verdict, issues = 0.0, False, ["review response was not valid rubric JSON"]
-            accepted = verdict and 0 <= score <= 1 and score >= 0.75 and bool(answer.strip())
+            accepted = verdict and score >= 0.75 and bool(answer.strip())
             record = {
                 "schema_version": "1.0",
                 "student_model_id": panel.student_model_id,
