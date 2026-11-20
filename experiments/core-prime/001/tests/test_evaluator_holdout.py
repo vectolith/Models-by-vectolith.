@@ -170,6 +170,14 @@ class HoldoutTests(unittest.TestCase):
  def test_qwen3_thinking_disabled_does_not_require_config(self):
   with tempfile.TemporaryDirectory() as tmp:evaluator.validate_qwen3_thinking_mode(Path(tmp),False)
 
+
+ def test_evaluator_atomic_output_syncs_parent_directory(self):
+  from unittest.mock import patch
+  with tempfile.TemporaryDirectory() as tmp:
+   path=Path(tmp)/"raw.jsonl"
+   with patch.object(evaluator.evaluation_gate,"fsync_directory",wraps=evaluator.evaluation_gate.fsync_directory) as sync:
+    evaluator.write_json(path,{"durable":True})
+   sync.assert_called_once_with(path.parent)
  def test_candidate_evidence_symlink_rejected(self):
   with tempfile.TemporaryDirectory() as tmp:
    root=Path(tmp);outside=root/"outside.txt";outside.write_text("evidence");link=root/"link.txt";link.symlink_to(outside)
