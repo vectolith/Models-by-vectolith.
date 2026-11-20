@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Validate JSONL task records, duplicate IDs, exact prompt leakage, and hashes."""
 from __future__ import annotations
-import argparse, hashlib, json, re
+import argparse, hashlib, json, re, sys
 from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+import evaluation_gate
 
 SPLITS = {"train", "development", "holdout"}
 REQUIRED = ("task_id", "category", "prompt", "split", "rubric_id", "provenance")
@@ -18,7 +20,7 @@ def validate(files):
         for n,line in enumerate(lines,1):
             if not line.strip(): continue
             count += 1
-            try: row=json.loads(line)
+            try: row=evaluation_gate.strict_json_loads(line)
             except json.JSONDecodeError as exc: errors.append(f"{file}:{n}: JSON parse error: {exc}"); continue
             if not isinstance(row,dict): errors.append(f"{file}:{n}: record must be an object"); continue
             unknown=set(row)-ALLOWED
