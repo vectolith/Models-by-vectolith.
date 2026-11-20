@@ -29,13 +29,20 @@ class CaptureTests(unittest.TestCase):
    original_hash=hashlib.sha256(original).hexdigest();real_read=snapshot.evaluation_gate.read_confined_bytes;changed=False
    def mutate_after_parse(base,relative,label):
     nonlocal changed
-    if not changed:
+    raw=real_read(base,relative,label)
+    if label=="candidate record" and not changed:
      changed=True;record.write_text(json.dumps({"model_snapshot_path":"changed-path"}),encoding="utf-8")
-    return real_read(base,relative,label)
+    return raw
    with patch.object(snapshot.evaluation_gate,"read_confined_bytes",side_effect=mutate_after_parse):
     result=snapshot.capture(record)
    self.assertTrue(changed)
    self.assertEqual(result["candidate_record_sha256"],original_hash)
+ def test_snapshot_capture_rejects_candidate_record_symlink(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);snap=root/"snapshot";snap.mkdir();(snap/"config.json").write_text("{}")
+   real=root/"real-candidate.json";real.write_text(json.dumps({"model_snapshot_path":"snapshot"}),encoding="utf-8")
+   link=root/"candidate.json";link.symlink_to(real)
+   with self.assertRaisesRegex(ValueError,"candidate record.*symlink components"):snapshot.capture(link)
  def test_snapshot_capture_rejects_path_escape(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);record=root/"candidate.json";record.write_text(json.dumps({"model_snapshot_path":"../outside"}))
