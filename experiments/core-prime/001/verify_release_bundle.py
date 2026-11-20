@@ -81,10 +81,9 @@ def verify_file(root,relative,digest):
    try:os.close(fd)
    except OSError:pass
  if digest_state.hexdigest()!=digest:raise ValueError("SHA-256 mismatch")
- p=base/rel
- try:p.resolve().relative_to(base)
- except ValueError:raise ValueError("path escapes evidence root")
- return p.resolve()
+ # The opened descriptor established the hash. Do not resolve/reopen the path
+ # after closing it: a concurrent replacement would change the returned identity.
+ return base/rel
 def main():
  p=argparse.ArgumentParser();p.add_argument("manifest",type=Path);a=p.parse_args()
  try:m=evaluation_gate.strict_json_loads(a.manifest.read_text(encoding="utf-8"))

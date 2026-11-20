@@ -18,6 +18,7 @@ from evaluation.run_eval import (
     safe_endpoint,
     validated_endpoint_url,
     write_records,
+    runner_source_sha256,
 )
 
 
@@ -227,7 +228,10 @@ class RunnerTests(unittest.TestCase):
                 "top_p": self.config.top_p,
                 "max_tokens": self.config.max_tokens,
                 "timeout_seconds": self.config.timeout_seconds,
+                "runner_sha256": runner_source_sha256(),
             }
+            self.assertEqual(record["runner_sha256"], runner_source_sha256())
+            self.assertEqual(len(record["runner_sha256"]), 64)
             expected_config_sha256 = hashlib.sha256(
                 json.dumps(config_snapshot, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
             ).hexdigest()
@@ -266,6 +270,14 @@ class RunnerTests(unittest.TestCase):
         self.assertIsNotNone(result["error"])
         self.assertIsNone(result["response_text"])
         self.assertIsNone(result["response_sha256"])
+
+    def test_load_cases_rejects_duplicate_ids(self):
+        with tempfile.TemporaryDirectory() as directory:
+            suite = Path(directory) / "suite.jsonl"
+            case = {"id": "duplicate", "messages": [{"role": "user", "content": "hi"}]}
+            suite.write_text(json.dumps(case) + "\\n" + json.dumps(case) + "\\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "duplicate case id"):
+                load_cases(suite)
 
     def test_load_fixture_suites(self):
         root = Path(__file__).resolve().parents[1] / "fixtures"

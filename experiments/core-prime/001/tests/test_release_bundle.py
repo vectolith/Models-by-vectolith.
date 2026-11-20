@@ -96,6 +96,11 @@ class ReleaseVerifierTests(unittest.TestCase):
    with self.assertRaisesRegex(ValueError,"not regular"):
     v.verify_file(root,fifo.name,hashlib.sha256(b"").hexdigest())
 
+ def test_verified_path_return_is_rooted_without_re_resolving(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);path=root/"evidence.txt";path.write_bytes(b"verified")
+   result=v.verify_file(root,path.name,hashlib.sha256(b"verified").hexdigest())
+   self.assertEqual(result,root.resolve()/path.name)
  def test_hash_mismatch(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);(root/"x").write_text("actual")

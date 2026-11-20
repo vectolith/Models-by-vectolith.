@@ -47,6 +47,11 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def runner_source_sha256() -> str:
+    """Fingerprint the evaluator implementation for detached evidence reproducibility."""
+    return hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+
+
 def endpoint_url(base_url: str) -> str:
     """Normalize a server root or /v1 URL to its chat-completions endpoint."""
     base = base_url.rstrip("/")
@@ -98,6 +103,7 @@ def safe_endpoint(base_url: str) -> str:
 
 def load_cases(path: Path) -> list[dict[str, Any]]:
     cases: list[dict[str, Any]] = []
+    seen_case_ids: set[str] = set()
     with path.open("r", encoding="utf-8") as handle:
         for line_number, raw in enumerate(handle, start=1):
             if not raw.strip() or raw.lstrip().startswith("#"):
@@ -110,6 +116,9 @@ def load_cases(path: Path) -> list[dict[str, Any]]:
                 raise ValueError(f"{path}:{line_number}: each case must be a JSON object")
             if not isinstance(case.get("id"), str) or not case["id"].strip():
                 raise ValueError(f"{path}:{line_number}: case requires a non-empty id")
+            if case["id"] in seen_case_ids:
+                raise ValueError(f"{path}:{line_number}: duplicate case id: {case['id']}")
+            seen_case_ids.add(case["id"])
             if not isinstance(case.get("messages"), list) or not case["messages"]:
                 raise ValueError(f"{path}:{line_number}: case requires non-empty messages")
             for message in case["messages"]:
@@ -270,32 +279,36 @@ def write_records(
         prefix=f".{output_path.name}.", suffix=".tmp", dir=output_path.parent
     )
     temporary_path = Path(temporary_name)
-    canonical_suite = json.dumps(cases, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    canonical_suite_sha256 = hashlib.sha256(canonical_suite).hexdigest()
-    config_snapshot = {
-        "endpoint": safe_endpoint(config.base_url),
-        "model": config.model,
-        "role": config.role,
-        "candidate_id": config.candidate_id,
-        "revision": config.revision,
-        "temperature": config.temperature,
-        "top_p": config.top_p,
-        "max_tokens": config.max_tokens,
-        "timeout_seconds": config.timeout_seconds,
-    }
-    run_config_sha256 = hashlib.sha256(
-        json.dumps(config_snapshot, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    ).hexdigest()
-    run_id = uuid.uuid4().hex
-    failures = 0
     try:
+        canonical_suite = json.dumps(cases, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        canonical_suite_sha256 = hashlib.sha256(canonical_suite).hexdigest()
+        runner_sha256 = runner_source_sha256()
+        config_snapshot = {
+            "endpoint": safe_endpoint(config.base_url),
+            "model": config.model,
+            "role": config.role,
+            "candidate_id": config.candidate_id,
+            "revision": config.revision,
+            "temperature": config.temperature,
+            "top_p": config.top_p,
+            "max_tokens": config.max_tokens,
+            "timeout_seconds": config.timeout_seconds,
+            "runner_sha256": runner_sha256,
+        }
+        run_config_sha256 = hashlib.sha256(
+            json.dumps(config_snapshot, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        run_id = uuid.uuid4().hex
+        failures = 0
         with os.fdopen(fd, "w", encoding="utf-8") as output:
+            fd = None
             for case in cases:
                 record = run_case(case, config, opener=opener)
                 record.update({
                     "run_id": run_id,
                     "canonical_suite_sha256": canonical_suite_sha256,
                     "run_config_sha256": run_config_sha256,
+                    "runner_sha256": runner_sha256,
                     "suite_case_count": len(cases),
                 })
                 output.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
@@ -319,6 +332,8 @@ def write_records(
                 os.close(directory_fd)
         return failures
     finally:
+        if fd is not None:
+            os.close(fd)
         temporary_path.unlink(missing_ok=True)
 
 
