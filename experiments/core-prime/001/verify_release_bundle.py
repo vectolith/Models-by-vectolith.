@@ -54,7 +54,13 @@ def verify(root,manifest):
  if manifest.get("release_status")!="qualified":errors.append("release_status must be qualified")
  return errors
 def verify_file(root,relative,digest):
- base=Path(root).resolve();p=(base/relative).resolve()
+ base=Path(root).resolve();rel=Path(relative)
+ if rel.is_absolute() or ".." in rel.parts:raise ValueError("path must be relative and confined")
+ cursor=base
+ for part in rel.parts:
+  cursor=cursor/part
+  if cursor.is_symlink():raise ValueError("evidence path contains symlink components")
+ p=(base/rel).resolve()
  try:p.relative_to(base)
  except ValueError:raise ValueError("path escapes evidence root")
  if not p.is_file():raise ValueError("evidence file missing")
