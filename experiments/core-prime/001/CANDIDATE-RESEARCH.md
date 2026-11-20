@@ -159,3 +159,15 @@ A fresh public-source re-check confirmed the license signals below but did not i
 - **Gemma 4 vs. older Gemma**: the official Gemma 4 license documentation identifies Apache-2.0; the older Gemma Terms (April 1, 2026) expressly include output-based distillation within their Model Derivatives definition and must not be applied to Gemma 4. Exact version/terms remain required for any use. https://ai.google.dev/gemma/docs/gemma_4_license and https://ai.google.dev/gemma/terms
 
 No candidate or teacher is approved. No output-training permission, legal review, license-file hash, snapshot inventory, provenance, compute evidence, or model measurements were completed by this source re-check.
+
+
+## Primary-source recheck — 2026-11-20 (this run)
+
+Public-source screening only; not a legal opinion, not an approval, and not a license/permission artifact capture.
+
+- **Qwen/Qwen3-0.6B** — the pinned revision-specific LICENSE page at `c1899de289a04d12100db370d81485cdf75e47ca` displays Apache-2.0. Source: https://huggingface.co/Qwen/Qwen3-0.6B/blob/c1899de289a04d12100db370d81485cdf75e47ca/LICENSE. This screening did not locate an explicit separate grant for use of generated outputs as student-training/distillation data.
+- **HuggingFaceTB/SmolLM2-360M-Instruct** — the official Hugging Face model card/file metadata identifies Apache-2.0. Source: https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct. No separate output-training grant located in this screening.
+- **microsoft/Phi-4-mini-instruct** — the official model card/file metadata identifies MIT. Source: https://huggingface.co/microsoft/Phi-4-mini-instruct. Its documented Transformers usage relies on `trust_remote_code=True`, which this harness forbids; this candidate therefore remains incompatible with the present runner absent a separately reviewed code/compatibility change. No separate output-training grant located.
+- **ibm-granite/granite-4.2-3b** — the official model card identifies Apache-2.0. Source: https://huggingface.co/ibm-granite/granite-4.2-3b. IBM's usage restriction against generating outputs that infringe third-party copyright is not a separate output-training permission. No distinct output-training grant located.
+
+No source inspected in this recheck expressly cleared the contemplated teacher-output collection and distillation use. Exact revision/provider terms, provenance/privacy, output use, student distribution and jurisdiction remain subject to independent review. License files were not downloaded to the evidence directory and no hashes are asserted. No inference or training was performed.
