@@ -171,3 +171,16 @@ Public-source screening only; not a legal opinion, not an approval, and not a li
 - **ibm-granite/granite-4.2-3b** — the official model card identifies Apache-2.0. Source: https://huggingface.co/ibm-granite/granite-4.2-3b. IBM's usage restriction against generating outputs that infringe third-party copyright is not a separate output-training permission. No distinct output-training grant located.
 
 No source inspected in this recheck expressly cleared the contemplated teacher-output collection and distillation use. Exact revision/provider terms, provenance/privacy, output use, student distribution and jurisdiction remain subject to independent review. License files were not downloaded to the evidence directory and no hashes are asserted. No inference or training was performed.
+
+
+## Primary-source recheck — 2026-11-20 (additional source confirmation)
+
+This is a public-document screen only. It is not independent legal review, evidence capture, or approval to collect outputs or train.
+
+- **Qwen/Qwen3-0.6B**, revision `c1899de289a04d12100db370d81485cdf75e47ca`: the revision-specific LICENSE page displays Apache-2.0. [Pinned LICENSE](https://huggingface.co/Qwen/Qwen3-0.6B/blob/c1899de289a04d12100db370d81485cdf75e47ca/LICENSE). The text reviewed in the browser does not expressly address the contemplated output-to-student-training use; unresolved.
+- **SmolLM2-360M-Instruct**: its official card and revision/file metadata identify Apache-2.0. [Official card](https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct). No distinct output-to-training grant located in this screen.
+- **Phi-4-mini-instruct**: the official card/file metadata identify MIT. [Official card](https://huggingface.co/microsoft/Phi-4-mini-instruct). The card's Transformers usage relies on `trust_remote_code=True`, which the current harness blocks, so it remains incompatible pending a separate reviewed code/compatibility decision; no distinct output-training grant located.
+- **Granite 4.2**: IBM's model documentation and repository describe Apache-2.0. [IBM documentation](https://www.ibm.com/granite/docs/models/granite4-2). IBM's output-use restriction concerning third-party copyright infringement is not a specific student-distillation grant. No separate output-training permission located.
+- **Gemma 4 vs older Gemma**: Gemma 4's official documentation identifies Apache-2.0. [Gemma 4 overview](https://ai.google.dev/gemma/docs/core) and [Apache license](https://ai.google.dev/gemma/apache_2). Older Gemma models covered by the April 1, 2026 custom Terms remain distinct; those Terms expressly address output-based Model Derivatives. [Older Gemma Terms](https://ai.google.dev/gemma/terms). Do not apply older terms to Gemma 4 or the Gemma 4 license to older variants.
+
+This screen did not find an explicit separate permission artifact for output collection/distillation for the reviewed candidates. This is not a legal conclusion that the use is prohibited or permitted. Exact revision/provider terms, source rights, privacy, student distribution, jurisdiction, and independent review remain open. License bytes and hashes are still not captured in the experiment evidence directory. No inference or training was performed.
