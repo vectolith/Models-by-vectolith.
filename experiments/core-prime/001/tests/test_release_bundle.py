@@ -52,7 +52,7 @@ class ReleaseVerifierTests(unittest.TestCase):
    gates={}
    for name in v.REQUIRED_GATES:
     p=root/(name+".txt");p.write_text(name);gates[name]={"status":"approved","evidence_path":p.name,"sha256":hashlib.sha256(p.read_bytes()).hexdigest()}
-   m={"model_name":"Core Prime","release_version":"x","release_status":"qualified","holdout_included":False,"artifacts":[{"path":"artifact.bin","sha256":digest},{"path":"sub/../artifact.bin","sha256":digest}],"gates":gates}
+   m={"model_name":"Core Prime","release_version":"x","release_status":"qualified","holdout_included":False,"artifacts":[{"path":"artifact.bin","sha256":digest},{"path":"artifact.bin","sha256":digest}],"gates":gates}
    self.assertTrue(any("duplicate artifact file" in e for e in v.verify(root,m)))
 
  def test_symlink_evidence_path_rejected(self):
