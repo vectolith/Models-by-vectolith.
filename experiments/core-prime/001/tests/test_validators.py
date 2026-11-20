@@ -46,6 +46,14 @@ class CandidateTests(unittest.TestCase):
  def test_verified_candidate_evidence_fields(self):
   r=self.record();r.update({"status":"verified","license_identifier":"Apache-2.0","license_evidence_path":"license.txt","license_evidence_sha256":"a"*64,"output_training_permission":"verified","output_training_permission_evidence_path":"permission.txt","output_training_permission_evidence_sha256":"b"*64,"human_legal_review":"approved","human_legal_review_evidence_path":"review.txt","human_legal_review_evidence_sha256":"c"*64,"model_config_evidence_path":"config.json","model_config_sha256":"d"*64,"tokenizer_revision":r["revision"],"chat_template_evidence_path":"snapshot/template.txt","chat_template_sha256":"e"*64,"model_snapshot_path":"snapshot","compatibility_status":"compatible","weight_inventory":[{"path":"snapshot/weights.bin","sha256":"f"*64}]})
   self.assertEqual(candidate.validate(r),[])
+
+ def test_duplicate_candidate_keys_rejected_by_cli_parser(self):
+  import sys
+  from unittest.mock import patch
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d)/"candidate.json";p.write_text('{"revision":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}')
+   with patch.object(sys,"argv",["validate_candidate.py",str(p)]):
+    with self.assertRaisesRegex(ValueError,"duplicate JSON object key"):candidate.evaluation_gate.strict_json_loads(p.read_text())
  def test_hash_validation(self):r=self.record();r["license_evidence_sha256"]="z"*64;self.assertTrue(any("license_evidence" in e for e in candidate.validate(r)))
  def test_extra_fields(self):r=self.record();r["arbitrary"]=1;self.assertTrue(any("unexpected fields" in e for e in candidate.validate(r)))
 class EvaluatorTests(unittest.TestCase):
