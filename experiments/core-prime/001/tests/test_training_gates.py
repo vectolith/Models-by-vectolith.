@@ -144,7 +144,11 @@ class Tests(unittest.TestCase):
  def test_build_sequence_truncates_prompt_to_preserve_response(self):
   class Tok:
    eos_token="<eos>"
-   def __call__(self,text,add_special_tokens=True):return {"input_ids":text.split()}
+   def __call__(self,text,add_special_tokens=True):
+    parts=text.split()
+    if parts and parts[-1]=="response<eos>":parts[-1]="response";parts.append("<eos>")
+    elif parts and parts[-1]=="answer<eos>":parts[-1]="answer";parts.append("<eos>")
+    return {"input_ids":parts}
   ids,prefix=trainer.build_sequence(Tok(),"very long prefix words","answer",max_length=4)
   self.assertEqual(ids,["words","Assistant:","answer<eos>"])
   self.assertEqual(prefix,2)
