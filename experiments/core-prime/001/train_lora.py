@@ -116,8 +116,11 @@ def checkpoint_inventory(path):
  items=[]
  for f in sorted(path.rglob("*")):
   if f.is_symlink():raise ValueError("checkpoint contains symlinks")
-  if not f.is_file() or f.name in ("checkpoint-integrity.json","checkpoint-integrity.json.tmp","checkpoint-budget.json.tmp"):continue
   relative_inside=str(f.relative_to(path))
+  # Only the checkpoint root's control files are excluded. Nested files with
+  # these names are payload and must remain covered by the integrity manifest.
+  if relative_inside in ("checkpoint-integrity.json","checkpoint-integrity.json.tmp","checkpoint-budget.json.tmp"):continue
+  if not f.is_file():continue
   confined_relative=str(Path(root_component)/relative_inside)
   _,digest,_=evaluation_gate.hash_confined_file(anchor,confined_relative,"checkpoint")
   items.append({"path":relative_inside,"sha256":digest})
