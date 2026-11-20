@@ -80,7 +80,7 @@ class HoldoutTests(unittest.TestCase):
 
  def test_duplicate_task_record_keys_rejected(self):
   with tempfile.TemporaryDirectory() as d:
-   path=Path(d)/"tasks.jsonl";path.write_text('{"task_id":"a","task_id":"b","prompt":"p","category":"c","split":"development","rubric_id":"r","provenance":"p"}\\n',encoding="utf-8")
+   path=Path(d)/"tasks.jsonl";path.write_text('{"task_id":"a","task_id":"b","prompt":"p","category":"c","split":"development","rubric_id":"r","provenance":"p"}\n',encoding="utf-8")
    with self.assertRaisesRegex(ValueError,"duplicate JSON object key"):evaluator.load_jsonl_snapshot(path)
  def test_candidate_snapshot_integrity_and_permission(self):
   with tempfile.TemporaryDirectory() as tmp:
