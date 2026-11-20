@@ -88,6 +88,10 @@ class Tests(unittest.TestCase):
   self.a["dataset_provenance"]["evidence_path"]="provenance-dir/provenance.json"
   self.a["dataset_provenance"]["evidence_sha256"]=trainer.sha256_file(outside/"provenance.json")
   with self.assertRaisesRegex(ValueError,"dataset provenance evidence path contains symlink components"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
+
+ def test_duplicate_training_dataset_keys_rejected(self):
+  self.dataset.write_text('{"task_id":"x","task_id":"y","prompt":"p","response":"r","provenance":"a","split":"train"}\\n',encoding="utf-8")
+  with self.assertRaisesRegex(ValueError,"duplicate JSON object key"):trainer.load_rows_snapshot(self.dataset)
  def test_duplicate_ids_rejected(self):r={"task_id":"x","prompt":"p","response":"r","provenance":"a","split":"train"};self.dataset.write_text(json.dumps(r)+"\n"+json.dumps(r));self.assertRaisesRegex(ValueError,"duplicate",trainer.load_rows,self.dataset)
 
  def test_training_config_hash_binds_cli_parameters(self):
