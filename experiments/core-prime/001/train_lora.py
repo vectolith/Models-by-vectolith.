@@ -110,11 +110,13 @@ def build_sequence(tok,prompt,response,max_length=2048):
  prefix_ids=tok(prefix,add_special_tokens=False)["input_ids"]
  response_ids=tok(response+tok.eos_token,add_special_tokens=False)["input_ids"]
  if not response_ids:raise ValueError("empty tokenized response")
+ if max_length < 2:raise ValueError("max_length must allow at least one prompt and one response token")
+ if len(response_ids)>=max_length:raise ValueError("response exceeds sequence limit; response truncation is forbidden")
+ prefix_budget=max_length-len(response_ids)
+ if len(prefix_ids)>prefix_budget:prefix_ids=prefix_ids[-prefix_budget:]
  prefix_len=len(prefix_ids)
- ids=(prefix_ids+response_ids)[:max_length]
- prefix_len=min(prefix_len,len(ids))
- if prefix_len>=len(ids):raise ValueError("truncation left no response tokens")
- return ids,prefix_len
+ if prefix_len<=0:raise ValueError("truncation left no prompt tokens")
+ return prefix_ids+response_ids,prefix_len
 def make_labels(input_ids, attention_mask, prompt_lengths):
  labels=input_ids.clone()
  labels[attention_mask==0]=-100
