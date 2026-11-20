@@ -90,21 +90,27 @@ def check_step_budget(prior_steps,target_step,start_step,approved_steps):
  cumulative=prior_steps+planned
  if cumulative>approved_steps:raise ValueError(f"cumulative step budget exceeded: {prior_steps} prior steps + {planned} planned steps = {cumulative}, approved maximum {approved_steps}")
  return cumulative
+def checkpoint_read_bytes(path,name):
+ anchor=path.parent.resolve()
+ relative=str(Path(path.name)/name)
+ return evaluation_gate.read_confined_bytes(anchor,relative,"checkpoint")[1]
 def checkpoint_step(path):
- state=path/"trainer_state.json"
  if path.is_symlink():raise ValueError("checkpoint directory symlink is unsafe")
- if state.is_symlink():raise ValueError("checkpoint trainer state symlink is unsafe")
- if not path.is_dir() or not state.is_file():raise ValueError("checkpoint missing trainer_state.json")
- try:record=evaluation_gate.strict_json_loads(state.read_text(encoding="utf-8"))
+ if not path.is_dir():raise ValueError("checkpoint missing trainer_state.json")
+ try:raw=checkpoint_read_bytes(path,"trainer_state.json")
+ except ValueError as e:
+  if "missing" in str(e).lower():raise ValueError("checkpoint missing trainer_state.json") from e
+  raise
+ try:record=evaluation_gate.strict_json_loads(raw.decode("utf-8"))
  except Exception as e:raise ValueError(f"checkpoint trainer state invalid: {e}")
+ if not isinstance(record,dict):raise ValueError("checkpoint trainer state invalid: JSON object required")
  try:step=int(path.name.removeprefix("checkpoint-"))
  except Exception:raise ValueError("checkpoint directory name invalid")
  if isinstance(record.get("global_step"),bool) or record.get("global_step")!=step:raise ValueError("checkpoint step mismatch")
  return step
 def checkpoint_inventory(path):
  if path.is_symlink():raise ValueError("checkpoint directory symlink is unsafe")
- # Anchor reads to the checkpoint parent and open every path component with
- # no-follow descriptors. The path walk and hash must not be separate reads.
+ # Hash each file incrementally through no-follow directory/file descriptors.
  anchor=path.parent.resolve()
  root_component=path.name
  items=[]
@@ -113,8 +119,8 @@ def checkpoint_inventory(path):
   if not f.is_file() or f.name in ("checkpoint-integrity.json","checkpoint-integrity.json.tmp","checkpoint-budget.json.tmp"):continue
   relative_inside=str(f.relative_to(path))
   confined_relative=str(Path(root_component)/relative_inside)
-  _,raw=evaluation_gate.read_confined_bytes(anchor,confined_relative,"checkpoint")
-  items.append({"path":relative_inside,"sha256":hashlib.sha256(raw).hexdigest()})
+  _,digest,_=evaluation_gate.hash_confined_file(anchor,confined_relative,"checkpoint")
+  items.append({"path":relative_inside,"sha256":digest})
  return items
 def write_checkpoint_budget_state(path,step,cumulative_elapsed_seconds):
  if isinstance(cumulative_elapsed_seconds,bool) or not isinstance(cumulative_elapsed_seconds,(int,float)) or not math.isfinite(cumulative_elapsed_seconds) or cumulative_elapsed_seconds<0:raise ValueError("checkpoint cumulative elapsed time must be finite and non-negative")
@@ -122,10 +128,12 @@ def write_checkpoint_budget_state(path,step,cumulative_elapsed_seconds):
  atomic_write_text(path/"checkpoint-budget.json",json.dumps(record,sort_keys=True,indent=2)+"\n")
  return record
 def checkpoint_budget_state(path):
- target=path/"checkpoint-budget.json"
- if target.is_symlink():raise ValueError("checkpoint budget state symlink is unsafe")
- if not target.is_file():raise ValueError("checkpoint cumulative budget state missing")
- try:record=evaluation_gate.strict_json_loads(target.read_text(encoding="utf-8"))
+ if path.is_symlink():raise ValueError("checkpoint directory symlink is unsafe")
+ try:raw=checkpoint_read_bytes(path,"checkpoint-budget.json")
+ except ValueError as e:
+  if "missing" in str(e).lower():raise ValueError("checkpoint cumulative budget state missing") from e
+  raise
+ try:record=evaluation_gate.strict_json_loads(raw.decode("utf-8"))
  except Exception as e:raise ValueError(f"checkpoint budget state invalid: {e}")
  if not isinstance(record,dict) or record.get("schema_version")!=1 or record.get("global_step")!=checkpoint_step(path):raise ValueError("checkpoint budget state step/schema mismatch")
  elapsed=record.get("cumulative_elapsed_seconds")
@@ -158,11 +166,13 @@ def validate_checkpoint(path):
  for required in ("optimizer.pt","scheduler.pt"):
   if not (path/required).is_file() or (path/required).stat().st_size==0:raise ValueError(f"checkpoint missing or empty {required}")
  if not any(f.is_file() and f.stat().st_size>0 for f in path.glob("rng_state*.pth")):raise ValueError("checkpoint RNG state missing or empty")
- manifest_path=path/"checkpoint-integrity.json"
- if not manifest_path.is_file():raise ValueError("checkpoint integrity manifest missing")
- try:manifest=evaluation_gate.strict_json_loads(manifest_path.read_text(encoding="utf-8"))
+ try:manifest_raw=checkpoint_read_bytes(path,"checkpoint-integrity.json")
+ except ValueError as e:
+  if "missing" in str(e).lower():raise ValueError("checkpoint integrity manifest missing") from e
+  raise
+ try:manifest=evaluation_gate.strict_json_loads(manifest_raw.decode("utf-8"))
  except Exception as e:raise ValueError(f"checkpoint integrity manifest invalid: {e}")
- if manifest.get("schema_version")!=1 or manifest.get("step")!=step:raise ValueError("checkpoint integrity manifest step/schema mismatch")
+ if not isinstance(manifest,dict) or manifest.get("schema_version")!=1 or manifest.get("step")!=step:raise ValueError("checkpoint integrity manifest step/schema mismatch")
  checkpoint_budget_state(path)
  actual=checkpoint_inventory(path);expected=manifest.get("files")
  if not isinstance(expected,list) or not all(isinstance(i,dict) and set(i)=={"path","sha256"} and isinstance(i["path"],str) and isinstance(i["sha256"],str) and len(i["sha256"])==64 and all(ch in "0123456789abcdef" for ch in i["sha256"]) for i in expected):raise ValueError("checkpoint integrity manifest file entries malformed")
