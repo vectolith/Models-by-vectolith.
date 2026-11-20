@@ -275,7 +275,7 @@ class RunnerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             suite = Path(directory) / "suite.jsonl"
             case = {"id": "duplicate", "messages": [{"role": "user", "content": "hi"}]}
-            suite.write_text(json.dumps(case) + "\\n" + json.dumps(case) + "\\n", encoding="utf-8")
+            suite.write_text(json.dumps(case) + "\n" + json.dumps(case) + "\n", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "duplicate case id"):
                 load_cases(suite)
 
