@@ -215,7 +215,11 @@ def verify_evidence_file(base,relative_path,digest,label):
  rel=Path(relative_path)
  if rel.is_absolute() or ".." in rel.parts:raise ValueError(f"{label} evidence path must be relative and confined")
  if not isinstance(digest,str) or len(digest)!=64 or any(ch not in "0123456789abcdef" for ch in digest):raise ValueError(f"{label} evidence SHA-256 invalid")
- root=Path(base).resolve();target=(root/relative_path).resolve()
+ root=Path(base).resolve();cursor=root
+ for part in rel.parts:
+  cursor=cursor/part
+  if cursor.is_symlink():raise ValueError(f"{label} evidence path contains symlink components")
+ target=cursor.resolve()
  try:target.relative_to(root)
  except ValueError:raise ValueError(f"{label} evidence path escapes evidence root")
  if not target.is_file():raise ValueError(f"{label} evidence file missing")
