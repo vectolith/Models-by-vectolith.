@@ -4,8 +4,10 @@
 This verifier only checks evidence integrity/completeness; it does not attest truth,
 legal permission, reviewer independence, or model quality.
 """
-import argparse, hashlib, json, re, os, stat
+import argparse, hashlib, json, re, os, stat, sys
 from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+import evaluation_gate
 SHA=re.compile(r"^[a-f0-9]{64}$")
 REQUIRED_GATES=("legal_review","data_provenance","baseline_evaluation","post_training_evaluation","independent_human_grading","safety_review","reproducibility_review","release_approval")
 def sha256(path):
@@ -86,7 +88,7 @@ def verify_file(root,relative,digest):
  return p.resolve()
 def main():
  p=argparse.ArgumentParser();p.add_argument("manifest",type=Path);a=p.parse_args()
- try:m=json.loads(a.manifest.read_text(encoding="utf-8"))
+ try:m=evaluation_gate.strict_json_loads(a.manifest.read_text(encoding="utf-8"))
  except Exception as e:p.error(f"manifest read/parse failed: {e}")
  errors=verify(a.manifest.parent,m)
  if errors:print("\n".join(errors));return 1
