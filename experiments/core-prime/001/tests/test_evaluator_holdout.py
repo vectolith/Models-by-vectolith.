@@ -62,7 +62,7 @@ class HoldoutTests(unittest.TestCase):
    result,digest=evaluator.evaluation_gate.verify_evaluation_authorization(authpath,"c"*64,evaluator.sha256_file(tasks),freeze,"d"*40,"e"*64,1,20)
    self.assertEqual(result,auth);self.assertEqual(digest,evaluator.evaluation_gate.sha256_file(authpath))
    auth["approval"]="pending";authpath.write_text(json.dumps(auth))
-   with self.assertRaisesRegex(ValueError,"not approved"):evaluator.evaluation_gate.verify_evaluation_authorization(authpath,"c"*64,tasks,freeze,"d"*40,"e"*64,1,20)
+   with self.assertRaisesRegex(ValueError,"not approved"):evaluator.evaluation_gate.verify_evaluation_authorization(authpath,"c"*64,evaluator.sha256_file(tasks),freeze,"d"*40,"e"*64,1,20)
  def test_authorized_budget_overflow_rejected(self):
   with tempfile.TemporaryDirectory() as tmp:
    root=Path(tmp);tasks=root/"tasks";tasks.write_text("task",encoding="utf-8");freeze=root/"freeze";freeze.write_text("freeze")
