@@ -274,6 +274,11 @@ class Tests(unittest.TestCase):
   with self.assertRaisesRegex(ValueError,"integrity hash mismatch: nested/checkpoint-integrity.json"):
    trainer.validate_checkpoint(ck)
 
+ def test_checkpoint_inventory_rejects_special_files(self):
+  ck=self.make_checkpoint(self.d,"checkpoint-19",19)
+  os.mkfifo(ck/"unexpected-fifo")
+  with self.assertRaisesRegex(ValueError,"unsupported special file: unexpected-fifo"):
+   trainer.checkpoint_inventory(ck)
  def test_checkpoint_inventory_rejects_symlink_swap_before_hash(self):
   ck=self.make_checkpoint(self.d,"checkpoint-14",14)
   target=ck/"trainer_state.json"
