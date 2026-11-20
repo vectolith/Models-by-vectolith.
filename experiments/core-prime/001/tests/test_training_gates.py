@@ -65,6 +65,15 @@ class Tests(unittest.TestCase):
  def test_telemetry_run_cumulative_accounting(self):
   rows=[{"run_id":"r1","session_elapsed_seconds":12},{"run_id":"r1","session_elapsed_seconds":8},{"run_id":"r2","session_elapsed_seconds":5}]
   self.assertEqual(trainer.telemetry_elapsed(rows),17)
+ def test_telemetry_step_cumulative_accounting(self):
+  rows=[{"run_id":"r1","start_global_step":0,"step":5},{"run_id":"r1","start_global_step":0,"step":4},{"run_id":"r2","start_global_step":5,"step":8},{"run_id":"r3","start_global_step":8,"step":10}]
+  self.assertEqual(trainer.telemetry_steps(rows),10)
+ def test_cumulative_step_budget_accounts_for_recovery(self):
+  self.assertEqual(trainer.check_step_budget(5,10,5,10),10)
+  with self.assertRaisesRegex(ValueError,"cumulative step budget exceeded"):trainer.check_step_budget(5,10,3,10)
+  with self.assertRaisesRegex(ValueError,"target max_steps"):trainer.check_step_budget(5,5,5,10)
+ def test_telemetry_step_start_mismatch_rejected(self):
+  with self.assertRaisesRegex(ValueError,"disagree on start_global_step"):trainer.telemetry_steps([{"run_id":"r","start_global_step":0,"step":2},{"run_id":"r","start_global_step":1,"step":3}])
  def test_telemetry_invalid_elapsed_rejected(self):
   with self.assertRaises(ValueError):trainer.telemetry_elapsed([{"run_id":"x","session_elapsed_seconds":float("nan")}])
  def test_telemetry_negative_elapsed_rejected(self):
