@@ -84,4 +84,17 @@ class HoldoutTests(unittest.TestCase):
    code=evaluator.evaluation_gate.git_head()
    result=subprocess.run([sys.executable,str(EVALUATOR),"--model","unused","--revision","unused","--tasks",str(tasks),"--output",str(Path(tmp)/"out"),"--freeze-manifest",str(Path(tmp)/"freeze.json"),"--candidate-record",str(Path(tmp)/"candidate.json"),"--authorization",str(Path(tmp)/"auth.json"),"--code-commit",code],capture_output=True,text=True)
    self.assertNotEqual(result.returncode,0);self.assertIn("development-only",result.stderr);self.assertFalse((Path(tmp)/"out").exists())
+
+ def test_qwen3_thinking_setting_matches_verified_snapshot_config(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   snapshot=Path(tmp);helper=evaluator.validate_qwen3_thinking_mode
+   with self.assertRaisesRegex(ValueError,"requires config.json"):helper(snapshot,True)
+   config=snapshot/"config.json";config.write_text(json.dumps({"model_type":"qwen3"}),encoding="utf-8")
+   helper(snapshot,True)
+   config.write_text(json.dumps({"model_type":"llama"}),encoding="utf-8")
+   with self.assertRaisesRegex(ValueError,"only supported for a verified Qwen3-family"):helper(snapshot,True)
+   config.write_text("invalid json",encoding="utf-8")
+   with self.assertRaisesRegex(ValueError,"verified model config is invalid"):helper(snapshot,True)
+ def test_qwen3_thinking_disabled_does_not_require_config(self):
+  with tempfile.TemporaryDirectory() as tmp:evaluator.validate_qwen3_thinking_mode(Path(tmp),False)
 if __name__=="__main__":unittest.main()

@@ -63,6 +63,22 @@ def load_jsonl(path: Path) -> list[dict[str,Any]]:
 def verify_frozen_config(manifest_path: Path, model: str, revision: str, tasks_path: Path, seed: int, max_new_tokens: int, temperature: float, trust_remote_code: bool, qwen3_thinking: bool, limit: int, selected_task_ids: list[str], candidate_sha: str, code_commit: str, package_hash: str, max_wall_seconds: int) -> str:
     return evaluation_gate.verify_frozen_config(manifest_path,model,revision,tasks_path,seed,max_new_tokens,temperature,trust_remote_code,qwen3_thinking,limit,selected_task_ids,candidate_sha,code_commit,package_hash,max_wall_seconds)
 
+
+def validate_qwen3_thinking_mode(snapshot: Path, enabled: bool) -> None:
+    """Reject a frozen thinking-mode setting that the snapshot cannot support."""
+    if not enabled:
+        return
+    config_path=snapshot/"config.json"
+    if not config_path.is_file():
+        raise ValueError("Qwen3 thinking mode requires config.json in the verified local snapshot")
+    try:
+        config=json.loads(config_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise ValueError(f"verified model config is invalid: {exc}") from exc
+    model_type=config.get("model_type") if isinstance(config,dict) else None
+    if not isinstance(model_type,str) or not model_type.lower().startswith("qwen3"):
+        raise ValueError("--qwen3-thinking is only supported for a verified Qwen3-family config")
+
 def initialization_failure_records(run_id: str, tasks: list[dict[str,Any]], error: Exception, status: str="initialization_failed") -> list[dict[str,Any]]:
     return [{"run_id":run_id,"task_id":task["task_id"],"category":task["category"],"split":task["split"],
         "prompt_sha256":sha256_text(task["prompt"]),"status":status,"error":repr(error)}
@@ -122,6 +138,7 @@ def main()->int:
     selected_task_ids_sha256=sha256_serialized(selected_task_ids)
     try:
         candidate,candidate_sha,snapshot=evaluation_gate.verify_candidate_record(a.candidate_record,a.model,a.revision)
+        validate_qwen3_thinking_mode(snapshot,bool(a.qwen3_thinking))
         inventory,inventory_sha256=package_inventory_snapshot()
         authorization,authorization_sha256=evaluation_gate.verify_evaluation_authorization(a.authorization,candidate_sha,a.tasks,a.freeze_manifest,a.code_commit,inventory_sha256,len(tasks),a.max_new_tokens)
         max_wall_seconds=authorization["budget"]["max_wall_seconds"]

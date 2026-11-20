@@ -28,16 +28,23 @@ python experiments/core-prime/001/validate_candidate.py candidate.json
 Requires a full 40-character lowercase commit SHA and validates fields, evidence hashes, and prerequisites for verified status. Structural validation is not independent verification of license, authenticity, or compatibility.
 
 ## Baseline inference
-```bash
-python experiments/core-prime/001/evaluate.py \
-  --model MODEL_REPOSITORY_OR_LOCAL_PATH \
-  --revision IMMUTABLE_REVISION_SHA \
-  --tasks tasks.jsonl \
-  --output experiment-results \
-  --max-new-tokens 256
-```
-Use a pinned revision. For local model paths, the revision string is only recorded and provenance is not automatically authenticated. Remote custom code should only be enabled after review with `--trust-remote-code`.
 
-Holdout inference is blocked by default; use `--allow-holdout` only after configuration freeze and proper access control. The evaluator records prompts/responses, hashes, token counts, timing, Python/PyTorch/Transformers/Accelerate/Safetensors versions where installed, device/hardware, model-config and chat-template hashes, CUDA peak allocated memory (when CUDA is used), seeded Python and PyTorch CPU/CUDA RNGs, and per-task failure outcomes. It uses UUID-suffixed run IDs to avoid same-second artifact collisions and emits parseable JSONL records for dependency-blocked runs. Deterministic kernels are not guaranteed. Qwen3 thinking mode is explicitly disabled by default (enable with --qwen3-thinking). Runs distinguish completed, partial and failed outcomes. Raw data can be sensitive; avoid committing private content.
+The evaluator is gated: candidate artifact and permission evidence, independent legal-review evidence, a verified local snapshot, an authorization record tied to the exact task/freeze/code/package hashes, and genuine free-compute/session evidence must all be present before it imports ML runtimes or creates run outputs. The repository does not provide or infer those approvals.
+
+```bash
+python experiments/core-prime/001/evaluate.py \\
+  --model VERIFIED_REPOSITORY_ID \\
+  --revision IMMUTABLE_REVISION_SHA \\
+  --tasks tasks.dev.jsonl \\
+  --output experiment-results \\
+  --candidate-record candidate.json \\
+  --authorization evaluation-authorization.json \\
+  --freeze-manifest evaluation-freeze.json \\
+  --code-commit "$(git rev-parse HEAD)" \\
+  --max-new-tokens 256 \\
+  --temperature 0
+```
+
+The model must be loaded from the verified local snapshot; network downloads and remote custom code are disabled. The `--qwen3-thinking` option is accepted only when the snapshot's verified `config.json` identifies a Qwen3-family model. The deprecated `--allow-holdout` flag cannot unlock holdout evaluation. Holdout inference is blocked by this harness.
 
 Remaining limitations: model-specific templates, multi-GPU benchmarking, independent grading, semantic leakage detection, GPU peak-memory instrumentation and statistical comparison.
