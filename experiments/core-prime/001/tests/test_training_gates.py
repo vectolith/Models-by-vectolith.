@@ -205,6 +205,20 @@ class Tests(unittest.TestCase):
     trainer.append_telemetry_record(path,{"run_id":"r","step":1})
     sync.assert_called_once()
    self.assertEqual(json.loads(path.read_text())["step"],1)
+ def test_hash_confined_file_reads_in_bounded_chunks(self):
+  from unittest.mock import patch
+  import hashlib,os
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);data=b"x"*(2*1024*1024+17);path=root/"large.bin";path.write_bytes(data)
+   original_read=os.read;observed=[]
+   def recording_read(fd,size):
+    observed.append(size)
+    return original_read(fd,size)
+   with patch.object(trainer.evaluation_gate.os,"read",side_effect=recording_read):
+    target,digest,size=trainer.evaluation_gate.hash_confined_file(root,"large.bin","checkpoint",chunk_size=65536)
+   self.assertEqual(target,path);self.assertEqual(digest,hashlib.sha256(data).hexdigest());self.assertEqual(size,len(data))
+   self.assertTrue(observed);self.assertTrue(all(size==65536 for size in observed))
+
  def test_checkpoint_inventory_uses_confined_descriptor_reads(self):
   ck=self.make_checkpoint(self.d,"checkpoint-13",13)
   from unittest.mock import patch
