@@ -20,6 +20,22 @@ class CaptureTests(unittest.TestCase):
    self.assertEqual(len(result["inventory"]),2)
    self.assertEqual(result["inventory_sha256"],snapshot.evaluation_gate.sha256_serialized(result["inventory"]))
    self.assertTrue(all(len(item["sha256"])==64 for item in result["inventory"]))
+ def test_snapshot_inventory_hash_binds_candidate_bytes_parsed(self):
+  from unittest.mock import patch
+  import hashlib
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);snap=root/"snapshot";snap.mkdir();(snap/"config.json").write_text("{}")
+   record=root/"candidate.json";original=json.dumps({"model_snapshot_path":"snapshot"}).encode("utf-8");record.write_bytes(original)
+   original_hash=hashlib.sha256(original).hexdigest();real_hash=snapshot.evaluation_gate.sha256_file;changed=False
+   def mutate_after_parse(path):
+    nonlocal changed
+    if not changed:
+     changed=True;record.write_text(json.dumps({"model_snapshot_path":"changed-path"}),encoding="utf-8")
+    return real_hash(path)
+   with patch.object(snapshot.evaluation_gate,"sha256_file",side_effect=mutate_after_parse):
+    result=snapshot.capture(record)
+   self.assertTrue(changed)
+   self.assertEqual(result["candidate_record_sha256"],original_hash)
  def test_snapshot_capture_rejects_path_escape(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);record=root/"candidate.json";record.write_text(json.dumps({"model_snapshot_path":"../outside"}))
