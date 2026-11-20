@@ -1,8 +1,22 @@
 #!/usr/bin/env python3
 """Guarded LoRA training runner; authorization/evidence checks precede ML imports."""
-import argparse,hashlib,json,platform,sys,time,uuid,math,os,importlib.metadata
+import argparse,hashlib,json,platform,sys,time,uuid,math,os,importlib.metadata,tempfile
 from pathlib import Path
 import evaluation_gate
+def atomic_write_text(path,text):
+ path=Path(path);path.parent.mkdir(parents=True,exist_ok=True)
+ fd,temp=tempfile.mkstemp(prefix=path.name+".",suffix=".tmp",dir=path.parent)
+ try:
+  with os.fdopen(fd,"w",encoding="utf-8") as f:
+   f.write(text);f.flush();os.fsync(f.fileno())
+  os.replace(temp,path)
+  dir_fd=os.open(path.parent,os.O_RDONLY)
+  try:os.fsync(dir_fd)
+  finally:os.close(dir_fd)
+ except BaseException:
+  try:os.unlink(temp)
+  except FileNotFoundError:pass
+  raise
 def sha256_file(p):
  h=hashlib.sha256()
  with p.open("rb") as f:
@@ -99,10 +113,7 @@ def checkpoint_inventory(path):
 def write_checkpoint_budget_state(path,step,cumulative_elapsed_seconds):
  if isinstance(cumulative_elapsed_seconds,bool) or not isinstance(cumulative_elapsed_seconds,(int,float)) or not math.isfinite(cumulative_elapsed_seconds) or cumulative_elapsed_seconds<0:raise ValueError("checkpoint cumulative elapsed time must be finite and non-negative")
  record={"schema_version":1,"global_step":step,"cumulative_elapsed_seconds":float(cumulative_elapsed_seconds)}
- temp=path/"checkpoint-budget.json.tmp"
- with temp.open("w",encoding="utf-8") as f:
-  f.write(json.dumps(record,sort_keys=True,indent=2)+"\n");f.flush();os.fsync(f.fileno())
- os.replace(temp,path/"checkpoint-budget.json")
+ atomic_write_text(path/"checkpoint-budget.json",json.dumps(record,sort_keys=True,indent=2)+"\n")
  return record
 def checkpoint_budget_state(path):
  target=path/"checkpoint-budget.json"
@@ -132,9 +143,7 @@ def seal_checkpoint(path,cumulative_elapsed_seconds=0.0):
  if not any(f.is_file() and f.stat().st_size>0 for f in path.glob("rng_state*.pth")):raise ValueError("checkpoint RNG state missing or empty")
  inventory=checkpoint_inventory(path)
  record={"schema_version":1,"step":step,"files":inventory}
- temp=path/"checkpoint-integrity.json.tmp"
- temp.write_text(json.dumps(record,sort_keys=True,indent=2)+"\n",encoding="utf-8")
- os.replace(temp,path/"checkpoint-integrity.json")
+ atomic_write_text(path/"checkpoint-integrity.json",json.dumps(record,sort_keys=True,indent=2)+"\n")
  return record
 def validate_checkpoint(path):
  step=checkpoint_step(path)
@@ -332,5 +341,5 @@ def main():
  trainer.train(resume_from_checkpoint=str(resume) if resume else None)
  model.save_pretrained(x.output/"adapter");tok.save_pretrained(x.output/"adapter")
  manifest={"candidate_id":c["candidate_id"],"candidate_repository":c["repository_id"],"candidate_revision":c["revision"],"dataset_path":str(x.dataset.resolve()),"dataset_sha256":dataset_sha256,"code_commit":x.code_commit,"run_id":run_id,"provider_session_id":session_id,"steps_limit":x.max_steps,"start_global_step":start_step,"actual_steps_run":trainer.state.global_step-start_step,"prior_steps_consumed":prior_steps,"cumulative_steps_consumed":prior_steps+trainer.state.global_step-start_step,"planned_cumulative_steps":planned_cumulative_steps,"wall_limit_seconds":x.max_wall_seconds,"training_config":cfg,"training_config_sha256":training_config_hash,"rank":cfg["rank"],"alpha":cfg["alpha"],"target_modules":cfg["target_modules"],"learning_rate":cfg["learning_rate"],"batch_size":cfg["per_device_train_batch_size"],"gradient_accumulation_steps":cfg["gradient_accumulation_steps"],"seed":cfg["seed"],"data_seed":cfg["data_seed"],"max_sequence_length":cfg["max_sequence_length"],"duration_seconds":time.time()-started,"prior_session_elapsed_seconds":prior_elapsed,"cumulative_wall_seconds":prior_elapsed+time.time()-started,"gpu":torch.cuda.get_device_name(0),"gpu_memory_total_bytes":torch.cuda.get_device_properties(0).total_memory,"cuda_version":torch.version.cuda,"python":sys.version,"platform":platform.platform(),"torch":torch.__version__,"transformers_version":__import__("transformers").__version__,"peft_version":__import__("peft").__version__,"package_inventory":packages,"package_inventory_sha256":packages_hash,"environment_package_inventory_sha256":packages_hash,"candidate_record_sha256":candidate_record_sha256,"authorization_sha256":authorization_sha256,"model_snapshot_path":str(snapshot.resolve()),"model_snapshot_inventory_sha256":evaluation_gate.sha256_serialized(c["weight_inventory"]),"adapter_sha256_inventory":[{"path":str(f.relative_to(x.output)),"sha256":sha256_file(f)} for f in sorted((x.output/"adapter").rglob("*")) if f.is_file()],"status":"trained_pending_evaluation","holdout_evaluated":False}
- (x.output/"training-manifest.json").write_text(json.dumps(manifest,indent=2));print(json.dumps(manifest,indent=2))
+ atomic_write_text(x.output/"training-manifest.json",json.dumps(manifest,indent=2)+"\n");print(json.dumps(manifest,indent=2))
 if __name__=="__main__":main()
