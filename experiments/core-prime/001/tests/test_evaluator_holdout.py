@@ -82,6 +82,12 @@ class HoldoutTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as d:
    path=Path(d)/"tasks.jsonl";path.write_text('{"task_id":"a","task_id":"b","prompt":"p","category":"c","split":"development","rubric_id":"r","provenance":"p"}\n',encoding="utf-8")
    with self.assertRaisesRegex(ValueError,"duplicate JSON object key"):evaluator.load_jsonl_snapshot(path)
+
+ def test_candidate_snapshot_file_symlink_rejected(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp);snapshot=root/"snapshot";snapshot.mkdir();outside=root/"outside.bin";outside.write_bytes(b"weights");link=snapshot/"weights.bin";link.symlink_to(outside)
+   record_path=root/"candidate.json";record_path.write_text(json.dumps({"model_snapshot_path":"snapshot","weight_inventory":[{"path":"snapshot/weights.bin","sha256":hashlib.sha256(b"weights").hexdigest()}]}),encoding="utf-8")
+   with self.assertRaisesRegex(ValueError,"symlink components"):evaluator.evaluation_gate.verify_model_snapshot({"model_snapshot_path":"snapshot","weight_inventory":[{"path":"snapshot/weights.bin","sha256":hashlib.sha256(b"weights").hexdigest()}]},record_path)
  def test_candidate_snapshot_integrity_and_permission(self):
   with tempfile.TemporaryDirectory() as tmp:
    path,candidate=self.fixture_candidate(Path(tmp))
