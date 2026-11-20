@@ -141,11 +141,18 @@ class Tests(unittest.TestCase):
   ids,prefix=trainer.build_sequence(Tok(),"prompt words","answer words",max_length=30)
   self.assertEqual(ids[prefix:],["answer","words<eos>"])
   self.assertGreater(prefix,0)
- def test_build_sequence_rejects_truncated_response(self):
+ def test_build_sequence_truncates_prompt_to_preserve_response(self):
   class Tok:
    eos_token="<eos>"
    def __call__(self,text,add_special_tokens=True):return {"input_ids":text.split()}
-  with self.assertRaisesRegex(ValueError,"no response tokens"):trainer.build_sequence(Tok(),"very long prefix words","answer",max_length=3)
+  ids,prefix=trainer.build_sequence(Tok(),"very long prefix words","answer",max_length=4)
+  self.assertEqual(ids,["words","answer<eos>"])
+  self.assertEqual(prefix,1)
+ def test_build_sequence_rejects_response_over_limit(self):
+  class Tok:
+   eos_token="<eos>"
+   def __call__(self,text,add_special_tokens=True):return {"input_ids":text.split()}
+  with self.assertRaisesRegex(ValueError,"response exceeds sequence limit"):trainer.build_sequence(Tok(),"prompt","answer response",max_length=3)
  def test_build_sequence_uses_chat_template_prefix(self):
   class Tok:
    eos_token="<eos>"
