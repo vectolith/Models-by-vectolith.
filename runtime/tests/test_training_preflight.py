@@ -135,7 +135,13 @@ class TrainingPreflightTests(unittest.TestCase):
             rows=[]
             for i in range(4):
                 prompt=f"prompt-{i}"; response=f"response-{i}"
-                rows.append({"accepted":True,"teacher_id":f"teacher-{i}","teacher_revision":REV,
+                rows.append({"schema_version":"1.0","student_model_id":"core-prime","run_id":"corpus-run-001",
+                    "task_id":f"task-{i}","competency":"reasoning","accepted":True,
+                    "teacher_id":f"teacher-{i}","teacher_revision":REV,"reviewer_id":f"teacher-{(i+1)%4}",
+                    "review":{"score":0.9,"verdict":"accept","issues":[]},
+                    "human_review":{"status":"approved","independent_reviewer_ids":["human-1","human-2"],
+                        "adjudication_complete":True,"adjudication_id":f"adj-{i}",
+                        "review_report_sha256":SHA,"adjudication_sha256":SHA},
                     "prompt":prompt,"response":response,
                     "content_sha256":hashlib.sha256((prompt+"\0"+response).encode()).hexdigest()})
             dataset=root/"data.jsonl"; dataset.write_text("\n".join(json.dumps(x) for x in rows)+"\n")
@@ -157,8 +163,15 @@ class TrainingPreflightTests(unittest.TestCase):
             rows=[]
             for i in range(4):
                 prompt=f"p{i}"; response=f"r{i}"
-                rows.append({"accepted":True,"teacher_id":f"teacher-{i}","teacher_revision":"c"*40,
-                    "prompt":prompt,"response":response,"content_sha256":hashlib.sha256((prompt+"\0"+response).encode()).hexdigest()})
+                rows.append({"schema_version":"1.0","student_model_id":"core-prime","run_id":"corpus-run-001",
+                    "task_id":f"task-{i}","competency":"reasoning","accepted":True,
+                    "teacher_id":f"teacher-{i}","teacher_revision":"c"*40,"reviewer_id":f"teacher-{(i+1)%4}",
+                    "review":{"score":0.9,"verdict":"accept","issues":[]},
+                    "human_review":{"status":"approved","independent_reviewer_ids":["human-1","human-2"],
+                        "adjudication_complete":True,"adjudication_id":f"adj-{i}",
+                        "review_report_sha256":SHA,"adjudication_sha256":SHA},
+                    "prompt":prompt,"response":response,
+                    "content_sha256":hashlib.sha256((prompt+"\0"+response).encode()).hexdigest()})
             dataset=root/"data.jsonl"; dataset.write_text("\n".join(json.dumps(x) for x in rows))
             execution_path=write_execution_approval(root,dataset)
             with self.assertRaisesRegex(ValueError,"revision does not match"):
@@ -196,6 +209,46 @@ class TrainingPreflightTests(unittest.TestCase):
                     holdout_deployment_manifest_path=deployment_path,holdout_evaluation_results_dir=results_dir,
                     training_execution_manifest_path=execution_path,training_code_revision=CODE_REV,training_config=TRAIN_CONFIG)
 
+
+    def test_dataset_rows_require_core_prime_peer_review_and_human_adjudication(self):
+        from vectolith_runtime.training_preflight import validate_training_dataset_rows
+        base = {"schema_version":"1.0","student_model_id":"core-prime","run_id":"run-1",
+            "task_id":"task-1","competency":"reasoning","accepted":True,
+            "teacher_id":"teacher-a","teacher_revision":REV,"reviewer_id":"teacher-b",
+            "review":{"score":0.9,"verdict":"accept","issues":[]},
+            "human_review":{"status":"approved","independent_reviewer_ids":["human-1","human-2"],
+                "adjudication_complete":True,"adjudication_id":"adj-1",
+                "review_report_sha256":SHA,"adjudication_sha256":SHA},
+            "prompt":"Explain a proof","response":"A valid explanation",
+            "content_sha256":hashlib.sha256(("Explain a proof"+"\0"+"A valid explanation").encode()).hexdigest()}
+        self.assertEqual(validate_training_dataset_rows([base], {"teacher-a":REV,"teacher-b":REV}), [])
+        cases = [
+            ("student_model_id","core-prima","student_model_id"),
+            ("task_id","","task_id"),
+            ("reviewer_id","teacher-a","peer reviewer"),
+            ("review",{"score":0.99,"verdict":"reject"},"peer review"),
+            ("human_review",None,"human review"),
+            ("content_sha256","0"*64,"content digest"),
+        ]
+        for field, value, expected in cases:
+            row = dict(base)
+            row[field] = value
+            errors = validate_training_dataset_rows([row], {"teacher-a":REV,"teacher-b":REV})
+            self.assertTrue(any(expected in error for error in errors), (field, errors))
+
+    def test_dataset_rows_reject_duplicate_task_teacher_pairs(self):
+        from vectolith_runtime.training_preflight import validate_training_dataset_rows
+        row = {"schema_version":"1.0","student_model_id":"core-prime","run_id":"run-1",
+            "task_id":"task-1","competency":"reasoning","accepted":True,
+            "teacher_id":"teacher-a","teacher_revision":REV,"reviewer_id":"teacher-b",
+            "review":{"score":0.9,"verdict":"accept","issues":[]},
+            "human_review":{"status":"approved","independent_reviewer_ids":["human-1","human-2"],
+                "adjudication_complete":True,"adjudication_id":"adj-1",
+                "review_report_sha256":SHA,"adjudication_sha256":SHA},
+            "prompt":"Explain a proof","response":"A valid explanation",
+            "content_sha256":hashlib.sha256(("Explain a proof"+"\0"+"A valid explanation").encode()).hexdigest()}
+        errors = validate_training_dataset_rows([row, dict(row)], {"teacher-a":REV,"teacher-b":REV})
+        self.assertTrue(any("duplicate task_id/teacher_id" in error for error in errors))
 
     def test_training_execution_approval_binds_exact_config_and_capacity(self):
         with tempfile.TemporaryDirectory() as tmp:

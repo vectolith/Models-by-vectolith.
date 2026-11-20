@@ -1,0 +1,82 @@
+{
+  "schema_version": "vectolith-prime-teacher-registry/1.0",
+  "role": "core_prime",
+  "training_started": false,
+  "contributors": [
+    {
+      "candidate_id": "qwen3.5-2b",
+      "repo_id": "Qwen/Qwen3.5-2B",
+      "expected_model_type": "qwen3_5",
+      "expected_architecture": "Qwen3_5ForConditionalGeneration",
+      "loader": "multimodal",
+      "license_tag": "apache-2.0",
+      "license_review": "pending_human_legal_review",
+      "local_inference_authorized": false,
+      "training_output_permission": "not_verified",
+      "teacher_qualification": "not_qualified",
+      "revision": "5bf1871105527bed0f47e8fa941d2fc5170f7b1d"
+    },
+    {
+      "candidate_id": "gemma-4-e2b-it",
+      "repo_id": "google/gemma-4-E2B-it",
+      "expected_model_type": "gemma4",
+      "expected_architecture": "Gemma4ForConditionalGeneration",
+      "loader": "AutoModelForMultimodalLM",
+      "license_tag": "apache-2.0",
+      "license_review": "pending_human_legal_review",
+      "local_inference_authorized": false,
+      "training_output_permission": "not_verified",
+      "teacher_qualification": "not_qualified",
+      "revision": "4adf15748de9e1a0097b6274cee9c15836c41c37"
+    },
+    {
+      "candidate_id": "nemotron-3-nano-4b",
+      "repo_id": "nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16",
+      "expected_model_type": "nemotron_h",
+      "expected_architecture": "NemotronHForCausalLM",
+      "loader": "AutoModelForCausalLM",
+      "license_tag": "nvidia-nemotron-open-model-license",
+      "license_review": "pending_human_legal_review",
+      "local_inference_authorized": false,
+      "training_output_permission": "not_verified",
+      "teacher_qualification": "not_qualified",
+      "revision": "ef26eca1cb6b37ea5e5d5b7e01c087e63345aeec",
+      "license_evidence_conflict": {
+        "hugging_face_model_card_tag": "nvidia-nemotron-open-model-license",
+        "nvidia_open_source_catalog": "OpenMDW 1.1",
+        "status": "unresolved",
+        "sources": [
+          "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16",
+          "https://opensource.nvidia.com/en-eu/",
+          "https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-nemotron-open-model-license/"
+        ],
+        "resolution": null,
+        "type": "release_date_scope_discrepancy",
+        "note": "The selected BF16 model card states NVIDIA Nemotron Open Model License and lists a 2026-03-16 release date. NVIDIA's May 28, 2026 OpenMDW announcement says adoption applies to future Nemotron-family releases. The exact governing terms for this March checkpoint must be confirmed by human legal review; do not assume the family-wide announcement retroactively replaces the checkpoint terms."
+      },
+      "license_evidence_urls": [
+        "https://openmdw.ai/license/1-1/",
+        "https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-nemotron-open-model-license/"
+      ]
+    },
+    {
+      "candidate_id": "lfm2.5-2.6b",
+      "repo_id": "LiquidAI/LFM2.5-2.6B",
+      "expected_model_type": "lfm2",
+      "expected_architecture": "Lfm2ForCausalLM",
+      "loader": "causal",
+      "license_tag": "lfm1.0",
+      "license_review": "pending_human_legal_review",
+      "local_inference_authorized": false,
+      "training_output_permission": "not_verified",
+      "teacher_qualification": "not_qualified",
+      "revision": "7141b56cd4650af95c7c7b86983443aed050c96a",
+      "license_evidence_urls": [
+        "https://www.liquid.ai/lfm-license"
+      ],
+      "candidate_notes": "Independent new-run candidate. Earlier LFM2.5 historical artifacts remain immutable historical contributions and are not replaced or relabelled. Model card recommends this checkpoint for agentic/tool-use workloads and does not recommend it for agentic coding or knowledge-heavy tasks; retain this limitation in interpretation.",
+      "revision_source": "reused_exact_immutable_revision_from_historical_Run_42_artifacts",
+      "rights_capture_status": "captured_pending_authorized_legal_review"
+    }
+  ]
+}

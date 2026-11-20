@@ -328,7 +328,7 @@ async def generate_teaching_corpus(
                 "review": {"score": score, "verdict": "accept" if accepted else "reject", "issues": issues},
                 "teacher_latency_ms": round(latency, 2),
                 "review_latency_ms": round(review_latency, 2),
-                "content_sha256": _digest(task.prompt + "\\0" + answer),
+                "content_sha256": _digest(task.prompt + "\0" + answer),
                 "accepted": accepted,
             }
             records.append(record)

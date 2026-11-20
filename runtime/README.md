@@ -127,3 +127,13 @@ python runtime/scripts/core_prime_training_preflight.py \
 ```
 
 The command delegates to the same validators used by `train_student()`. It records hashes for the supplied input files and writes a JSON report on both success and failure. A non-zero exit code and `status: blocked` mean the evidence is incomplete or invalid. A passing report means only that the preflight validators passed; it is not a training authorization, does not approve legal rights, and does not start training. Keep private holdout artifacts and result files outside the repository.
+
+## Core Prime zero-download resource probe
+
+To measure an actual notebook session before approving any training run, execute:
+
+```bash
+python -m vectolith_runtime.compute_probe --output core-prime-resource-probe.json
+```
+
+The probe uses only the Python standard library and local system inspection. It records CPU, RAM, free storage, NVIDIA GPU names and per-device VRAM, and installed training-library versions. It does not install packages, make network requests, download model weights, run inference, or train. Kaggle quota and session availability are deliberately left unverified in the report; check those in the account UI and confirm the selected accelerator and session limits. Preserve the JSON report and its SHA-256 digest as evidence, but do not treat a hardware probe as run approval.

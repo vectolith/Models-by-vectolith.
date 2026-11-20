@@ -8,6 +8,7 @@ import zipfile
 from pathlib import Path
 
 from evaluation.prepare_blinded_human_review import (
+    ARTIFACT_PROVENANCE,
     BLIND_GRADE_SCHEMA,
     build_review_packages,
     unblind_grade_files,
@@ -77,6 +78,17 @@ class BlindedHumanReviewTests(unittest.TestCase):
 
     def tearDown(self):
         self.tmp.cleanup()
+
+    def test_historical_provenance_registry_covers_all_fifteen_artifacts(self):
+        self.assertEqual(len(ARTIFACT_PROVENANCE), 15)
+        item = ARTIFACT_PROVENANCE["run42-prime-phi-4-mini-instruct.zip"]
+        self.assertEqual(item["workflow_run_id"], "43820188813")
+        self.assertEqual(item["artifact_id"], 14280614317)
+        self.assertEqual(item["job_id"], 133549417510)
+        self.assertEqual(
+            item["sha256"],
+            "9b34e52ef661236741bae16b7de0ce9b04b065fdb223e2aec3bfb4d812cbac4c",
+        )
 
     def test_builds_two_blinded_packages_and_keeps_identity_key_separate(self):
         output = self.root / "review"

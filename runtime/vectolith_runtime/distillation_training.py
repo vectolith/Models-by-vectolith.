@@ -222,90 +222,102 @@ def train_student(
     run_manifest_path.write_text(json.dumps(run_manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
     try:
-        from datasets import Dataset
-        from transformers import (
-            AutoModelForCausalLM, AutoTokenizer, DataCollatorForSeq2Seq,
-            Trainer, TrainingArguments,
+        try:
+            from datasets import Dataset
+            from transformers import (
+                AutoModelForCausalLM, AutoTokenizer, DataCollatorForSeq2Seq,
+                Trainer, TrainingArguments,
+            )
+            from peft import LoraConfig, get_peft_model
+        except ImportError as exc:
+            raise RuntimeError(
+                "training dependencies missing; install vectolith-runtime[training]"
+            ) from exc
+    
+        tokenizer = AutoTokenizer.from_pretrained(foundation_model, revision=foundation_revision)
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+        model = AutoModelForCausalLM.from_pretrained(
+            foundation_model, revision=foundation_revision, device_map="auto"
         )
-        from peft import LoraConfig, get_peft_model
-    except ImportError as exc:
-        raise RuntimeError(
-            "training dependencies missing; install vectolith-runtime[training]"
-        ) from exc
-
-    tokenizer = AutoTokenizer.from_pretrained(foundation_model, revision=foundation_revision)
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-    model = AutoModelForCausalLM.from_pretrained(
-        foundation_model, revision=foundation_revision, device_map="auto"
-    )
-    token_counts = {
-        teacher_id: sum(
-            len(tokenizer(row["response"], add_special_tokens=False)["input_ids"])
-            for row in rows if row["teacher_id"] == teacher_id
+        token_counts = {
+            teacher_id: sum(
+                len(tokenizer(row["response"], add_special_tokens=False)["input_ids"])
+                for row in rows if row["teacher_id"] == teacher_id
+            )
+            for teacher_id in teacher_ids
+        }
+        if use_lora:
+            model = get_peft_model(model, LoraConfig(
+                r=16, lora_alpha=32, lora_dropout=0.05,
+                target_modules="all-linear", task_type="CAUSAL_LM",
+            ))
+    
+        train_dataset = Dataset.from_list([
+            {"prompt": row["prompt"], "response": row["response"]} for row in train_rows
+        ])
+        validation_dataset = Dataset.from_list([
+            {"prompt": row["prompt"], "response": row["response"]} for row in validation_rows
+        ])
+        tokenize = lambda batch: _tokenize_batch(batch, tokenizer, max_seq_length)
+        train_tokenized = train_dataset.map(tokenize, batched=True, remove_columns=["prompt", "response"])
+        validation_tokenized = validation_dataset.map(tokenize, batched=True, remove_columns=["prompt", "response"])
+        args = TrainingArguments(
+            output_dir=output_dir,
+            num_train_epochs=epochs,
+            learning_rate=learning_rate,
+            per_device_train_batch_size=per_device_batch_size,
+            per_device_eval_batch_size=per_device_batch_size,
+            gradient_accumulation_steps=gradient_accumulation_steps,
+            logging_steps=10,
+            eval_strategy="epoch",
+            save_strategy="epoch",
+            load_best_model_at_end=True,
+            metric_for_best_model="eval_loss",
+            greater_is_better=False,
+            save_total_limit=2,
+            seed=seed,
+            data_seed=seed,
+            report_to=[],
+            remove_unused_columns=False,
         )
-        for teacher_id in teacher_ids
-    }
-    if use_lora:
-        model = get_peft_model(model, LoraConfig(
-            r=16, lora_alpha=32, lora_dropout=0.05,
-            target_modules="all-linear", task_type="CAUSAL_LM",
-        ))
-
-    train_dataset = Dataset.from_list([
-        {"prompt": row["prompt"], "response": row["response"]} for row in train_rows
-    ])
-    validation_dataset = Dataset.from_list([
-        {"prompt": row["prompt"], "response": row["response"]} for row in validation_rows
-    ])
-    tokenize = lambda batch: _tokenize_batch(batch, tokenizer, max_seq_length)
-    train_tokenized = train_dataset.map(tokenize, batched=True, remove_columns=["prompt", "response"])
-    validation_tokenized = validation_dataset.map(tokenize, batched=True, remove_columns=["prompt", "response"])
-    args = TrainingArguments(
-        output_dir=output_dir,
-        num_train_epochs=epochs,
-        learning_rate=learning_rate,
-        per_device_train_batch_size=per_device_batch_size,
-        per_device_eval_batch_size=per_device_batch_size,
-        gradient_accumulation_steps=gradient_accumulation_steps,
-        logging_steps=10,
-        eval_strategy="epoch",
-        save_strategy="epoch",
-        load_best_model_at_end=True,
-        metric_for_best_model="eval_loss",
-        greater_is_better=False,
-        save_total_limit=2,
-        seed=seed,
-        data_seed=seed,
-        report_to=[],
-        remove_unused_columns=False,
-    )
-    trainer = Trainer(
-        model=model,
-        args=args,
-        train_dataset=train_tokenized,
-        eval_dataset=validation_tokenized,
-        data_collator=DataCollatorForSeq2Seq(tokenizer=tokenizer, padding=True, label_pad_token_id=-100),
-    )
-    trainer.train()
-    evaluation = trainer.evaluate()
-    trainer.save_model(output_dir)
-    tokenizer.save_pretrained(output_dir)
-    run_manifest["final_evaluation"] = evaluation
-    run_manifest["status"] = "completed"
-    run_manifest_path.write_text(json.dumps(run_manifest, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
-    return {
-        "foundation_model": foundation_model,
-        "foundation_revision": foundation_revision,
-        "student_checkpoint": output_dir,
-        "training_examples": len(train_rows),
-        "validation_examples": len(validation_rows),
-        "teacher_ids": sorted(teacher_ids),
-        "accepted_examples_by_teacher": counts,
-        "accepted_tokens_by_teacher": token_counts,
-        "training_method": "LoRA-SFT" if use_lora else "full-parameter-SFT",
-        "training_preflight": preflight,
-        "training_preflight_manifest": str(preflight_path),
-        "training_run_manifest": str(run_manifest_path),
-        "final_evaluation": evaluation,
-    }
+        trainer = Trainer(
+            model=model,
+            args=args,
+            train_dataset=train_tokenized,
+            eval_dataset=validation_tokenized,
+            data_collator=DataCollatorForSeq2Seq(tokenizer=tokenizer, padding=True, label_pad_token_id=-100),
+        )
+        trainer.train()
+        evaluation = trainer.evaluate()
+        trainer.save_model(output_dir)
+        tokenizer.save_pretrained(output_dir)
+        run_manifest["final_evaluation"] = evaluation
+        run_manifest["status"] = "completed"
+        run_manifest_path.write_text(json.dumps(run_manifest, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
+        return {
+            "foundation_model": foundation_model,
+            "foundation_revision": foundation_revision,
+            "student_checkpoint": output_dir,
+            "training_examples": len(train_rows),
+            "validation_examples": len(validation_rows),
+            "teacher_ids": sorted(teacher_ids),
+            "accepted_examples_by_teacher": counts,
+            "accepted_tokens_by_teacher": token_counts,
+            "training_method": "LoRA-SFT" if use_lora else "full-parameter-SFT",
+            "training_preflight": preflight,
+            "training_preflight_manifest": str(preflight_path),
+            "training_run_manifest": str(run_manifest_path),
+            "final_evaluation": evaluation,
+        }
+    except Exception as exc:
+        run_manifest["status"] = "failed"
+        run_manifest["failure"] = {
+            "exception_type": type(exc).__name__,
+            "recorded_at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+        }
+        run_manifest_path.write_text(
+            json.dumps(run_manifest, indent=2, sort_keys=True, default=str) + "\n",
+            encoding="utf-8",
+        )
+        raise

@@ -18,13 +18,13 @@ Each contribution is registered independently and may have one or more classes:
 
 | Class | Examples | Evidence required |
 |---|---|---|
-| Compute capacity | GPU/CPU instances, clusters, storage, network | Actual entitlement, region/availability, quota, hardware, price/credits, duration and operator authorization |
+| Compute capacity | GPU/CPU instances, clusters, storage, network | Actual entitlement, region/availability, quota, hardware, duration and operator authorization |
 | Training framework | PyTorch, NeMo, trainer libraries, distributed runtimes | Exact package/revision, license, supported model/method matrix, compatibility tests |
 | Orchestration | Local, Docker, Slurm, Kubernetes, cloud job schedulers | Executor capabilities, lifecycle semantics, cancellation, logs and resource accounting |
 | Data infrastructure | Curation, storage, tokenization, deduplication, dataset versioning | Data handling, access controls, provenance, retention and reproducibility |
 | Evaluation infrastructure | Benchmark harnesses, graders, sandbox runners | Suite/version, isolation, reproducibility, validity and holdout protections |
 | Model serving | Inference engines, batching, quantization, routing | Supported architectures, tokenizer compatibility, latency/memory measurements and security |
-| Observability/artifacts | Metrics, logs, checkpoint stores, experiment tracking | Exportability, immutable identifiers, retention, access controls and cost |
+| Observability/artifacts | Metrics, logs, checkpoint stores, experiment tracking | Exportability, immutable identifiers, retention, access controls and resource limits |
 | Engineering reference | Open-source implementations, technical docs, recipes | Source URL/revision, license/terms, provenance and a documented adaptation rationale |
 
 Do not treat a provider's marketing statement or model card as proof that a resource is available to Vectolith.
@@ -48,7 +48,7 @@ A contribution record should contain:
 - access mode: public-reference, locally-installed, self-hosted, provider-hosted or provisioned-capacity;
 - capability declaration and supported/unsupported matrix;
 - required hardware, software, network, region and dependencies;
-- price, quota, credits and billing assumptions, marked unknown when not verified;
+- provider terms, quota, usage limits and access conditions, marked unknown when not verified;
 - data categories sent to or retained by the provider, retention/deletion terms and privacy review;
 - qualification status, evidence artifact hashes, evaluator and timestamp;
 - adapter ID/version, contract version, operational owner and deprecation/replacement status.
@@ -59,7 +59,7 @@ Credentials and secret material belong only in an approved secret manager. Manif
 
 A contribution moves through:
 
-`discovered → documented → legal_review → security_review → compatibility_test → cost_review → approved`
+`discovered → documented → legal_review → security_review → compatibility_test → resource_review → approved`
 
 It may instead become `blocked`, `rejected`, `suspended` or `retired`. Missing evidence is a block, not an implicit pass. Approval is scoped to the exact revision, service, use case, data class and environment reviewed. Material changes require requalification.
 
@@ -69,7 +69,7 @@ Minimum checks:
 3. **Security:** dependencies, permissions, network egress, secret handling, isolation and data exposure are reviewed.
 4. **Compatibility:** deterministic contract tests verify declared capabilities and failure behavior.
 5. **Operations:** health, observability, cancellation, retry, recovery, export and rollback behavior are understood.
-6. **Economics:** real price, quota, credits, usage limits and expected cost are recorded; unknown values remain unknown.
+6. **Resource profile:** capacity, quota, usage limits, session constraints and operational dependencies are recorded; unknown values remain unknown.
 7. **Data governance:** payloads, retention, region, training use, deletion and access controls are explicitly assessed.
 8. **Portability:** artifacts and records can be exported in Vectolith-owned formats, or the lock-in is explicitly documented and accepted.
 
@@ -81,7 +81,7 @@ All external infrastructure is accessed through Vectolith-owned interfaces. Prov
 
 A compute/execution adapter should expose:
 - capability discovery and preflight validation;
-- resource estimate and explicit cost/quota disclosure;
+- resource estimate and explicit quota/limit disclosure;
 - submit, status, logs, cancel and cleanup operations;
 - artifact/checkpoint export with content hashes;
 - hardware/runtime inventory and job provenance;
@@ -133,7 +133,7 @@ Adapters must not change Vectolith's model identity, task/message contracts, tea
        NVIDIA | cloud vendors | open source | others
 ```
 
-The broker selects only approved contributions that satisfy the job's architecture, method, hardware, region, security, data and budget constraints. Selection is evidence-based and policy-controlled, not based on teacher ranking or provider popularity.
+The broker selects only approved contributions that satisfy the job's architecture, method, hardware, region, security, data and resource constraints. Selection is evidence-based and policy-controlled, not based on teacher ranking or provider popularity.
 
 ## 7. Relationship to teacher qualification
 
@@ -152,10 +152,10 @@ Teacher outputs, datasets and infrastructure artifacts retain separate provenanc
 - Keep provider SDKs optional extras or isolated worker images; pin exact versions and hashes.
 - Do not make a provider-specific control plane the source of truth for model manifests, run state, datasets or evaluation.
 - Export run manifests, logs, metrics, checkpoints and evaluation reports into Vectolith-defined formats.
-- Keep a local/mock adapter for deterministic tests and development without network access or paid compute.
+- Keep a local/mock adapter for deterministic tests and development without network access or external resource provisioning.
 - Maintain at least one viable fallback path for critical capabilities where practical; document cases where no fallback exists.
-- No adapter import may trigger network access, downloads, account discovery, job submission or billing.
-- A real job requires explicit operator approval after preflight, budget check and access verification.
+- No adapter import may trigger network access, downloads, account discovery, job submission or external resource provisioning.
+- A real job requires explicit operator approval after preflight, resource check and access verification.
 
 NeMo/Nemotron is a candidate reference and optional training/execution adapter, not a required dependency. Its specific capabilities must be pinned and verified against the selected release. Other providers and open-source projects are evaluated under the same contribution contract.
 
@@ -169,7 +169,7 @@ The current integration is a CLI bridge implementing the provider-neutral `Train
 | Data contract | Reads accepted Vectolith JSONL and enforces provenance plus at least four teacher identities | Step-specific input configuration; caller must map Vectolith dataset/model revisions using verified dotlist overrides |
 | Training stack | Transformers, Datasets and PEFT optional training extra | Separately installed and pinned Nemotron toolchain |
 | Configuration | Typed Python arguments in the current SFT helper | Nemotron step ID, named config, optional environment profile and dotlist overrides |
-| Execution controls | Explicit function call; no general remote job lifecycle | Explicit approval, host-verified budget reference for profiles, no-shell subprocess, timeout and attached execution |
+| Execution controls | Explicit function call; no general remote job lifecycle | Explicit approval, host-verified run-approval reference for profiles, no-shell subprocess, timeout and attached execution |
 | Current evidence | Existing CPU-side validation and training-pipeline tests; no production training run implied | Fake-runner contract tests only; no actual Nemotron invocation or performance measurement |
 | Known gaps | No production run scheduler, full run-manifest service or distributed orchestration | No detached job tracking, cancellation, normalized checkpoint import, artifact lineage or parity proof |
 
@@ -177,7 +177,7 @@ The two paths are complementary integration candidates, not interchangeable trai
 
 ## 10. Initial implementation sequence
 
-**Implementation status:** versioned provider and contribution JSON Schemas, in-memory and SQLite metadata registries, fail-closed qualification blocker checks, compute adapter protocol, and deterministic mock compute lifecycle are implemented. The optional Nemotron Steps CLI bridge is an integration spike: it uses the documented CLI, has explicit approval and budget-reference gates, and does not add a NeMo Python dependency. CPU-only tests use a fake command runner; they do not invoke Nemotron or start training. Production remote-job tracking, artifact lineage, provider provisioning and serving adapters remain future work.
+**Implementation status:** versioned provider and contribution JSON Schemas, in-memory and SQLite metadata registries, fail-closed qualification blocker checks, compute adapter protocol, and deterministic mock compute lifecycle are implemented. The optional Nemotron Steps CLI bridge is an integration spike: it uses the documented CLI, has explicit approval and run-reference gates, and does not add a NeMo Python dependency. CPU-only tests use a fake command runner; they do not invoke Nemotron or start training. Production remote-job tracking, artifact lineage, provider provisioning and serving adapters remain future work.
 
 
 
@@ -187,10 +187,10 @@ The two paths are complementary integration candidates, not interchangeable trai
 4. Define provider-neutral compute, training and serving adapter protocols.
 5. Add deterministic local/mock adapters and contract tests for success, timeout, cancellation, partial failure and artifact export.
 6. Add and test the optional Nemotron Steps CLI bridge behind the provider-neutral boundary; compare its integration and lifecycle guarantees with the existing non-NeMo Vectolith SFT path before adoption.
-7. Add cost/quota preflight and explicit approval before any remote execution.
+7. Add resource/quota preflight and explicit approval before any remote execution.
 8. Add provenance links from every training run to the exact approved contributions it used.
 
-The registry and adapter contract tests must remain CPU-only and network-free. The CLI bridge can invoke a real run only through an explicit operator action after preflight and budget approval; tests must never download model weights, provision cloud resources, invoke teacher APIs or start training.
+The registry and adapter contract tests must remain CPU-only and network-free. The CLI bridge can invoke a real run only through an explicit operator action after preflight and resource approval; tests must never download model weights, provision cloud resources, invoke teacher APIs or start training.
 
 ## 11. Acceptance criteria
 
@@ -200,8 +200,8 @@ The contribution system is ready for its first implementation milestone when:
 - mock adapters pass deterministic contract tests without external services;
 - a run manifest records exact contribution IDs/revisions and resource observations;
 - secrets never appear in records, logs, fixtures or repository files;
-- no import-time network, provider, download, compute or billing side effects exist;
+- no import-time network, provider, download, compute or resource-provisioning side effects exist;
 - a provider can be replaced without changing the canonical model registry, task contracts, dataset format or evaluation report;
-- tests prove that unapproved, expired, incompatible or over-budget contributions cannot be scheduled.
+- tests prove that unapproved, expired, incompatible or out-of-envelope contributions cannot be scheduled.
 
 No actual provider capacity, credits, hosted service access or infrastructure donation is claimed by this specification.

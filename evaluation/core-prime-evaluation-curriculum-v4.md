@@ -1,6 +1,13 @@
 # Core Prime expanded evaluation curriculum — v4
 
-Status: public development suite authored; validation and real inference are pending. These cases are not secret holdouts and must not be used as qualification evidence until executed and independently graded.
+Status: public development suite validated. The 56-case fixture has four cases in each of 14 competencies, three rubric criteria per case, unique IDs, and no ID collisions with v1-v3. Real v1-v4 CPU response artifacts are preserved for the three existing Core Prime teachers plus LFM2.5-2.6B and Phi-4 Mini across [workflow run #40](https://github.com/vectolith/Models-by-vectolith./actions/runs/43796213917), [run #42](https://github.com/vectolith/Models-by-vectolith./actions/runs/43820188813), and [latest run #43](https://github.com/vectolith/Models-by-vectolith./actions/runs/43821046671). These are raw public-suite responses, not human grades or teacher-qualification evidence. The suite is not a secret holdout.
+
+## Validation evidence
+
+- Fixture inspection: 56 cases, 14 competencies, exactly four cases per competency; every case has three rubric criteria; IDs are unique and do not collide with v1-v3.
+- GitHub Actions: [Core Prime runtime and evaluation tests #520](https://github.com/vectolith/Models-by-vectolith./actions/runs/44311872306) passed 110 tests (3 skipped), including both v4-specific tests. [Vectolith Runtime #349](https://github.com/vectolith/Models-by-vectolith./actions/runs/44311872304) passed 84 tests.
+- Real public-suite inference: [runs #40](https://github.com/vectolith/Models-by-vectolith./actions/runs/43796213917), [#42](https://github.com/vectolith/Models-by-vectolith./actions/runs/43820188813), and [#43](https://github.com/vectolith/Models-by-vectolith./actions/runs/43821046671) each captured 180 records per successful teacher/candidate across v1 (12), v2 (20), v3 (92), and v4 (56). Fifteen response artifacts are preserved for five additive contributors across three runs; each workflow's overall failure was caused by the separate SmolLM3 snapshot job failing its license-file gate.
+- Raw outputs remain ungraded. Token-cap responses are incomplete evidence and must not be treated as completed answers. No teacher is qualified by this validation.
 
 ## Scope
 

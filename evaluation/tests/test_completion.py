@@ -13,6 +13,12 @@ class CompletionClassificationTests(unittest.TestCase):
             "eos_completed",
         )
 
+    def test_multiple_eos_ids_are_supported_for_multimodal_tokenizers(self):
+        self.assertEqual(
+            classify_completion([10, 106], 8, [1, 106], "finished"),
+            "eos_completed",
+        )
+
     def test_full_budget_without_eos_is_truncated(self):
         self.assertEqual(
             classify_completion([10, 11, 12], 3, 2, "partial answer"),

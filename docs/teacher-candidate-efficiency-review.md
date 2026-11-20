@@ -52,7 +52,7 @@ These are candidate pools, not a predetermined four-teacher panel. The final fou
 For each student, run the same versioned qualification harness against the candidate pool. Select at least four distinct models only after:
 - every selected teacher clears a minimum quality threshold for its assigned competencies;
 - the combined panel covers all required competencies;
-- measured cost, latency, memory and reliability fit the approved budget and deployment;
+- measured latency, memory and reliability fit the approved deployment resource envelope;
 - output-training permissions and license conditions are confirmed for the exact revision;
 - a pilot proves the contribution can be reviewed, accepted and traced into the student's dataset.
 

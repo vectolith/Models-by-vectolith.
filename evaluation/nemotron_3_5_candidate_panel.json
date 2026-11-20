@@ -1,0 +1,85 @@
+{
+  "schema_version": "vectolith-nemotron-3-5-candidate-panel/1.0",
+  "target_panels": [
+    "core_prime",
+    "core_prima"
+  ],
+  "core_prima_execution_status": "paused",
+  "training_started": false,
+  "policy": "Candidates are independently registered; no inference or training is permitted until candidate-specific legal authorization, a compatible runtime, and hardware qualification are recorded.",
+  "candidates": [
+    {
+      "candidate_id": "nemotron-3.5-lightning-30b-a3b",
+      "display_name": "NVIDIA Nemotron 3.5 Lightning",
+      "repo_id": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+      "parameters_total": 30000000000,
+      "parameters_active": 3000000000,
+      "architecture_family": "Mamba-2 + MoE + attention hybrid",
+      "runtime": "vLLM or SGLang",
+      "hardware_requirement": "NVIDIA H100 80GB, GB200 or B200-class GPU; vendor validates BF16 on 1x H100 80GB",
+      "execution_availability_status": "blocked_no_compatible_gpu_runner",
+      "execution_status": "registered_runtime_blocked",
+      "revision": null,
+      "license_tag": "openmdw-1.1",
+      "license_evidence_urls": [
+        "https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+        "https://openmdw.ai/license/1-1/"
+      ],
+      "license_review": "pending_human_legal_review",
+      "local_inference_authorized": false,
+      "training_output_permission": "not_verified",
+      "teacher_qualification": "not_qualified",
+      "trust_remote_code_review": "required_before_loader_enablement",
+      "notes": "3B active parameters do not mean a 3B-parameter checkpoint; the full 30B model still requires high-memory GPU execution. Do not route to the standard CPU runner."
+    },
+    {
+      "candidate_id": "nemotron-3.5-super-vl-120b-a12b",
+      "display_name": "NVIDIA Nemotron 3.5 Super VL",
+      "repo_id": "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16",
+      "parameters_total": 120000000000,
+      "parameters_active": 12000000000,
+      "architecture_family": "Mamba-2 + Transformer MoE with C-RADIO vision encoder",
+      "runtime": "vLLM or SGLang",
+      "hardware_requirement": "4x H100 or 2x GB200 for BF16 reference deployment",
+      "execution_availability_status": "blocked_no_compatible_gpu_runner",
+      "execution_status": "registered_runtime_blocked",
+      "revision": null,
+      "license_tag": "openmdw-1.1",
+      "license_evidence_urls": [
+        "https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16",
+        "https://openmdw.ai/license/1-1/"
+      ],
+      "license_review": "pending_human_legal_review",
+      "local_inference_authorized": false,
+      "training_output_permission": "not_verified",
+      "teacher_qualification": "not_qualified",
+      "trust_remote_code_review": "required_before_loader_enablement",
+      "notes": "The published BF16 deployment requires multi-GPU hardware. This candidate must remain out of CPU inference jobs until a legitimate free compatible runtime is available."
+    },
+    {
+      "candidate_id": "nemotron-3.5-bolt-e4b",
+      "display_name": "NVIDIA Nemotron 3.5 Bolt E4B",
+      "repo_id": "nvidia/NVIDIA-Nemotron-3.5-Bolt-E4B-4GB",
+      "parameters_total": 8000000000,
+      "parameters_active": 4000000000,
+      "architecture_family": "Gemma 4 E4B-derived",
+      "runtime": "llama.cpp (GGUF Q4_K_M)",
+      "hardware_requirement": "The official Q4_K_M GGUF file is 6.18 GB; CPU memory, disk and runtime compatibility must be measured before use.",
+      "execution_availability_status": "runtime_adapter_and_resource_probe_required",
+      "execution_status": "registered_runtime_adapter_required",
+      "revision": null,
+      "license_tag": "openmdw-1.1",
+      "license_evidence_urls": [
+        "https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Bolt-E4B-4GB",
+        "https://openmdw.ai/license/1-1/",
+        "https://huggingface.co/google/gemma-4-E4B-it"
+      ],
+      "license_review": "pending_human_legal_review",
+      "local_inference_authorized": false,
+      "training_output_permission": "not_verified",
+      "teacher_qualification": "not_qualified",
+      "trust_remote_code_review": "not_applicable_to_gguf_runtime; verify model card and llama.cpp implementation",
+      "notes": "The repository name says 4GB, but the official Q4_K_M GGUF file is 6.18 GB. Do not infer total memory needs from the repository name; require an actual resource probe and smoke response before enabling CPU execution."
+    }
+  ]
+}
