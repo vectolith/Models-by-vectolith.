@@ -28,7 +28,9 @@ def capture(candidate_record_path):
  inventory=[]
  for path in sorted(snapshot.rglob("*")):
   if path.is_symlink():raise ValueError("snapshot contains symlinks")
-  if path.is_file():inventory.append({"path":str(path.relative_to(root)),"sha256":evaluation_gate.sha256_file(path)})
+  if path.is_file():
+   relative=str(path.relative_to(root));_,raw=evaluation_gate.read_confined_bytes(root,relative,"snapshot inventory")
+   inventory.append({"path":relative,"sha256":hashlib.sha256(raw).hexdigest()})
  if not inventory:raise ValueError("snapshot is empty")
  return {"candidate_record_sha256":candidate_record_sha256,"model_snapshot_path":rel,"inventory":inventory,"inventory_sha256":evaluation_gate.sha256_serialized(inventory),"scope":"file inventory and SHA-256 only; no license or permission approval, model loading, inference or training"}
 def atomic_write_json(path,record):
