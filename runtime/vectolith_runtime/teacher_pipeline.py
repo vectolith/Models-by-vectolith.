@@ -37,6 +37,8 @@ class TeacherEndpoint:
 class OpenAICompatibleTeacher:
     """Minimal chat-completions client; secrets are read only at call time."""
 
+    MAX_RESPONSE_BYTES = 8 * 1024 * 1024
+
     def __init__(self, endpoint: TeacherEndpoint):
         self.endpoint = endpoint
 
@@ -57,7 +59,10 @@ class OpenAICompatibleTeacher:
         })
         try:
             with urlopen(request, timeout=self.endpoint.timeout_seconds) as response:
-                body = json.loads(response.read())
+                raw = response.read(self.MAX_RESPONSE_BYTES + 1)
+                if len(raw) > self.MAX_RESPONSE_BYTES:
+                    raise RuntimeError("teacher response exceeds configured byte limit")
+                body = json.loads(raw)
         except (HTTPError, URLError, TimeoutError) as exc:
             raise RuntimeError(f"teacher request failed for {self.endpoint.teacher_id}: {type(exc).__name__}") from exc
         try:
