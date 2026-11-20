@@ -1,4 +1,4 @@
-import json,subprocess,sys,tempfile,unittest,hashlib
+import json,subprocess,sys,tempfile,unittest,hashlib,os
 from unittest.mock import patch
 import importlib.util
 from pathlib import Path
