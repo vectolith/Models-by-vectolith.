@@ -206,4 +206,14 @@ class HoldoutTests(unittest.TestCase):
    root=Path(tmp);outside=root/"outside";outside.mkdir();(outside/"evidence.txt").write_text("evidence");link=root/"linked-dir";link.symlink_to(outside,target_is_directory=True)
    with self.assertRaisesRegex(ValueError,"symlink components"):evaluator.evaluation_gate.verify_evidence_file(root,"linked-dir/evidence.txt",hashlib.sha256(b"evidence").hexdigest(),"fixture")
 
+
+ def test_confined_evidence_read_rejects_oversized_file(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp);path=root/"evidence.txt";path.write_bytes(b"x")
+   chunk=b"x"*(1024*1024)
+   reads=[chunk]*65
+   with patch.object(evaluator.evaluation_gate.os,"read",side_effect=reads):
+    with self.assertRaisesRegex(ValueError,"evidence exceeds 67108864 byte limit"):
+     evaluator.evaluation_gate.read_confined_bytes(root,path.name,"fixture")
+
 if __name__=="__main__":unittest.main()
