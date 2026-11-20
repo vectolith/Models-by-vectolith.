@@ -37,7 +37,7 @@ def load_rows_snapshot(p):
  for n,line in enumerate(text.splitlines(),1):
   if not line.strip():continue
   try:r=evaluation_gate.strict_json_loads(line)
-  except json.JSONDecodeError as exc:raise ValueError(f"line {n}: invalid JSON: {exc}") from exc
+  except ValueError as exc:raise ValueError(f"line {n}: invalid JSON: {exc}") from exc
   if not isinstance(r,dict):raise ValueError(f"line {n}: record must be object")
   for k in ("task_id","prompt","response","provenance"):
    if not isinstance(r.get(k),str) or not r[k].strip():raise ValueError(f"line {n}: {k} required")
