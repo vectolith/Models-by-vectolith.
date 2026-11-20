@@ -12,7 +12,12 @@ def capture(candidate_record_path):
  if not isinstance(rel,str) or not rel.strip():raise ValueError("candidate model_snapshot_path is unset")
  relative=Path(rel)
  if relative.is_absolute() or ".." in relative.parts:raise ValueError("model snapshot path must be relative and confined")
- root=candidate_record_path.parent.resolve();snapshot=(root/relative).resolve()
+ root=candidate_record_path.parent.resolve();raw_snapshot=root/relative
+ cursor=root
+ for part in relative.parts:
+  cursor=cursor/part
+  if cursor.is_symlink():raise ValueError("model snapshot path contains symlink components")
+ snapshot=raw_snapshot.resolve()
  try:snapshot.relative_to(root)
  except ValueError:raise ValueError("model snapshot path escapes candidate root")
  if not snapshot.is_dir():raise ValueError("snapshot directory missing")
