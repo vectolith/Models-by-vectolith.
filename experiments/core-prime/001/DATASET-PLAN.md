@@ -22,6 +22,8 @@ Each task record must include task_id, category, prompt, split, rubric_id, prove
 
 Use the task validator before evaluation. It detects exact normalized prompt duplicates and prompt hash mismatches, but does not detect semantic, answer-level, or paraphrase leakage. A human must inspect leakage and dataset quality.
 
+The dataset provenance review evidence record must be JSON and bind `dataset_sha256` to the exact JSONL bytes; include `review_status: reviewed`, reviewer identifier, scope, and timezone-qualified review timestamp. The verifier checks structure, hash binding and path integrity only—it does not authenticate the reviewer or prove that the review was substantive.
+
 ## Scoring
 
 Use category-specific rubrics, and record criterion-level scores with evidence and rationale. A deterministic checker may score mechanically verifiable constraints (e.g., valid JSON, exact arithmetic), but it must not claim to assess general reasoning. Blind human grading should use candidate-neutral IDs, shuffled outputs, and a separate identity key. Do not generate or invent human grades.
