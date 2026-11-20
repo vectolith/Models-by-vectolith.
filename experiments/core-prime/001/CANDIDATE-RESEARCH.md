@@ -146,3 +146,16 @@ This comparison is limited to official model-card/documentation observations; no
 Sources: SmolLM2 model card (https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct); Qwen3 model card and pinned LICENSE (https://huggingface.co/Qwen/Qwen3-0.6B/blob/c1899de289a04d12100db370d81485cdf75e47ca/LICENSE); Phi-4-mini-instruct model card (https://huggingface.co/microsoft/Phi-4-mini-instruct); IBM Granite model selector (https://www.ibm.com/granite/playground/model-selector/models) and usage restriction (https://www.ibm.com/granite); Gemma 4 overview/license (https://ai.google.dev/gemma/docs/core; https://ai.google.dev/gemma/apache_2); older Gemma terms (https://ai.google.dev/gemma/terms).
 
 All output-training permissions remain unresolved. License metadata and vendor resource estimates are not independent legal review, compute verification, measured suitability or model qualification.
+
+
+## Source re-check — 2026-11-20
+
+A fresh public-source re-check confirmed the license signals below but did not identify a distinct, explicit output-to-student-training grant. This is source screening, not legal review, and the pages have not been downloaded into the experiment evidence directory or hash-verified.
+
+- **Qwen3-0.6B**: its official Hugging Face model card lists Apache-2.0; the provisional experiment revision remains \`c1899de289a04d12100db370d81485cdf75e47ca\`. The revision-specific LICENSE must still be captured and hash-verified before candidate verification. https://huggingface.co/Qwen/Qwen3-0.6B
+- **SmolLM2-360M-Instruct**: the official model card and model-file metadata list Apache-2.0. That license signal does not itself grant or resolve rights to use generated outputs as student-training data. https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct
+- **Phi-4-mini-instruct**: the official model card lists MIT and describes the intended-use context; it does not provide a separate output-distillation permission artifact. The runner's remote-code prohibition also remains a compatibility constraint. https://huggingface.co/microsoft/Phi-4-mini-instruct
+- **Granite 4.2**: IBM's official pages describe Apache-2.0 releases and separately restrict use to generate outputs that infringe, misappropriate or otherwise violate third-party copyright rights. That restriction is not an output-training grant. https://www.ibm.com/granite and https://github.com/ibm-granite/granite-4.2-language-models
+- **Gemma 4 vs. older Gemma**: the official Gemma 4 license documentation identifies Apache-2.0; the older Gemma Terms (April 1, 2026) expressly include output-based distillation within their Model Derivatives definition and must not be applied to Gemma 4. Exact version/terms remain required for any use. https://ai.google.dev/gemma/docs/gemma_4_license and https://ai.google.dev/gemma/terms
+
+No candidate or teacher is approved. No output-training permission, legal review, license-file hash, snapshot inventory, provenance, compute evidence, or model measurements were completed by this source re-check.
