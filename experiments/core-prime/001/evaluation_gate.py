@@ -78,11 +78,12 @@ def verify_candidate_record(path,model,revision):
   try:target.relative_to(snapshot)
   except ValueError:raise ValueError("model config/chat template evidence must be inside verified snapshot")
  return record,sha256_file(path),snapshot
-def verify_evaluation_authorization(path,candidate_sha,tasks_path,freeze_path,code_commit,package_hash,task_count,max_new_tokens):
+def verify_evaluation_authorization(path,candidate_sha,tasks_sha256,freeze_path,code_commit,package_hash,task_count,max_new_tokens):
  try:authorization=json.loads(path.read_text(encoding="utf-8"))
  except Exception as exc:raise ValueError(f"evaluation authorization invalid: {exc}") from exc
  if not isinstance(authorization,dict) or authorization.get("approval")!="approved":raise ValueError("evaluation authorization not approved")
- expected={"candidate_record_sha256":candidate_sha,"tasks_sha256":sha256_file(tasks_path),"freeze_manifest_sha256":sha256_file(freeze_path),"code_commit":code_commit,"package_inventory_sha256":package_hash}
+ if not isinstance(tasks_sha256,str) or not SHA64.fullmatch(tasks_sha256):raise ValueError("exact loaded task snapshot SHA-256 invalid")
+ expected={"candidate_record_sha256":candidate_sha,"tasks_sha256":tasks_sha256,"freeze_manifest_sha256":sha256_file(freeze_path),"code_commit":code_commit,"package_inventory_sha256":package_hash}
  for key,value in expected.items():
   if authorization.get(key)!=value:raise ValueError(f"evaluation authorization mismatch: {key}")
  if not isinstance(authorization.get("candidate_revision"),str):raise ValueError("candidate revision missing in authorization")
@@ -97,10 +98,11 @@ def verify_evaluation_authorization(path,candidate_sha,tasks_path,freeze_path,co
  if task_count>budget["max_task_count"]:raise ValueError("selected tasks exceed authorized task budget")
  if max_new_tokens>budget["max_new_tokens"]:raise ValueError("max-new-tokens exceeds authorized budget")
  return authorization,sha256_file(path)
-def verify_frozen_config(manifest_path,model,revision,tasks_path,seed,max_new_tokens,temperature,trust_remote_code,qwen3_thinking,limit,selected_task_ids,candidate_sha,code_commit,package_hash,max_wall_seconds):
+def verify_frozen_config(manifest_path,model,revision,tasks_sha256,seed,max_new_tokens,temperature,trust_remote_code,qwen3_thinking,limit,selected_task_ids,candidate_sha,code_commit,package_hash,max_wall_seconds):
  try:manifest=json.loads(manifest_path.read_text(encoding="utf-8"))
  except Exception as exc:raise ValueError(f"freeze manifest invalid: {exc}") from exc
- expected={"model":model,"revision":revision,"tasks_sha256":sha256_file(tasks_path),"seed":seed,"max_new_tokens":max_new_tokens,"temperature":temperature,"trust_remote_code":trust_remote_code,"qwen3_thinking":qwen3_thinking,"limit":limit,"selected_task_count":len(selected_task_ids),"selected_task_ids_sha256":sha256_serialized(selected_task_ids),"candidate_record_sha256":candidate_sha,"code_commit":code_commit,"package_inventory_sha256":package_hash,"max_wall_seconds":max_wall_seconds}
+ if not isinstance(tasks_sha256,str) or not SHA64.fullmatch(tasks_sha256):raise ValueError("exact loaded task snapshot SHA-256 invalid")
+ expected={"model":model,"revision":revision,"tasks_sha256":tasks_sha256,"seed":seed,"max_new_tokens":max_new_tokens,"temperature":temperature,"trust_remote_code":trust_remote_code,"qwen3_thinking":qwen3_thinking,"limit":limit,"selected_task_count":len(selected_task_ids),"selected_task_ids_sha256":sha256_serialized(selected_task_ids),"candidate_record_sha256":candidate_sha,"code_commit":code_commit,"package_inventory_sha256":package_hash,"max_wall_seconds":max_wall_seconds}
  for key,value in expected.items():
   if manifest.get(key)!=value:raise ValueError(f"freeze manifest mismatch: {key}")
  return sha256_file(manifest_path)
