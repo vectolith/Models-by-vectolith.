@@ -38,7 +38,22 @@ class ReleaseVerifierTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);gate=root/"gate.txt";gate.write_text("evidence");digest=hashlib.sha256(gate.read_bytes()).hexdigest()
    m={"model_name":"Core Prime","release_version":"x","release_status":"qualified","holdout_included":False,"artifacts":[{"path":"gate.txt","sha256":digest}],"gates":{k:{"status":"approved","evidence_path":"gate.txt","sha256":digest} for k in v.REQUIRED_GATES}}
-   self.assertTrue(any("duplicate gate evidence path" in e for e in v.verify(root,m)))
+   self.assertTrue(any("duplicate gate evidence file" in e for e in v.verify(root,m)))
+ def test_duplicate_gate_evidence_alias_rejected(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);(root/"sub").mkdir();gate=root/"gate.txt";gate.write_text("evidence");digest=hashlib.sha256(gate.read_bytes()).hexdigest()
+   gates={k:{"status":"approved","evidence_path":"gate.txt","sha256":digest} for k in v.REQUIRED_GATES}
+   gates["data_provenance"]["evidence_path"]="sub/../gate.txt"
+   m={"model_name":"Core Prime","release_version":"x","release_status":"qualified","holdout_included":False,"artifacts":[{"path":"gate.txt","sha256":digest}],"gates":gates}
+   self.assertTrue(any("duplicate gate evidence file" in e for e in v.verify(root,m)))
+ def test_duplicate_artifact_alias_rejected(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);(root/"sub").mkdir();artifact=root/"artifact.bin";artifact.write_bytes(b"artifact");digest=hashlib.sha256(artifact.read_bytes()).hexdigest()
+   gates={}
+   for name in v.REQUIRED_GATES:
+    p=root/(name+".txt");p.write_text(name);gates[name]={"status":"approved","evidence_path":p.name,"sha256":hashlib.sha256(p.read_bytes()).hexdigest()}
+   m={"model_name":"Core Prime","release_version":"x","release_status":"qualified","holdout_included":False,"artifacts":[{"path":"artifact.bin","sha256":digest},{"path":"sub/../artifact.bin","sha256":digest}],"gates":gates}
+   self.assertTrue(any("duplicate artifact file" in e for e in v.verify(root,m)))
  def test_hash_mismatch(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);(root/"x").write_text("actual")
