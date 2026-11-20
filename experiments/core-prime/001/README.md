@@ -49,10 +49,13 @@ The verifier intentionally cannot make an experiment release-qualified by fillin
 
 ## Evaluation authorization and local snapshot
 
-Baseline inference is blocked until the candidate record is verified, written output-training permission and independent legal review are approved, all candidate evidence hashes and the staged snapshot inventory pass, the task file is development-only, dataset-provenance evidence is independently reviewed and hash-verified, and an evaluation authorization binds the exact freeze manifest, candidate record, task file, Git HEAD, package inventory, provenance evidence, free-compute evidence and bounded budget. The evaluator loads the verified local snapshot with network access disabled. Use `evaluation-freeze.template.json` and `evaluation-authorization.template.json` as pending structures; they are not approvals. Holdout inference is not supported.
+Baseline inference is blocked until the candidate record is verified, written output-training permission and independent legal review are approved, all candidate evidence hashes and the staged snapshot inventory pass, the task file is development-only, dataset-provenance evidence is independently reviewed, hash-verified and its JSON record binds the exact task-file SHA-256, reviewer, review scope and timestamp, and an evaluation authorization binds the exact freeze manifest, candidate record, task file, Git HEAD, package inventory, provenance evidence, free-compute evidence and bounded budget. The evaluator loads the verified local snapshot with network access disabled. Use `evaluation-freeze.template.json` and `evaluation-authorization.template.json` as pending structures; they are not approvals. Holdout inference is not supported.
 
 
 `training-authorization.template.json` is a pending structure; the training runner refuses to execute until the candidate, provenance, package inventory, exact checkout, free compute and budgets are independently verified.
 
 
 Before any run, `capture_environment.py` and `capture_snapshot_inventory.py` can capture real local package/Git and staged snapshot file hashes. These utilities do not approve rights, verify free compute, load models or run inference/training; captured output must be reviewed and bound to the authorization.
+
+
+Copy `dataset-provenance.template.json` as a pending evidence structure. The completed provenance record must bind `dataset_sha256` to the exact task-file bytes and include `review_status: reviewed`, reviewer, scope, and timezone-qualified `reviewed_at_utc`; this metadata and hash check do not authenticate the reviewer or substantiate the review by themselves. 
