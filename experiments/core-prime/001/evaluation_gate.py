@@ -6,6 +6,15 @@ from datetime import datetime
 from pathlib import Path
 SHA40=re.compile(r"^[a-f0-9]{40}$")
 SHA64=re.compile(r"^[a-f0-9]{64}$")
+def strict_json_loads(text):
+ """Parse JSON while rejecting duplicate object keys at every nesting level."""
+ def unique_pairs(pairs):
+  result={}
+  for key,value in pairs:
+   if key in result:raise ValueError(f"duplicate JSON object key: {key}")
+   result[key]=value
+  return result
+ return json.loads(text,object_pairs_hook=unique_pairs)
 def sha256_file(path):
  h=hashlib.sha256()
  with Path(path).open("rb") as f:
@@ -25,7 +34,7 @@ def load_json_snapshot(path,label):
  raw=Path(path).read_bytes()
  try:text=raw.decode("utf-8")
  except UnicodeDecodeError as exc:raise ValueError(f"{label} invalid UTF-8: {exc}") from exc
- try:record=json.loads(text)
+ try:record=strict_json_loads(text)
  except Exception as exc:raise ValueError(f"{label} invalid JSON: {exc}") from exc
  if not isinstance(record,dict):raise ValueError(f"{label} must be a JSON object")
  return record,hashlib.sha256(raw).hexdigest()
@@ -80,7 +89,7 @@ def read_verified_evidence_bytes(base,relative,digest,label):
  return (root/rel),raw
 def verify_dataset_provenance_evidence(base,relative,digest,dataset_sha256):
  target,raw=read_verified_evidence_bytes(base,relative,digest,"dataset provenance")
- try:record=json.loads(raw.decode("utf-8"))
+ try:record=strict_json_loads(raw.decode("utf-8"))
  except Exception as exc:raise ValueError(f"dataset provenance evidence must be valid JSON: {exc}") from exc
  if not isinstance(record,dict):raise ValueError("dataset provenance evidence must be a JSON object")
  if record.get("dataset_sha256")!=dataset_sha256:raise ValueError("dataset provenance evidence dataset SHA-256 mismatch")
