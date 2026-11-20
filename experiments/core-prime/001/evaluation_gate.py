@@ -40,6 +40,21 @@ def verify_evidence_file(base,relative,digest,label):
  if not target.is_file():raise ValueError(f"{label} evidence file missing")
  if sha256_file(target)!=digest:raise ValueError(f"{label} evidence hash mismatch")
  return target
+def verify_dataset_provenance_evidence(base,relative,digest,dataset_sha256):
+ target=verify_evidence_file(base,relative,digest,"dataset provenance")
+ try:record=json.loads(target.read_text(encoding="utf-8"))
+ except Exception as exc:raise ValueError(f"dataset provenance evidence must be valid JSON: {exc}") from exc
+ if not isinstance(record,dict):raise ValueError("dataset provenance evidence must be a JSON object")
+ if record.get("dataset_sha256")!=dataset_sha256:raise ValueError("dataset provenance evidence dataset SHA-256 mismatch")
+ if record.get("review_status")!="reviewed":raise ValueError("dataset provenance evidence review_status must be reviewed")
+ for key in ("reviewer","review_scope","reviewed_at_utc"):
+  value=record.get(key)
+  if not isinstance(value,str) or not value.strip():raise ValueError(f"dataset provenance evidence {key} required")
+ try:
+  reviewed=datetime.fromisoformat(record["reviewed_at_utc"].replace("Z","+00:00"))
+ except ValueError as exc:raise ValueError("dataset provenance evidence reviewed_at_utc must be ISO-8601") from exc
+ if reviewed.tzinfo is None:raise ValueError("dataset provenance evidence reviewed_at_utc must include timezone")
+ return target
 def verify_model_snapshot(record,record_path):
  root=record_path.parent.resolve()
  rel=record.get("model_snapshot_path")
@@ -104,7 +119,7 @@ def verify_evaluation_authorization(path,candidate_sha,tasks_sha256,freeze_path,
  if authorization.get("holdout_access") not in ("sealed","denied"):raise ValueError("holdout access must remain sealed")
  provenance=authorization.get("dataset_provenance",{})
  if not isinstance(provenance,dict) or provenance.get("status")!="reviewed":raise ValueError("dataset provenance must be independently reviewed")
- verify_evidence_file(path.parent,provenance.get("evidence_path"),provenance.get("evidence_sha256"),"dataset provenance")
+ verify_dataset_provenance_evidence(path.parent,provenance.get("evidence_path"),provenance.get("evidence_sha256"),tasks_sha256)
  hardware=authorization.get("hardware",{})
  if hardware.get("verified_free_budget") is not True or not hardware.get("provider") or not hardware.get("session_id"):raise ValueError("verified free compute/session evidence missing")
  verify_evidence_file(path.parent,hardware.get("evidence_path"),hardware.get("evidence_sha256"),"free compute")
