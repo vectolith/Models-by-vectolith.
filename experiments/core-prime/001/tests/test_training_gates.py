@@ -68,6 +68,10 @@ class Tests(unittest.TestCase):
   with patch.object(trainer,"package_inventory",return_value=items) as capture:
    inventory,digest=trainer.package_inventory_snapshot()
   self.assertEqual(inventory,items);self.assertEqual(digest,trainer.evaluation_gate.sha256_serialized(items));self.assertEqual(capture.call_count,1)
+ def test_training_manifest_uses_preflight_package_snapshot(self):
+  source=(ROOT/"train_lora.py").read_text(encoding="utf-8")
+  self.assertIn("packages,packages_hash=package_inventory_snapshot();snapshot=gates(c,a,rows,x,packages_hash)",source)
+  self.assertIn('"package_inventory":packages,"package_inventory_sha256":packages_hash,"environment_package_inventory_sha256":packages_hash',source)
  def test_telemetry_run_cumulative_accounting(self):
   rows=[{"run_id":"r1","session_elapsed_seconds":12},{"run_id":"r1","session_elapsed_seconds":8},{"run_id":"r2","session_elapsed_seconds":5}]
   self.assertEqual(trainer.telemetry_elapsed(rows),17)
