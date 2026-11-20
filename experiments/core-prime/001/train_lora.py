@@ -33,14 +33,16 @@ def load_rows_snapshot(p):
  raw=p.read_bytes()
  try:text=raw.decode("utf-8")
  except UnicodeDecodeError as exc:raise ValueError(f"dataset invalid UTF-8: {exc}") from exc
- rows=[];ids=set()
+ rows=[];ids=set();allowed={"task_id","prompt","response","provenance","split"}
  for n,line in enumerate(text.splitlines(),1):
   if not line.strip():continue
   try:r=evaluation_gate.strict_json_loads(line)
   except ValueError as exc:raise ValueError(f"line {n}: invalid JSON: {exc}") from exc
   if not isinstance(r,dict):raise ValueError(f"line {n}: record must be object")
-  for k in ("task_id","prompt","response","provenance"):
-   if not isinstance(r.get(k),str) or not r[k].strip():raise ValueError(f"line {n}: {k} required")
+  unknown=set(r)-allowed
+  if unknown:raise ValueError(f"line {n}: unexpected training dataset fields: {sorted(unknown)}")
+  for k in allowed-{"split"}:
+   if not isinstance(r.get(k),str) or not r[k].strip():raise ValueError(f"line {n}: {k} required as non-empty text")
   if r.get("split")!="train":raise ValueError(f"line {n}: split must be train; development/holdout forbidden")
   if r["task_id"] in ids:raise ValueError(f"line {n}: duplicate task_id")
   ids.add(r["task_id"]);rows.append(r)
