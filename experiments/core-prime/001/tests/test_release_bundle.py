@@ -39,7 +39,7 @@ class ReleaseVerifierTests(unittest.TestCase):
    root=Path(d);gate=root/"gate.txt";gate.write_text("evidence");digest=hashlib.sha256(gate.read_bytes()).hexdigest()
    m={"model_name":"Core Prime","release_version":"x","release_status":"qualified","holdout_included":False,"artifacts":[{"path":"gate.txt","sha256":digest}],"gates":{k:{"status":"approved","evidence_path":"gate.txt","sha256":digest} for k in v.REQUIRED_GATES}}
    self.assertTrue(any("duplicate gate evidence path" in e for e in v.verify(root,m)))
- def test_hash_mismatch(self)
+ def test_hash_mismatch(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);(root/"x").write_text("actual")
    with self.assertRaisesRegex(ValueError,"SHA-256 mismatch"):v.verify_file(root,"x","0"*64)

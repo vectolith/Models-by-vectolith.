@@ -70,7 +70,7 @@ class HoldoutTests(unittest.TestCase):
    code=evaluator.evaluation_gate.git_head()
    result=subprocess.run([sys.executable,str(EVALUATOR),"--model","unused","--revision","unused","--tasks",str(tasks),"--output",str(Path(tmp)/"out"),"--freeze-manifest",str(Path(tmp)/"freeze.json"),"--candidate-record",str(Path(tmp)/"candidate.json"),"--authorization",str(Path(tmp)/"auth.json"),"--code-commit",code,"--trust-remote-code"],capture_output=True,text=True)
    self.assertNotEqual(result.returncode,0);self.assertIn("trust-remote-code is forbidden",result.stderr);self.assertFalse((Path(tmp)/"out").exists())
- def test_train_split_rejected(self)
+ def test_train_split_rejected(self):
   with tempfile.TemporaryDirectory() as tmp:
    tasks=Path(tmp)/"train.jsonl";tasks.write_text(json.dumps({"task_id":"t","prompt":"p","category":"c","split":"train"})+chr(10),encoding="utf-8")
    code=evaluator.evaluation_gate.git_head()

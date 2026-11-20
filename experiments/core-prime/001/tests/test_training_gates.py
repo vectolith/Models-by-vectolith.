@@ -26,10 +26,10 @@ class Tests(unittest.TestCase):
  def test_all_gates_pass(self):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_pending_permission_blocked(self):
   self.c["output_training_permission"]="pending";self.candidate_path.write_text(json.dumps(self.c,sort_keys=True));self.a["candidate_record_sha256"]=trainer.sha256_file(self.candidate_path)
-  self.assertRaisesRegex(ValueError,"output_training_permission",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
+  self.assertRaisesRegex(ValueError,"output-training permission",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x
  def test_legal_review_blocked(self):
   self.c["human_legal_review"]="pending";self.candidate_path.write_text(json.dumps(self.c,sort_keys=True));self.a["candidate_record_sha256"]=trainer.sha256_file(self.candidate_path)
-  self.assertRaisesRegex(ValueError,"human_legal_review",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
+  self.assertRaisesRegex(ValueError,"independent human legal review",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x
  def test_dataset_hash_blocked(self):self.a["dataset_sha256"]="0"*64;self.assertRaisesRegex(ValueError,"dataset hash",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_code_hash_blocked(self):self.a["code_commit"]="d"*40;self.assertRaisesRegex(ValueError,"code commit",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_free_compute_blocked(self):self.a["hardware"]["verified_free_budget"]=False;self.assertRaisesRegex(ValueError,"free compute",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
