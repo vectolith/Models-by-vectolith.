@@ -60,6 +60,16 @@ class ReleaseVerifierTests(unittest.TestCase):
    root=Path(d);outside=root/"outside.txt";outside.write_text("evidence");link=root/"link.txt";link.symlink_to(outside)
    with self.assertRaisesRegex(ValueError,"symlink components"):v.verify_file(root,"link.txt",hashlib.sha256(b"evidence").hexdigest())
 
+
+ def test_symlink_parent_component_rejected(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);outside=root/"outside";outside.mkdir();(outside/"evidence.txt").write_text("evidence")
+   link=root/"linked-dir";link.symlink_to(outside,target_is_directory=True)
+   with self.assertRaisesRegex(ValueError,"symlink components"):v.verify_file(root,"linked-dir/evidence.txt",hashlib.sha256(b"evidence").hexdigest())
+ def test_directory_as_evidence_file_rejected(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);(root/"dir").mkdir()
+   with self.assertRaisesRegex(ValueError,"not regular"):v.verify_file(root,"dir",hashlib.sha256(b"").hexdigest())
  def test_hash_mismatch(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);(root/"x").write_text("actual")
