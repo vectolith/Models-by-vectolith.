@@ -118,6 +118,28 @@ class Tests(unittest.TestCase):
   (root/"checkpoint-not-a-step").mkdir()
   (root/"checkpoint-").mkdir()
   self.assertEqual(trainer.select_recovery_checkpoint(root),good)
+ def test_checkpoint_budget_state_and_recovery(self):
+  ck=self.make_checkpoint(self.d,"checkpoint-3",3)
+  trainer.seal_checkpoint(ck,cumulative_elapsed_seconds=42.5)
+  steps,elapsed=trainer.recover_budget_from_checkpoint(0,0.0,ck)
+  self.assertEqual(steps,3)
+  self.assertEqual(elapsed,42.5)
+  self.assertEqual(trainer.recover_budget_from_checkpoint(5,60.0,ck),(5,60.0))
+ def test_checkpoint_budget_state_tamper_rejected(self):
+  ck=self.make_checkpoint(self.d,"checkpoint-4",4)
+  state=ck/"checkpoint-budget.json"
+  record=json.loads(state.read_text())
+  record["cumulative_elapsed_seconds"]=99.0
+  state.write_text(json.dumps(record))
+  with self.assertRaisesRegex(ValueError,"integrity hash mismatch"):trainer.validate_checkpoint(ck)
+ def test_telemetry_append_fsyncs(self):
+  from unittest.mock import patch
+  with tempfile.TemporaryDirectory() as d:
+   path=Path(d)/"telemetry.jsonl"
+   with patch.object(trainer.os,"fsync") as sync:
+    trainer.append_telemetry_record(path,{"run_id":"r","step":1})
+    sync.assert_called_once()
+   self.assertEqual(json.loads(path.read_text())["step"],1)
  def test_checkpoint_validation(self):
   ck=self.make_checkpoint(self.d,"checkpoint-3",3)
   self.assertEqual(trainer.validate_checkpoint(ck),3)
