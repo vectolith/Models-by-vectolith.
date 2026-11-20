@@ -64,7 +64,8 @@ def compare(base,trained):
     for tid in sorted(base):
         a,b=base[tid]["scores"],trained[tid]["scores"]
         if set(a)!=set(b):raise ValueError(f"{tid}: criterion set mismatch")
-        criteria.update(a)
+        if criteria and set(a)!=criteria:raise ValueError(f"{tid}: criterion set differs across tasks; consistent rubric criteria required")
+        if not criteria:criteria=set(a)
         out.append({"task_id":tid,"baseline_scores":a,"adapter_scores":b,
                     "deltas":{k:b[k]-a[k] for k in a}})
     aggregate={}
