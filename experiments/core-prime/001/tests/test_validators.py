@@ -99,6 +99,14 @@ class EvaluatorTests(unittest.TestCase):
    self.assertEqual(outside.read_text(encoding="utf-8"),"preserve")
    self.assertEqual([json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()],records)
    self.assertFalse(any(p.name.startswith(path.name+".") and p.name.endswith(".tmp") and p!=path.with_suffix(path.suffix+".tmp") for p in root.iterdir()))
+ def test_atomic_evaluator_output_cleans_temp_on_replace_failure(self):
+  from unittest.mock import patch
+  with tempfile.TemporaryDirectory() as directory:
+   root=Path(directory);path=root/"out.jsonl";path.write_text("previous",encoding="utf-8")
+   with patch.object(evaluator.os,"replace",side_effect=OSError("forced replace failure")):
+    with self.assertRaisesRegex(OSError,"forced replace failure"):evaluator.write_jsonl(path,[{"task_id":"new"}])
+   self.assertEqual(path.read_text(encoding="utf-8"),"previous")
+   self.assertEqual(list(root.glob(path.name+".*.tmp")),[])
  def test_incremental_jsonl_persistence(self):
   with tempfile.TemporaryDirectory() as directory:
    path=Path(directory)/"partial.jsonl"
