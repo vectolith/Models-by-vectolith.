@@ -32,6 +32,17 @@ def candidate(index, competencies=("reasoning",)):
     return QualifiedTeacher(qualification, endpoint)
 
 class TeacherPipelineTests(unittest.TestCase):
+    def test_teacher_response_is_bounded(self):
+        from vectolith_runtime.teacher_pipeline import OpenAICompatibleTeacher
+        endpoint = TeacherEndpoint("teacher-x", "model-x", "http://localhost:8000/v1", "TEST_KEY", REV)
+        class FakeResponse:
+            def __enter__(self): return self
+            def __exit__(self, *args): return None
+            def read(self, size): return b"x" * size
+        with patch.dict("os.environ", {"TEST_KEY": "secret"}), patch("vectolith_runtime.teacher_pipeline.urlopen", return_value=FakeResponse()):
+            with self.assertRaisesRegex(RuntimeError, "byte limit"):
+                OpenAICompatibleTeacher(endpoint).generate([{"role":"user","content":"test"}], max_tokens=1)
+
     def test_teaching_corpus_digest_uses_same_nul_separator_as_training_preflight(self):
         import hashlib
         from vectolith_runtime.teacher_pipeline import _digest
