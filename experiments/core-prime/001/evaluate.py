@@ -58,7 +58,7 @@ def load_jsonl_snapshot(path: Path) -> tuple[list[dict[str,Any]],str]:
     allowed_fields={"task_id","category","prompt","split","rubric_id","reference_answer","expected_constraints","provenance","content_sha256"}
     for n,line in enumerate(text.splitlines(),1):
         if not line.strip(): continue
-        try: row=json.loads(line)
+        try: row=evaluation_gate.strict_json_loads(line)
         except json.JSONDecodeError as e: raise ValueError(f"{path}:{n}: invalid JSON: {e}") from e
         if not isinstance(row,dict): raise ValueError(f"{path}:{n}: expected object")
         unknown=set(row)-allowed_fields
