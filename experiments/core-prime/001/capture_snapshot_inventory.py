@@ -38,6 +38,7 @@ def atomic_write_json(path,record):
   with os.fdopen(fd,"w",encoding="utf-8") as f:
    f.write(json.dumps(record,indent=2)+"\n");f.flush();os.fsync(f.fileno())
   os.replace(temp,path)
+  evaluation_gate.fsync_directory(path.parent)
  except BaseException:
   try:os.unlink(temp)
   except FileNotFoundError:pass
