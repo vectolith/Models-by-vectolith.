@@ -24,6 +24,11 @@ jobs:
         run: python -m pip install -r experiments/core-prime/001/requirements-training.txt
       - name: Check dependency consistency
         run: python -m pip check
+      - name: Capture resolved CI package inventory and hash
+        run: |
+          python -m pip freeze --all > dependency-inventory.txt
+          sha256sum dependency-inventory.txt
+          cat dependency-inventory.txt
       - name: Verify runtime imports and exact direct versions
         run: |
           python - <<'PY'
