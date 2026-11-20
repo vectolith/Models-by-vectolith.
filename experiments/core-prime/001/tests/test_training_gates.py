@@ -44,6 +44,14 @@ class Tests(unittest.TestCase):
  def test_budget_limit(self):self.x.max_steps=11;self.a["training_config_sha256"]=trainer.training_config_sha256(self.x);self.assertRaisesRegex(ValueError,"max_steps",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_holdout_access_blocked(self):self.a["holdout_access"]="open";self.assertRaisesRegex(ValueError,"holdout",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_dev_split_rejected(self):self.dataset.write_text(json.dumps({"task_id":"x","prompt":"p","response":"r","provenance":"authored","split":"development"}));self.assertRaisesRegex(ValueError,"split must be train",trainer.load_rows,self.dataset)
+ def test_training_dataset_unknown_fields_rejected(self):
+  row={"task_id":"x","prompt":"p","response":"r","provenance":"authored","split":"train","extra":"unbound"}
+  self.dataset.write_text(json.dumps(row)+"\\n",encoding="utf-8")
+  with self.assertRaisesRegex(ValueError,"unexpected training dataset fields"):trainer.load_rows(self.dataset)
+ def test_training_dataset_response_must_be_nonempty_text(self):
+  row={"task_id":"x","prompt":"p","response":"  ","provenance":"authored","split":"train"}
+  self.dataset.write_text(json.dumps(row)+"\\n",encoding="utf-8")
+  with self.assertRaisesRegex(ValueError,"response required as non-empty text"):trainer.load_rows(self.dataset)
  def test_empty_data_rejected(self):self.dataset.write_text("");self.assertRaisesRegex(ValueError,"empty",trainer.load_rows,self.dataset)
  def test_candidate_evidence_hash_mismatch(self):
   (self.d/"license.txt").write_text("tampered")
