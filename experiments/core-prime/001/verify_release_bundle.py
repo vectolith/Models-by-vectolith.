@@ -61,17 +61,17 @@ def verify_file(root,relative,digest):
  # Verify and hash the same bytes through no-follow descriptors. A path check
  # followed by a separate open/hash would leave a symlink replacement race.
  nofollow=getattr(os,"O_NOFOLLOW",0);directory=getattr(os,"O_DIRECTORY",0);flags=os.O_RDONLY
- descriptors=[];chunks=[]
+ descriptors=[];digest_state=hashlib.sha256()
  try:
   current=os.open(base,flags|directory);descriptors.append(current)
   for part in rel.parts[:-1]:
    current=os.open(part,flags|directory|nofollow,dir_fd=current);descriptors.append(current)
-  file_fd=os.open(rel.parts[-1],flags|nofollow,dir_fd=current);descriptors.append(file_fd)
+  file_fd=os.open(rel.parts[-1],flags|nofollow|getattr(os,"O_NONBLOCK",0),dir_fd=current);descriptors.append(file_fd)
   if not stat.S_ISREG(os.fstat(file_fd).st_mode):raise ValueError("evidence file is not regular")
   while True:
    chunk=os.read(file_fd,1024*1024)
    if not chunk:break
-   chunks.append(chunk)
+   digest_state.update(chunk)
  except FileNotFoundError as exc:
   raise ValueError(f"evidence file missing: {exc}") from exc
  except OSError as exc:
@@ -80,8 +80,7 @@ def verify_file(root,relative,digest):
   for fd in reversed(descriptors):
    try:os.close(fd)
    except OSError:pass
- raw=b"".join(chunks)
- if hashlib.sha256(raw).hexdigest()!=digest:raise ValueError("SHA-256 mismatch")
+ if digest_state.hexdigest()!=digest:raise ValueError("SHA-256 mismatch")
  p=base/rel
  try:p.resolve().relative_to(base)
  except ValueError:raise ValueError("path escapes evidence root")
