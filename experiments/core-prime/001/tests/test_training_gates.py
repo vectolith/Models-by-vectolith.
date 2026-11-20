@@ -239,6 +239,19 @@ class Tests(unittest.TestCase):
   expected_count=len([p for p in ck.iterdir() if p.is_file() and p.name not in ("checkpoint-integrity.json","checkpoint-integrity.json.tmp","checkpoint-budget.json.tmp")])
   self.assertEqual(len(inventory),expected_count)
 
+ def test_checkpoint_inventory_hashes_nested_control_named_payload(self):
+  ck=self.make_checkpoint(self.d,"checkpoint-18",18)
+  nested=ck/"nested";nested.mkdir()
+  names=("checkpoint-integrity.json","checkpoint-integrity.json.tmp","checkpoint-budget.json.tmp")
+  for name in names:(nested/name).write_bytes(("payload:"+name).encode("utf-8"))
+  trainer.seal_checkpoint(ck)
+  inventory=trainer.checkpoint_inventory(ck)
+  self.assertEqual({item["path"] for item in inventory if item["path"].startswith("nested/")},{ "nested/"+name for name in names })
+  self.assertEqual(trainer.validate_checkpoint(ck),18)
+  (nested/"checkpoint-integrity.json").write_bytes(b"tampered")
+  with self.assertRaisesRegex(ValueError,"integrity hash mismatch: nested/checkpoint-integrity.json"):
+   trainer.validate_checkpoint(ck)
+
  def test_checkpoint_inventory_rejects_symlink_swap_before_hash(self):
   ck=self.make_checkpoint(self.d,"checkpoint-14",14)
   target=ck/"trainer_state.json"
