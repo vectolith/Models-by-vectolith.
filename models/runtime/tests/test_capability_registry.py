@@ -21,7 +21,7 @@ class RegistryTests(unittest.TestCase):
   bad=json.loads(json.dumps(self.registry));bad["models"].append(bad["models"][0])
   with self.assertRaises(RegistryError):validate_registry(bad)
  def test_capability_route_requires_full_set(self):
-  self.assertEqual(route(self.registry,["testing","code_review"],available_ids=["core-code"]),[])
+  self.assertEqual(route(self.registry,["testing","code_review","deployment_verification"],available_ids=["core-code"]),[])
  def test_prime_capability_contract(self):
   prime=next(m for m in self.registry["models"] if m["id"]=="core-prime")
   required={"task_intake","requirements_elicitation","multi_step_planning","adaptive_routing","result_integration","verification"}
