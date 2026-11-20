@@ -65,7 +65,7 @@ def tally_records(records: list[dict[str,Any]], task_count: int, expected_task_i
         by_id.setdefault(record.get("task_id"),[]).append(record)
     expected=set(expected_task_ids) if expected_task_ids is not None else None
     ambiguous=sum(len(group)!=1 or not group[0].get("task_id") for group in by_id.values())
-    completed_ids=sum(len(group)==1 and group[0].get("status")=="completed" and (expected is None or task_id in expected for task_id,group in by_id.items())
+    completed_ids=sum(len(group)==1 and group[0].get("status")=="completed" and (expected is None or task_id in expected) for task_id,group in by_id.items())
     completed=min(completed_ids,task_count)
     accounted=len(by_id)
     missing=max(0,task_count-accounted)
