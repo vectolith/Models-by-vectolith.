@@ -35,7 +35,15 @@ class ComparisonTests(unittest.TestCase):
    p=Path(d)/"x";p.write_text('{"task_id":"1","candidate_id":"b","scores":{"x":1},"notes":[]}\n')
    with self.assertRaisesRegex(ValueError,"notes must be text"):m.load(p)
 
- def test_main_records_input_hashes_and_atomic_output(self):
+
+ def test_load_snapshot_hash_is_bound_to_parsed_bytes(self):
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d)/"grades.jsonl";original=json.dumps({"task_id":"1","candidate_id":"base","scores":{"x":1}})+"\\n";p.write_text(original,encoding="utf-8")
+   rows,digest=m.load_snapshot(p)
+   p.write_text(json.dumps({"task_id":"2","candidate_id":"changed","scores":{"x":2}})+"\n",encoding="utf-8")
+   self.assertEqual(set(rows),{"1"})
+   self.assertEqual(digest,__import__("hashlib").sha256(original.encode("utf-8")).hexdigest())
+\n def test_main_records_input_hashes_and_atomic_output(self):
   import sys
   from unittest.mock import patch
   with tempfile.TemporaryDirectory() as d:
