@@ -142,6 +142,21 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         result = await runtime.delegate(request())
         self.assertEqual(result.status, TaskStatus.PARTIALLY_COMPLETED)
 
+    async def test_store_returns_defensive_snapshots(self):
+        from vectolith_runtime.engine import TaskStore
+        store = TaskStore()
+        req = request()
+        req.context["nested"] = {"value": "original"}
+        created = await store.create(req)
+        created.events[0]["detail"] = "tampered"
+        created.request.context["nested"]["value"] = "tampered"
+        read = await store.get("task-1")
+        self.assertEqual(read.events[0]["detail"], "task accepted")
+        self.assertEqual(read.request.context["nested"]["value"], "original")
+        read.events[0]["status"] = "failed"
+        again = await store.get("task-1")
+        self.assertEqual(again.events[0]["status"], "received")
+
     async def test_duplicate_task_ids_are_rejected(self):
         async def prima(task):
             return TaskResult(task.task_id, TaskStatus.FAILED, "not run")
