@@ -166,7 +166,14 @@ def select_recovery_checkpoint(directory):
   except Exception as e:failures.append(f"{candidate.name}: {e}")
  if candidates:raise ValueError("no valid recovery checkpoint; "+ "; ".join(failures))
  return None
+def validate_tokenizer_tokens(tok):
+ eos=getattr(tok,"eos_token",None)
+ if not isinstance(eos,str) or not eos:raise ValueError("tokenizer EOS token required for supervised sequence construction")
+ if getattr(tok,"pad_token",None) is None:tok.pad_token=eos
+ if getattr(tok,"pad_token_id",None) is None:raise ValueError("tokenizer padding token ID required for batch collation")
+ return tok
 def build_sequence(tok,prompt,response,max_length=2048):
+ validate_tokenizer_tokens(tok)
  if getattr(tok,"chat_template",None):
   messages=[{"role":"user","content":prompt}]
   try:
@@ -273,9 +280,11 @@ def main():
  try:planned_cumulative_steps=check_step_budget(prior_steps,x.max_steps,start_step,a.get("budget",{}).get("max_steps"))
  except Exception as e:p.error(f"cumulative step budget blocked: {e}")
  run_started_monotonic=time.monotonic()
- tok=AutoTokenizer.from_pretrained(str(snapshot),local_files_only=True,trust_remote_code=False);model=AutoModelForCausalLM.from_pretrained(str(snapshot),local_files_only=True,trust_remote_code=False,torch_dtype=torch.float16,device_map="auto")
+ tok=AutoTokenizer.from_pretrained(str(snapshot),local_files_only=True,trust_remote_code=False)
+ try:validate_tokenizer_tokens(tok)
+ except ValueError as e:p.error(f"tokenizer validation blocked: {e}")
+ model=AutoModelForCausalLM.from_pretrained(str(snapshot),local_files_only=True,trust_remote_code=False,torch_dtype=torch.float16,device_map="auto")
  model=get_peft_model(model,LoraConfig(r=x.rank,lora_alpha=x.alpha,target_modules=[s.strip() for s in x.target_modules.split(",") if s.strip()],lora_dropout=0,bias="none",task_type="CAUSAL_LM"))
- if tok.pad_token is None:tok.pad_token=tok.eos_token
  class DS(torch.utils.data.Dataset):
   def __init__(self):
    self.items=[]
