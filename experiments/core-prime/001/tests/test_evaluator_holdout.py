@@ -55,7 +55,7 @@ class HoldoutTests(unittest.TestCase):
    with self.assertRaisesRegex(ValueError,"lowercase SHA-256"):evaluator.load_jsonl_snapshot(path)
  def test_fallback_prompt_tokenization_matches_training_template(self):
   source=EVALUATOR.read_text(encoding="utf-8")
-  self.assertIn('encoded=f"User:\n{prompt}\\nAssistant:\\n"',source)
+  self.assertIn(r'encoded=f"User:\n{prompt}\nAssistant:\n"',source)
   self.assertIn("add_special_tokens=False",source)
  def fixture_candidate(self,root):
   snapshot=root/"snapshot";snapshot.mkdir()
