@@ -34,7 +34,12 @@ def verify_model_snapshot(record,record_path):
  if not isinstance(rel,str) or not rel.strip():raise ValueError("candidate model_snapshot_path missing")
  relpath=Path(rel)
  if relpath.is_absolute() or ".." in relpath.parts:raise ValueError("model snapshot path must be relative and confined")
- snapshot=(root/relpath).resolve()
+ raw_snapshot=root/relpath
+ cursor=root
+ for part in relpath.parts:
+  cursor=cursor/part
+  if cursor.is_symlink():raise ValueError("model snapshot path contains symlink components")
+ snapshot=raw_snapshot.resolve()
  try:snapshot.relative_to(root)
  except ValueError:raise ValueError("model snapshot path escapes candidate root")
  if not snapshot.is_dir() or snapshot.is_symlink():raise ValueError("local model snapshot directory missing or unsafe")
