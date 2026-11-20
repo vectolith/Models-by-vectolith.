@@ -48,6 +48,15 @@ class ComparisonTests(unittest.TestCase):
    self.assertEqual(set(rows),{"1"})
    self.assertEqual(digest,__import__("hashlib").sha256(original.encode("utf-8")).hexdigest())
 
+ def test_atomic_output_does_not_follow_predictable_tmp_symlink(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);out=root/"result.json";outside=root/"outside.json";outside.write_text("preserve",encoding="utf-8")
+   out.with_suffix(out.suffix+".tmp").symlink_to(outside)
+   digest=m.atomic_write_json(out,{"safe":True})
+   self.assertEqual(outside.read_text(encoding="utf-8"),"preserve")
+   self.assertEqual(json.loads(out.read_text(encoding="utf-8")),{"safe":True})
+   self.assertEqual(digest,m.sha256_file(out))
+   self.assertFalse(any(p.name.startswith(out.name+".") and p.name.endswith(".tmp") and p!=out.with_suffix(out.suffix+".tmp") for p in root.iterdir()))
  def test_main_records_input_hashes_and_atomic_output(self):
   import sys
   from unittest.mock import patch
