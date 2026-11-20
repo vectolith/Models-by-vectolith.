@@ -37,7 +37,16 @@ class HoldoutTests(unittest.TestCase):
   for name,data in (("license.txt",b"license"),("permission.txt",b"permission"),("review.txt",b"review")):(root/name).write_bytes(data)
   path=root/"candidate.json";path.write_text(json.dumps(candidate),encoding="utf-8")
   return path,candidate
- def test_candidate_snapshot_integrity_and_permission(self):
+
+ def test_candidate_snapshot_root_symlink_rejected(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp);outside=root/"outside";outside.mkdir()
+   (outside/"config.json").write_bytes(b"{}")
+   candidate={"model_snapshot_path":"snapshot-link","weight_inventory":[{"path":"snapshot-link/config.json","sha256":hashlib.sha256(b"{}").hexdigest()}]}
+   link=root/"snapshot-link";link.symlink_to(outside,target_is_directory=True)
+   record_path=root/"candidate.json";record_path.write_text(json.dumps(candidate),encoding="utf-8")
+   with self.assertRaisesRegex(ValueError,"symlink components"):evaluator.evaluation_gate.verify_model_snapshot(candidate,record_path)
+\n def test_candidate_snapshot_integrity_and_permission(self):
   with tempfile.TemporaryDirectory() as tmp:
    path,candidate=self.fixture_candidate(Path(tmp))
    record,digest,snapshot=evaluator.evaluation_gate.verify_candidate_record(path,"m","a"*40)
