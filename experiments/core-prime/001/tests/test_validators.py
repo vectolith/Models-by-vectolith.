@@ -28,6 +28,10 @@ class TaskTests(unittest.TestCase):
   r=row("1","prompt");r["content_sha256"]="not-a-hash";self.assertTrue(any("lowercase SHA-256" in e for e in tasks.validate([file_rows([r])])[1]))
  def test_content_hash_exact_prompt_bytes_accepted(self):
   r=row("1","prompt");r["content_sha256"]=tasks.sha256(r["prompt"]);self.assertEqual(tasks.validate([file_rows([r])])[1],[])
+ def test_invalid_utf8_file_returns_validation_error(self):
+  f=tempfile.NamedTemporaryFile(mode="wb",delete=False);f.write(b"\\xff\\xfe");f.close();self.assertTrue(any("read error" in e for e in tasks.validate([Path(f.name)])[1])
+ def test_unhashable_split_rejected_without_crash(self):
+  r=row("1","prompt");r["split"]={"invalid":True};self.assertTrue(any("invalid split" in e for e in tasks.validate([file_rows([r])])[1])
  def test_normalization(self):self.assertEqual(tasks.normalized_prompt("A  B\nC"),"a b c")
 class CandidateTests(unittest.TestCase):
  def test_candidate_json_schema_is_valid_json(self):
