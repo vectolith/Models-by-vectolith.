@@ -166,14 +166,14 @@ def select_recovery_checkpoint(directory):
   except Exception as e:failures.append(f"{candidate.name}: {e}")
  if candidates:raise ValueError("no valid recovery checkpoint; "+ "; ".join(failures))
  return None
-def validate_tokenizer_tokens(tok):
+def validate_tokenizer_tokens(tok,require_padding_id=True):
  eos=getattr(tok,"eos_token",None)
  if not isinstance(eos,str) or not eos:raise ValueError("tokenizer EOS token required for supervised sequence construction")
  if getattr(tok,"pad_token",None) is None:tok.pad_token=eos
- if getattr(tok,"pad_token_id",None) is None:raise ValueError("tokenizer padding token ID required for batch collation")
+ if require_padding_id and getattr(tok,"pad_token_id",None) is None:raise ValueError("tokenizer padding token ID required for batch collation")
  return tok
 def build_sequence(tok,prompt,response,max_length=2048):
- validate_tokenizer_tokens(tok)
+ validate_tokenizer_tokens(tok,require_padding_id=False)
  if getattr(tok,"chat_template",None):
   messages=[{"role":"user","content":prompt}]
   try:
