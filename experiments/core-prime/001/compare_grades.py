@@ -20,9 +20,12 @@ def atomic_write_json(path,record):
     os.replace(temp,path)
     return sha256_file(path)
 
-def load(path):
+def load_snapshot(path):
+    raw=Path(path).read_bytes()
+    try:text=raw.decode("utf-8")
+    except UnicodeDecodeError as exc:raise ValueError(f"{path}: invalid UTF-8: {exc}") from exc
     rows={}
-    for n,line in enumerate(Path(path).read_text(encoding="utf-8").splitlines(),1):
+    for n,line in enumerate(text.splitlines(),1):
         if not line.strip(): continue
         try:r=json.loads(line)
         except Exception as e:raise ValueError(f"{path}:{n}: invalid JSON: {e}")
@@ -43,7 +46,9 @@ def load(path):
     if not rows:raise ValueError(f"{path}: no grades")
     candidate_ids={r["candidate_id"] for r in rows.values()}
     if len(candidate_ids)!=1:raise ValueError(f"{path}: candidate_id must be consistent across all grade records")
-    return rows
+    return rows,hashlib.sha256(raw).hexdigest()
+
+def load(path):return load_snapshot(path)[0]
 
 def compare(base,trained):
     for label,records in (("baseline",base),("adapter",trained)):
@@ -74,9 +79,12 @@ def compare(base,trained):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument("--baseline-grades",required=True,type=Path);p.add_argument("--adapter-grades",required=True,type=Path);p.add_argument("--output",required=True,type=Path);a=p.parse_args()
-    try:result=compare(load(a.baseline_grades),load(a.adapter_grades))
+    try:
+        baseline,baseline_sha=load_snapshot(a.baseline_grades)
+        adapter,adapter_sha=load_snapshot(a.adapter_grades)
+        result=compare(baseline,adapter)
     except ValueError as e:p.error(str(e))
-    result["input_grade_file_sha256"]={"baseline":sha256_file(a.baseline_grades),"adapter":sha256_file(a.adapter_grades)}
+    result["input_grade_file_sha256"]={"baseline":baseline_sha,"adapter":adapter_sha}
     result["comparison_schema_version"]=1
     output_sha256=atomic_write_json(a.output,result)
     print(json.dumps({"task_count":result["task_count"],"criteria":result["criteria"],"input_grade_file_sha256":result["input_grade_file_sha256"],"output_sha256":output_sha256,"output":str(a.output)},indent=2))
