@@ -62,6 +62,12 @@ class Tests(unittest.TestCase):
   (self.d/"provenance.json").unlink()
   with self.assertRaisesRegex(ValueError,"dataset provenance evidence file missing"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_duplicate_ids_rejected(self):r={"task_id":"x","prompt":"p","response":"r","provenance":"a","split":"train"};self.dataset.write_text(json.dumps(r)+"\n"+json.dumps(r));self.assertRaisesRegex(ValueError,"duplicate",trainer.load_rows,self.dataset)
+ def test_training_package_inventory_snapshot_is_single_capture(self):
+  from unittest.mock import patch
+  items=[{"name":"fixture-package","version":"1.0"}]
+  with patch.object(trainer,"package_inventory",return_value=items) as capture:
+   inventory,digest=trainer.package_inventory_snapshot()
+  self.assertEqual(inventory,items);self.assertEqual(digest,trainer.evaluation_gate.sha256_serialized(items));self.assertEqual(capture.call_count,1)
  def test_telemetry_run_cumulative_accounting(self):
   rows=[{"run_id":"r1","session_elapsed_seconds":12},{"run_id":"r1","session_elapsed_seconds":8},{"run_id":"r2","session_elapsed_seconds":5}]
   self.assertEqual(trainer.telemetry_elapsed(rows),17)
