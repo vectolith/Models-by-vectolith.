@@ -75,6 +75,12 @@ class Tests(unittest.TestCase):
   (self.d/"compute.json").unlink()
   with self.assertRaisesRegex(ValueError,"free compute evidence file missing"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
 
+ def test_training_compute_evidence_uses_shared_confined_verifier(self):
+  from unittest.mock import patch
+  secure=trainer.evaluation_gate.verify_evidence_file
+  with patch.object(trainer.evaluation_gate,"verify_evidence_file",wraps=secure) as verifier:
+   trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
+  self.assertTrue(any(call.args[3]=="free compute" for call in verifier.call_args_list))
  def test_dataset_provenance_evidence_dataset_hash_mismatch(self):
   provenance=self.d/"provenance.json";provenance.write_text(json.dumps({"dataset_sha256":"0"*64,"review_status":"reviewed","reviewer":"independent-reviewer","review_scope":"review","reviewed_at_utc":"2026-11-20T08:00:00+00:00"}))
   self.a["dataset_provenance"]["evidence_sha256"]=trainer.sha256_file(provenance)
