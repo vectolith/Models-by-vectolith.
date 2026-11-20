@@ -32,6 +32,24 @@ class CaptureTests(unittest.TestCase):
    record=root/"candidate.json";record.write_text(json.dumps({"model_snapshot_path":"snapshot-link"}))
    with self.assertRaisesRegex(ValueError,"symlink components"):snapshot.capture(record)
 
+ def test_environment_evidence_atomic_cli_output(self):
+  from unittest.mock import patch
+  with tempfile.TemporaryDirectory() as d:
+   out=Path(d)/"environment.json"
+   with patch.object(sys,"argv",["capture_environment.py","--output",str(out)]):env.main()
+   parsed=json.loads(out.read_text(encoding="utf-8"))
+   self.assertEqual(parsed["package_inventory_sha256"],env.evaluation_gate.sha256_serialized(parsed["package_inventory"]))
+   self.assertEqual(list(out.parent.glob(out.name+".*.tmp")),[])
+ def test_snapshot_inventory_atomic_cli_output(self):
+  from unittest.mock import patch
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);snap=root/"snapshot";snap.mkdir();(snap/"config.json").write_text("{}")
+   record=root/"candidate.json";record.write_text(json.dumps({"model_snapshot_path":"snapshot"}))
+   out=root/"inventory.json"
+   with patch.object(sys,"argv",["capture_snapshot_inventory.py","--candidate-record",str(record),"--output",str(out)]):snapshot.main()
+   parsed=json.loads(out.read_text(encoding="utf-8"))
+   self.assertEqual(parsed["inventory_sha256"],snapshot.evaluation_gate.sha256_serialized(parsed["inventory"]))
+   self.assertEqual(list(out.parent.glob(out.name+".*.tmp")),[])
  def test_snapshot_capture_rejects_empty(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);(root/"snapshot").mkdir();record=root/"candidate.json";record.write_text(json.dumps({"model_snapshot_path":"snapshot"}))
