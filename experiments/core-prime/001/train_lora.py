@@ -251,7 +251,7 @@ def gates(c,a,rows,x,package_hash=None,training_config_hash=None,dataset_sha256=
  if a.get("code_commit")!=x.code_commit:raise ValueError("code commit mismatch")
  provenance=a.get("dataset_provenance",{})
  if provenance.get("status")!="reviewed":raise ValueError("dataset provenance review missing")
- verify_evidence_file(x.authorization.parent,provenance.get("evidence_path"),provenance.get("evidence_sha256"),"dataset provenance")
+ evaluation_gate.verify_dataset_provenance_evidence(x.authorization.parent,provenance.get("evidence_path"),provenance.get("evidence_sha256"),dataset_sha256)
  h=a.get("hardware",{})
  if h.get("verified_free_budget") is not True or not h.get("provider") or not h.get("session_id"):raise ValueError("verified free compute/session evidence missing")
  verify_evidence_file(x.authorization.parent,h.get("evidence_path"),h.get("evidence_sha256"),"free compute")
