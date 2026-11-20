@@ -70,6 +70,11 @@ class ReleaseVerifierTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);(root/"dir").mkdir()
    with self.assertRaisesRegex(ValueError,"not regular"):v.verify_file(root,"dir",hashlib.sha256(b"").hexdigest())
+
+ def test_duplicate_manifest_keys_rejected(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);manifest=root/"release.json";manifest.write_text('{"model_name":"Core Prime","model_name":"Other"}')
+   with self.assertRaisesRegex(ValueError,"duplicate JSON object key"):v.evaluation_gate.strict_json_loads(manifest.read_text())
  def test_hash_mismatch(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);(root/"x").write_text("actual")
