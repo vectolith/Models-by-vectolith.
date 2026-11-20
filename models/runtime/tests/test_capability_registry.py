@@ -22,4 +22,19 @@ class RegistryTests(unittest.TestCase):
   with self.assertRaises(RegistryError):validate_registry(bad)
  def test_capability_route_requires_full_set(self):
   self.assertEqual(route(self.registry,["testing","code_review"],available_ids=["core-code"]),[])
+ def test_prime_capability_contract(self):
+  prime=next(m for m in self.registry["models"] if m["id"]=="core-prime")
+  required={"task_intake","requirements_elicitation","multi_step_planning","adaptive_routing","result_integration","verification"}
+  self.assertTrue(required.issubset(set(prime["capabilities"])))
+  self.assertTrue(prime["profile"]["workflow"])
+ def test_prima_capability_contract(self):
+  prima=next(m for m in self.registry["models"] if m["id"]=="core-prima")
+  required={"repository_inspection","code_generation","debugging","test_execution","ci_diagnosis","reproducibility","engineering_evidence_capture"}
+  self.assertTrue(required.issubset(set(prima["capabilities"])))
+  self.assertTrue(prima["profile"]["workflow"])
+ def test_orchestrator_delegation_allowlists_are_defined(self):
+  for model_id in ("core-prime","core-prima"):
+   model=next(m for m in self.registry["models"] if m["id"]==model_id)
+   self.assertTrue(model["delegates_to"])
+   self.assertTrue(model["limits"])
 if __name__=="__main__": unittest.main()
