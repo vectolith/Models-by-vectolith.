@@ -1,0 +1,22 @@
+{
+  "schema_version": "vectolith-core-prime-grading-pilot-reference/1.0",
+  "source_report": "evaluation/core-prime-run-42-grading-pilot-2026-11-17.md",
+  "scope": {"candidate_count": 5, "responses_per_candidate": 6, "response_count": 30, "rubric_criteria_per_candidate": 22},
+  "candidate_order": ["granite-4.2-3b", "lfm2.5-2.6b", "phi-4-mini-instruct", "granite-3.1-3b-a800m", "minicpm5-2b"],
+  "candidate_totals": {
+    "granite-4.2-3b": {"passed": 17, "total": 22},
+    "lfm2.5-2.6b": {"passed": 14, "total": 22},
+    "phi-4-mini-instruct": {"passed": 17, "total": 22},
+    "granite-3.1-3b-a800m": {"passed": 16, "total": 22},
+    "minicpm5-2b": {"passed": 16, "total": 22}
+  },
+  "case_totals": {
+    "prime-reasoning-001": {"criteria": 4, "passed": [2, 3, 4, 3, 3]},
+    "prime-reasoning-002": {"criteria": 3, "passed": [3, 0, 0, 3, 3]},
+    "prime-math-001": {"criteria": 4, "passed": [2, 4, 4, 4, 2]},
+    "prime-knowledge-001": {"criteria": 3, "passed": [3, 3, 3, 3, 3]},
+    "prime-instruction-001": {"criteria": 4, "passed": [3, 0, 4, 1, 3]},
+    "prime-synthesis-001": {"criteria": 4, "passed": [4, 4, 2, 2, 2]}
+  },
+  "note": "Aggregate reference only. The original pilot report did not preserve 30 criterion-level grade records. This can reconcile aggregate totals only; it is not ground truth or a record-by-record regression fixture."
+}

@@ -1,4 +1,4 @@
-# Independent human rubric grading
+# Grading protocol
 
 `run_eval.py` preserves raw model responses and the rubric attached to each public case. It intentionally does not grade model quality. This companion tool validates independently authored grades and summarizes evidence by role, candidate, model revision, competency category, and individual rubric criterion.
 
@@ -64,3 +64,10 @@ The output retains criterion-level means, population standard deviation, case co
 - The summary always sets `qualification_decision` to `not_made`.
 - Human grading does not replace private holdout evaluation, repeated-run variance, license and output-training permission review, verified free-compute testing, cross-review, contribution-shard checks, leave-one-teacher-out ablation, or teacher-disabled student release tests.
 - Public benchmark fixtures are public and must not be represented as secret or contamination-proof holdouts.
+
+
+## Core Prime qualification gate
+
+The qualification gate is **Grading**. It requires a completed grading report covering the expected response set, a documented rubric version, and a SHA-256 digest of the report. It does not require a minimum number of graders, reviewer-independence attestations, inter-grader agreement statistics or thresholds, or adjudication. Those are not qualification safeguards under the current policy.
+
+Preserve source outputs and grading reports with their provenance. The Grading gate validates report completion and traceability; it does not itself establish factual correctness or replace criterion-specific executable verification where an objective verifier is available.

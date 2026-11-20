@@ -27,7 +27,7 @@ Teacher models are training-time resources only. A released student must run wit
 | Student SFT | `runtime/vectolith_runtime/distillation_training.py` | Explicitly invoked optional LoRA/full-parameter SFT; at least four teacher identities represented |
 | Contribution and independence evidence | `runtime/vectolith_runtime/distillation.py` | Per-teacher contribution, positive ablation and teacher-independent inference evidence |
 | Student evaluation and release gate | `runtime/vectolith_runtime/independent_evaluation.py` | Capability report, leave-one-teacher-out evidence and fail-closed release decision |
-| Foundation discovery/evaluation | `evaluation/` | Pinned candidates, raw outputs, human grading, compute observations and immutable evidence |
+| Foundation discovery/evaluation | `evaluation/` | Pinned candidates, raw outputs, deterministic/local semantic grading, compute observations and immutable evidence |
 | Training and promotion policy | `docs/training-and-promotion.md` | Reproducibility, independent evaluation, safety and release gates |
 
 The current Python runtime is a reference implementation, not yet a hosted multi-tenant training control plane. Do not describe a documented or planned interface as a deployed service.
@@ -48,7 +48,7 @@ The current `ModelManifest` is the canonical model catalogue record:
 - `lifecycle`: experimental, development, evaluation, released, deprecated or retired.
 - `foundation`, `adapter_id`, and non-secret metadata where known.
 
-Registry discovery returns all compatible candidates. The orchestrator applies release eligibility, evaluation evidence, resource budgets, availability and permissions. Only `released` models are production-eligible by default. A manifest never implies that weights exist or that a model has passed evaluation.
+Registry discovery returns all compatible candidates. The orchestrator applies release eligibility, evaluation evidence, resource constraints, availability and permissions. Only `released` models are production-eligible by default. A manifest never implies that weights exist or that a model has passed evaluation.
 
 ### 3.2 Teacher qualification and assignment
 
@@ -62,7 +62,7 @@ The existing `TeacherQualification` and `TeacherAssignmentPanel` are the source 
 
 Teacher selection is competency coverage, not popularity or model count. For any student activated for training, the panel must contain at least four distinct qualified teachers, cover every required competency, and use exact revisions that match the qualification evidence. Every teacher must later contribute accepted examples and show a positive held-out leave-one-teacher-out effect. A candidate, shortlist entry, successful download, or keyword score is not a qualified teacher.
 
-**Qualification limitation:** the current built-in keyword/rubric score is a screening signal only. Appointment requires retained raw outputs, independent human grading/adjudication, factuality review, executable verification for objective tasks, license/terms review, and measured resource evidence. Provider-hosted APIs and self-hosted weights must be assessed separately for data handling and output-training permission.
+**Qualification limitation:** the current built-in keyword/rubric score is a screening signal only. Appointment requires retained raw outputs, grading report completion, factuality review, executable verification for objective tasks, license/terms review, and measured resource evidence. Provider-hosted APIs and self-hosted weights must be assessed separately for data handling and output-training permission.
 
 Current state: no teacher is presumed qualified merely because it appears in a candidate manifest. Core Prima's qualification activity remains dormant while the model is paused.
 
@@ -82,7 +82,7 @@ The current teaching corpus is JSONL. Each accepted row emitted by `generate_tea
 | `content_sha256` | SHA-256 over prompt, separator and response |
 | `accepted` | Explicit acceptance flag; only true rows enter SFT |
 
-A peer review is not ground truth. Add executable tests, trusted references, or human adjudication wherever the competency permits. Keep rejected examples and review evidence in a separately retained audit artifact; never silently convert a rejected row into accepted training data.
+A peer review is not ground truth. Add executable tests, trusted references, or criterion-specific verification where the competency permits. Keep rejected examples and review evidence in a separately retained audit artifact; never silently convert a rejected row into accepted training data.
 
 Every dataset release must also have a **dataset manifest** containing: dataset ID and semantic version; schema version; target student; purpose and competency coverage; source/task-suite revisions; row and token counts; accepted/rejected counts; per-teacher contribution counts; split designation (train/validation/public benchmark/private holdout); provenance and license references; deduplication/contamination checks; creation timestamp and pipeline commit; storage URI; and SHA-256 of the exact immutable dataset bytes.
 
@@ -96,7 +96,7 @@ Every training invocation must produce a machine-readable run manifest before wo
 - foundation repository/model ID, immutable weight revision, tokenizer revision and configuration hash;
 - dataset ID/version/hash and explicit train/validation split references;
 - trainer adapter/name/version, source commit, method (SFT, PEFT, RLVR, preference optimization, or distillation), full hyperparameter/config snapshot and random seed;
-- hardware/runtime inventory, precision, distributed topology, memory observations and approved resource budget;
+- hardware/runtime inventory, precision, distributed topology, memory observations and approved USD $0 resource ceiling;
 - output checkpoint/artifact URI and hashes, logs, metrics, evaluation report references and known limitations;
 - stop reason, failure details, rollback parent and operator identity.
 
@@ -108,7 +108,7 @@ Trainer adapters must expose capability metadata (supported architectures, token
 
 Every evaluation report must identify the exact student checkpoint hash, foundation lineage, tokenizer, inference adapter/version, suite and fixture revisions, split type, generation settings, environment/hardware, raw output artifact hashes, grading method, evaluator identity/version, per-case/per-competency outcomes, aggregate metrics and limitations.
 
-Keyword matching and smoke suites are execution checks, not release-quality judgments. Human grades must be blinded where practical, independently adjudicated for disagreement, and retained with provenance. Objective coding/math/tool tasks should use isolated sandboxes and deterministic verifiers. Public suites are not private holdouts.
+Keyword matching and smoke suites are execution checks, not release-quality judgments. Grading reports must cover the declared response set, identify the rubric version, and be retained with provenance. Reviewer counts, agreement thresholds, and adjudication are not qualification requirements. Objective coding/math/tool tasks should use isolated sandboxes and deterministic verifiers. Public suites are not private holdouts.
 
 Promotion is fail-closed. Required gates:
 
@@ -125,7 +125,7 @@ A failed or missing gate blocks promotion. Training loss, a successful training 
 
 ### 3.6 Distillation interface
 
-Distillation is a training-time adapter boundary, not a student inference dependency. The common request must identify student foundation/revision, teacher panel/revisions, dataset or prompt stream, tokenizer compatibility, method, objective, hyperparameters, resource budget and evaluation plan. The result must identify student checkpoint/hash, source run, accepted teacher contributions, metrics, ablations, and limitations.
+Distillation is a training-time adapter boundary, not a student inference dependency. The common request must identify student foundation/revision, teacher panel/revisions, dataset or prompt stream, tokenizer compatibility, method, objective, hyperparameters, verified free resource and USD $0 ceiling, and evaluation plan. The result must identify student checkpoint/hash, source run, accepted teacher contributions, metrics, ablations, and limitations.
 
 Supported maturity must be stated accurately:
 
@@ -143,7 +143,7 @@ The canonical state progression is:
 
 Terminal alternatives are `blocked`, `failed`, `cancelled`, `rejected` and `rolled_back`. State changes must be auditable and monotonic except for an explicit new run or rollback event. A failed run is not silently resumed under the same identity; resumed work records a parent run and new run ID.
 
-For the active Core Prime track: foundation comparison and selection precede expensive training; then data preparation, baseline evaluation, teacher qualification, accepted corpus generation, SFT, optional RL/post-training, distillation experiments, independent evaluation and promotion. Do not start a paid job or assume free GPU capacity. Compute availability must be verified before scheduling.
+For the active Core Prime track: foundation comparison and selection precede expensive training; then data preparation, baseline evaluation, teacher qualification, accepted corpus generation, SFT, optional RL/post-training, distillation experiments, independent evaluation and promotion. Do not schedule a run until the execution environment and compute capacity have been verified.
 
 Core Prima remains paused and is excluded from active scheduling. If reactivated, it receives a separate role justification, foundation decision, curriculum, teacher panel, dataset, run lineage, evaluation and release gate.
 
@@ -169,10 +169,10 @@ References:
 | Priority | Work | Acceptance criteria |
 |---|---|---|
 | P0 | Contract/schema hardening | Versioned JSON schemas and fixtures for dataset rows/manifests, run manifests, qualification records and evaluation reports; invalid or unknown versions fail closed |
-| P0 | Qualification evidence hardening | Keyword score cannot alone appoint a teacher; human/executable evidence, license and endpoint permission evidence are mandatory |
+| P0 | Qualification evidence hardening | Keyword score cannot alone appoint a teacher; grading/executable evidence, license and endpoint permission evidence are mandatory |
 | P0 | Run-manifest lifecycle | Preflight, approval, status, cancellation, immutable artifacts, reproducibility and audit records are emitted for each run |
 | P1 | Dataset manifest tooling | Build, validate, hash, split, deduplicate and audit immutable datasets without exposing holdouts |
-| P1 | Evaluation report tooling | Standard per-case raw evidence, human grading, executable verifier output, regression comparison and holdout integrity |
+| P1 | Evaluation report tooling | Standard per-case raw evidence, deterministic/local semantic grading, executable verifier output, regression comparison and holdout integrity |
 | P1 | Trainer adapter interface | Capability discovery and lifecycle methods with a deterministic mock adapter and no import-time side effects |
 | P2 | NeMo RL adapter prototype | Pinned optional adapter; smoke tests on small supported models; no assumed GPU provisioning |
 | P2 | MOPD/RLVR implementation | Only after foundation, data, compute and reward-verifier gates; reproducible unit/integration tests and student-independence proof |
@@ -187,4 +187,4 @@ P0 and P1 work must not launch expensive training. The first implementation mile
 - No automatic appointment based on candidate lists, public benchmark claims or keyword scores.
 - No teacher at student inference; no teacher endpoint or key in release runtime configuration.
 - No model release without independent held-out evaluation, safety gates, reproducibility and rollback evidence.
-- Preserve the current Core Prima pause and all existing foundation-selection and zero-cost compute constraints.
+- Preserve the current Core Prima pause and all existing foundation-selection and execution-environment constraints.

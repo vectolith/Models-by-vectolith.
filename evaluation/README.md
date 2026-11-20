@@ -99,9 +99,9 @@ This remains an execution/resource comparison, not a foundation selection. The r
 Every candidate remains `license_review=pending_human_legal_review`, `training_output_permission=not_verified`, and `teacher_qualification=not_qualified`. No student training is performed.
 
 
-## Independent human grading
+## Grading
 
-Raw outputs are never automatically treated as quality scores. Use [`docs/independent-human-rubric-grading.md`](../docs/independent-human-rubric-grading.md) for the human grading protocol and `summarize_human_grades.py` to validate independent rubric grades and produce per-criterion evidence summaries. The report never makes a foundation or teacher qualification decision.
+Raw outputs are never automatically treated as quality scores. Use [`docs/independent-human-rubric-grading.md`](../docs/independent-human-rubric-grading.md) for the grading protocol and `summarize_human_grades.py` to validate rubric grades and produce per-criterion evidence summaries. The report never makes a foundation or teacher qualification decision.
 
 
 ## Expanded competency suites and private holdout
@@ -130,7 +130,7 @@ These are public development/evaluation fixtures, not a secret holdout. The v3 s
 - `tests/test_core_prime_qualification_v4.py` validates category counts, rubric presence and unique IDs.
 - The Prime multi-teacher inference workflow now includes v4 for every active teacher. All raw outputs, including failures and truncated answers, remain preserved.
 - See [the v4 curriculum and proposed gates](core-prime-evaluation-curriculum-v4.md) and [additional teacher discovery register](additional-teacher-candidates-2026-11-16.md).
-- The new teacher candidates are discovery-only until exact snapshots, compatibility tests, resource measurements, independent human grading and separate training-output permission review are complete.
+- The new teacher candidates are discovery-only until exact snapshots, compatibility tests, resource measurements, grading report completion and separate training-output permission review are complete.
 - v4 is a public development suite, not a private holdout. No v4 responses or answers may be used for training.
 
 
@@ -158,14 +158,14 @@ The 2026-11-16 run 40 evidence record contains the five successful real-response
 
 ## Blinded Core Prime human review
 
-The run 40 five-artifact evidence set contains 900 raw responses across the three existing additive teachers and two discovery-only candidates, including 56 v4 prompts per candidate. Build reviewer-specific, identity-separated packages and validate/unblind complete independent submissions with:
+The run 40 five-artifact evidence set contains 900 raw responses across the three existing additive teachers and two discovery-only candidates, including 56 v4 prompts per candidate. The historical blinded-review tooling remains optional; it is not part of the current Grading qualification gate.
 
 \`\`\`bash
 python evaluation/prepare_blinded_human_review.py build --help
 python evaluation/prepare_blinded_human_review.py unblind --help
 \`\`\`
 
-The builder verifies immutable artifact ZIPs, JSON/JSONL parity, provenance, exact suite coverage, and original rubric integrity. It writes separate reviewer ZIPs and a restricted private identity key that must never be shared with reviewers. The unblinding step requires at least two distinct evaluator IDs and complete grade coverage. Human grade summaries report pairwise weighted agreement but never make a teacher qualification decision. See [Core Prime blinded human-review operations](../docs/core-prime-blinded-human-review.md).
+The builder verifies immutable artifact ZIPs, JSON/JSONL parity, provenance, exact suite coverage, and original rubric integrity. It writes separate reviewer ZIPs and a restricted private identity key that must never be shared with reviewers. The optional legacy blinded-review utility supports multiple evaluator packages; it is not required by the current Grading qualification gate. The gate requires complete grading coverage, a rubric version and a grade-report digest. See [Core Prime blinded human-review operations](../docs/core-prime-blinded-human-review.md).
 
 
 Additional verified follow-up artifacts from Core Prime runs 42 and 43 are recorded in [run 42/43 evidence](core-prime-multi-teacher-runs-42-43-evidence-2026-11-16.md). The blinded review builder supports repeated inference runs for the same candidate without overwriting or collapsing their provenance.
@@ -173,12 +173,12 @@ Additional verified follow-up artifacts from Core Prime runs 42 and 43 are recor
 The later run 42 Phi-4 completion and the 2026-11-17 PR #73 local-grader/teacher-rights intake evidence are recorded in [Core Prime intake run 44110893414 evidence](core-prime-intake-run-44110893414-evidence-2026-11-17.md). The Qwen3.5-2B smoke was performed in the local grader role only; the rights capture does not grant legal approval or training-output permission.
 
 
-Human disagreement records are generated and validated separately with \`evaluation/prepare_human_adjudication.py\`; adjudication never overwrites the original reviewer grades. See the operations guide for the third-party adjudicator workflow.
+The legacy disagreement/adjudication utilities remain available for historical analysis only. They are optional and are not part of the current Grading qualification gate.
 
 
 ## Fail-closed teacher qualification
 
-Use `teacher_qualification_gates.py` to validate candidate evidence against ten independent gates and enforce the minimum four-teacher Core Prime cohort. Inference success is not qualification. Legal permission to use generated outputs for training is separate from the model-weight license. Human review requires two independent reviewers and completed adjudication; protected-holdout evidence, corpus integrity, safety, and resource evidence remain mandatory. The template is intentionally empty and no candidate is approved by default. See [Core Prime teacher qualification gates](../docs/core-prime-four-teacher-qualification.md).
+Use `teacher_qualification_gates.py` to validate candidate evidence against ten independent gates and enforce the minimum four-teacher Core Prime cohort. Inference success is not qualification. Legal permission to use generated outputs for training is separate from the model-weight license. Grading requires a complete grading report and rubric version; protected-holdout evidence, corpus integrity, safety, and resource evidence remain mandatory. The template is intentionally empty and no candidate is approved by default. See [Core Prime teacher qualification gates](../docs/core-prime-four-teacher-qualification.md).
 
 
 ## Controlled completion-budget study
@@ -189,3 +189,8 @@ The manual-only Core Prime completion study evaluates the same immutable candida
 ## Criterion-specific verification and protected holdout operations
 
 See [criterion verification and protected holdout operations](../docs/criterion-verification-and-protected-holdout.md) for the exact-answer, decimal, signed sandbox-attestation, and source-backed factuality verifier interfaces, plus the required external custody and evaluator isolation evidence. These verifiers do not replace blinded human grading for open-ended reasoning, and a deployment manifest does not provision a private holdout.
+
+
+## Evidence-bound Core Prime grading engine
+
+The repeatable Run 42 grading engine is in [grading/](grading/README.md). It verifies the five pinned artifact ZIP digests, extracts and binds all 900 response records, prepares blinded candidate-balanced semantic grading requests, applies explicitly declared deterministic rubric checks, validates structured grade records, and fails closed on missing, duplicate or unexpected response coverage. By default it excludes the six-case-per-candidate pilot and prepares the remaining 870 outputs in 29 batches of 30. The historical pilot supports aggregate reconciliation only because criterion-level records were not retained. See [Run 42 grading status](reports/run-42/grading-status.json). All raw outputs and generated grading ledgers must remain in restricted storage, not Git or public CI.

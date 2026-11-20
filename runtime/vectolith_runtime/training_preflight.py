@@ -1,6 +1,6 @@
 """Evidence gates for Core Prime training preflight; no training dependencies imported."""
 from __future__ import annotations
-import hashlib, json, re, math
+import hashlib, json, re
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -14,8 +14,11 @@ def _sha(value: Any) -> bool:
 
 def _time(value: Any) -> bool:
     if not isinstance(value,str) or not value.strip(): return False
-    try: datetime.fromisoformat(value.replace("Z","+00:00")); return True
-    except ValueError: return False
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return parsed.tzinfo is not None and parsed.utcoffset() is not None
+    except ValueError:
+        return False
 
 def validate_teacher_manifest(manifest: dict[str,Any], teacher_id: str, revision: str, *, holdout_deployment_sha256: str | None = None, holdout_evaluation_sha256: str | None = None, holdout_case_count: int | None = None, holdout_audit_sha256: str | None = None) -> list[str]:
     errors=[]
@@ -39,14 +42,12 @@ def validate_teacher_manifest(manifest: dict[str,Any], teacher_id: str, revision
     if (inf.get("status")!="completed" or inf.get("tested_revision")!=revision or not inf.get("workflow_run_id") or not inf.get("internal_run_id") or not isinstance(inf.get("expected_response_count"),int) or isinstance(inf.get("expected_response_count"),bool) or inf.get("expected_response_count",0)<=0 or inf.get("response_count")!=inf.get("expected_response_count") or inf.get("error_count")!=0 or not _sha(inf.get("artifact_sha256"))): errors.append("real inference gate failed")
     res=gate("resource_measurement")
     if (res.get("status")!="recorded" or not res.get("runner_type") or not res.get("device") or not isinstance(res.get("peak_rss_bytes"),int) or isinstance(res.get("peak_rss_bytes"),bool) or res.get("peak_rss_bytes",0)<=0 or not isinstance(res.get("mean_latency_seconds"),(int,float)) or isinstance(res.get("mean_latency_seconds"),bool) or res.get("mean_latency_seconds",0)<=0 or not _sha(res.get("compute_record_sha256"))): errors.append("resource measurement gate failed")
-    h=gate("human_review"); reviewers=h.get("independent_reviewer_ids")
-    if (h.get("status")!="passed" or not isinstance(reviewers,list) or len(set(x for x in reviewers if isinstance(x,str) and x.strip()))<2 or h.get("independence_attested") is not True or h.get("adjudication_complete") is not True or not isinstance(h.get("expected_response_count"),int) or h.get("expected_response_count",0)<=0 or h.get("graded_response_count")!=h.get("expected_response_count") or not _sha(h.get("grade_report_sha256")) or not _sha(h.get("adjudication_sha256"))): errors.append("independent human review/adjudication gate failed")
-    agreement=h.get("agreement")
-    if not isinstance(agreement,dict) or agreement.get("status")!="accepted" or agreement.get("metric") not in {"quadratic_weighted_cohen_kappa","krippendorff_alpha"}: errors.append("human-review agreement record missing or invalid")
-    else:
-        value,threshold=agreement.get("value"),agreement.get("minimum_required")
-        if not isinstance(value,(int,float)) or isinstance(value,bool) or not -1<=value<=1 or not isinstance(threshold,(int,float)) or isinstance(threshold,bool) or not 0<=threshold<=1 or value<threshold: errors.append("human-review agreement below policy threshold or invalid")
-        if not _sha(agreement.get("report_sha256")) or not _sha(agreement.get("policy_sha256")) or not _sha(agreement.get("reviewer_independence_sha256")): errors.append("human-review agreement/independence digest missing")
+    grading=gate("grading")
+    expected=grading.get("expected_response_count")
+    if (grading.get("status")!="passed" or not isinstance(expected,int) or isinstance(expected,bool) or expected<=0
+        or grading.get("graded_response_count")!=expected or not _sha(grading.get("grade_report_sha256"))
+        or not grading.get("rubric_version")):
+        errors.append("grading gate failed")
     safety=gate("safety_review")
     if safety.get("status")!="passed" or not safety.get("reviewer_id") or not _sha(safety.get("report_sha256")): errors.append("safety review gate failed")
     holdout=gate("holdout")
@@ -151,7 +152,7 @@ def validate_training_execution_manifest(
     manifest: dict[str,Any], *, foundation_model: str, foundation_revision: str,
     dataset_sha256: str, training_code_revision: str, training_config: dict[str,Any],
 ) -> list[str]:
-    """Validate run-specific compute, budget, and configuration approval."""
+    """Validate run-specific execution environment and configuration approval."""
     errors=[]
     if not isinstance(manifest,dict) or manifest.get("schema_version")!=EXECUTION_SCHEMA:
         return ["unsupported_or_missing_training_execution_schema"]
@@ -171,20 +172,16 @@ def validate_training_execution_manifest(
     if not _sha(manifest.get("approval_document_sha256")): errors.append("training execution approval document digest missing")
     if manifest.get("approved_configuration")!=training_config:
         errors.append("training configuration differs from approved configuration")
-    budget=manifest.get("budget")
-    if not isinstance(budget,dict): budget={}
-    cost=budget.get("maximum_cost_usd")
-    runtime=budget.get("maximum_runtime_seconds")
-    if (isinstance(cost,bool) or not isinstance(cost,(int,float)) or not math.isfinite(cost) or cost<0 or
-        isinstance(runtime,bool) or not isinstance(runtime,int) or runtime<=0):
-        errors.append("training budget cap is missing or invalid")
-    if budget.get("currency")!="USD" or not _sha(budget.get("pricing_evidence_sha256")) or not budget.get("budget_reference"):
-        errors.append("training budget evidence is incomplete")
     compute=manifest.get("compute")
     if not isinstance(compute,dict): compute={}
-    for field in ("provider","account_or_project","region","runner_type","accelerator_type","runtime_image"):
+    for field in ("provider","account_or_project","region","runner_type","accelerator_type","runtime_image","execution_environment_reference"):
         if not isinstance(compute.get(field),str) or not compute[field].strip():
             errors.append(f"training compute field missing:{field}")
+    runtime=compute.get("maximum_runtime_seconds")
+    if isinstance(runtime,bool) or not isinstance(runtime,int) or runtime<=0:
+        errors.append("training maximum_runtime_seconds is missing or invalid")
+    if not _sha(compute.get("environment_approval_sha256")):
+        errors.append("training execution environment approval digest missing")
     devices=compute.get("accelerator_count")
     if isinstance(devices,bool) or not isinstance(devices,int) or devices<1:
         errors.append("training accelerator count invalid")

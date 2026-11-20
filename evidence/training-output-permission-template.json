@@ -1,0 +1,30 @@
+{
+  "schema_version": "vectolith-training-output-permission/1.0",
+  "status": "pending",
+  "model_id": "",
+  "immutable_revision": "",
+  "authorized_use": "Use of outputs generated from this exact model revision as synthetic teacher data for Core Prime supervised distillation/training.",
+  "scope": {
+    "student": "Core Prime",
+    "allowed_training_methods": [
+      "supervised fine-tuning",
+      "distillation"
+    ],
+    "commercial_use": null,
+    "redistribution": null,
+    "retention_and_deletion_terms": ""
+  },
+  "rights_holder_or_authorized_grantor": "",
+  "authorized_signatory": "",
+  "authority_basis": "",
+  "effective_at": "",
+  "expiry_or_termination": "",
+  "governing_terms_reference": "",
+  "signed_document_reference": "",
+  "signed_document_sha256": "",
+  "reviewer_status": "pending_legal_review",
+  "reviewer_id": "",
+  "reviewed_at": "",
+  "limitations": [],
+  "note": "Template only. This record is not permission until signed by a person with authority to grant the rights and approved by the project's legal reviewer."
+}

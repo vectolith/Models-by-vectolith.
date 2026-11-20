@@ -1,79 +1,43 @@
 # Infrastructure provider qualification register
 
 **Assessment date:** 2026-11-17  
-**Scope:** GPU compute and execution infrastructure for Models by vectolith  
-**Decision:** No remote compute provider is approved yet. Public documentation review is not proof of account eligibility, capacity, payment acceptance, or a Vectolith service entitlement.
+**Scope:** execution-environment qualification for Models by vectolith  
+**Hard ceiling:** **USD $0**  
+**Decision:** No GPU training provider or GPU session is currently verified for this project. Provider eligibility, account access, workload permissions and measured capacity must be verified before execution.
 
-## Candidate summary
+## Current no-cost options
 
-| Candidate | Current state | What public evidence establishes | Blocking evidence |
+| Environment | Published no-cost offer | Current project status | Permitted use |
 |---|---|---|---|
-| RunPod Secure Cloud Pods | discovered; preferred candidate for account/access verification | On-demand GPU Pods, 30+ regions across the US, Europe, Asia and Australia, per-second billing, and published GPU prices | Nigerian account/payment eligibility, actual region inventory, Secure Cloud entitlement, final price/quota, data-processing terms and support/SLA are unverified |
-| Lambda Cloud | blocked for Nigeria-based billing | Public GPU instances and published hourly prices | Lambda's billing documentation currently excludes Nigeria from supported purchase regions; it also says prepaid/debit cards are not accepted |
-| NVIDIA DGX Cloud Lepton | discovered; access unverified | NeMo-Run has a Lepton executor and documents its setup requirements | Authenticated Lepton workspace, node-group entitlement, GPU capacity, remote storage and pricing/contract are not available as evidence |
+| GitHub Actions standard hosted runners on this public repository | Standard public-repository runners are free and unlimited; `ubuntu-latest` is documented as 4 CPU, 16 GB RAM and 14 GB SSD | **Available for CPU CI; model-grading workload not yet load-tested** | Tests, metadata capture, small CPU checks and the pinned local grading pilot only if the workload fits |
+| Kaggle Notebooks | GPU availability, queue and quotas are conditional | **Conditional; no Vectolith account/session or successful workload probe recorded** | Candidate inference or training only after the exact model loads and completes within a verified session with measured capacity |
+| Google Colab free tier | GPU resources may be offered, but availability and usage limits vary and are not guaranteed | **Conditional; no Vectolith session or successful workload probe recorded** | Candidate inference or training only after account/session, hardware, quota and workload evidence are captured |
 
-No provider API has been called, no account has been connected, and no instance has been provisioned.
+Official references:
+- GitHub public runners and specifications: https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job
+- GitHub Actions billing: https://docs.github.com/en/actions/concepts/billing-and-usage
+- Kaggle Notebooks: https://www.kaggle.com/docs/notebooks
+- Google Colab resource limits: https://research.google.com/colaboratory/faq.html
 
-## Candidate evidence
+A published free tier is not proof that a Vectolith workload is available. Before marking a GPU resource verified, capture the actual account/session, accelerator model/count, VRAM, system RAM, disk, queue, quota remaining, runtime limit, model-load result, completed workload, and evidence that no payment method, billing activation, trial credit or charge was used.
 
-### 1. RunPod Secure Cloud
+## Excluded paid or billing-dependent providers
 
-Official evidence:
-- [GPU pricing](https://www.runpod.io/pricing) — updated 2026-11-12. Secure Cloud list prices include L40S at $1.09/GPU-hour and H100 PCIe at $2.89/GPU-hour. Actual quote depends on SKU, region, inventory and storage; re-check in the console immediately before deployment.
-- [Cloud GPU overview](https://www.runpod.io/product/cloud-gpus) — describes 31 global regions across the US, Europe, Asia and Australia and per-second billing.
-- [Billing overview](https://github.com/runpod/docs/blob/main/accounts-billing/billing.mdx) — says RunPod accepts Visa, Mastercard, American Express and other Stripe-supported cards; prepaid cards require at least $100 per transaction; cryptocurrency is accepted through integrated processors subject to any required KYC; business invoicing is available for transactions above $5,000. It documents a default $80/hour account spend limit.
-- [REST API v2 overview](https://www.runpod.io/blog/runpods-rest-api-v2-is-here-one-api-for-your-entire-gpu-stack) — API v2 is the current integration target and was described as public beta on 2026-08-25. It covers Pods, templates, volumes, GPU/data-center catalog and billing.
-- [REST API v1 deprecation notice](https://github.com/runpod/docs/blob/main/api-reference/overview.mdx) — v1 was scheduled for retirement on 2026-11-15, which has passed as of this register's assessment date. Do not build new integrations on v1.
-- [RunPod API MCP setup](https://github.com/runpod/docs/blob/main/get-started/mcp-servers.mdx) — official hosted MCP at https://mcp.runpod.io/ supports Sign in with RunPod OAuth, or API-key authentication. OAuth approval must be initiated by the account holder.
-- [RunPod API v2 Pod management](https://github.com/runpod/docs/blob/main/pods/manage-pods.mdx) — documents the v2 create/list/action/terminate flow. Pod creation uses nested fields such as `gpu: {id, count}`, `image`, `disk` and `mounts`; Pod status is asynchronous and must be polled.
-- [Terms of Service](https://www.runpod.io/legal/terms-of-service) — customer remains responsible for securing data, workloads and guest environments.
+| Provider | Disposition | Reason |
+|---|---|---|
+| RunPod Secure Cloud / Community Cloud | **Excluded by USD $0 policy** | Published GPU Pods are billed; no paid instance, storage volume, hosted service or API may be provisioned |
+| Lambda Cloud | **Not qualified** | Account-level access, applicable terms, workload permissions and measured capacity have not been verified |
+| NVIDIA DGX Cloud Lepton | **Not an available no-cost entitlement** | No verified free Vectolith workspace, GPU allocation or contractual entitlement exists |
+| Any hosted inference API | **Excluded by USD $0 policy** | No paid or billing-enabled model API may be used for grading, teacher inference or foundation evaluation |
 
-Assessment:
-- Keep Secure Cloud as the candidate tier. Do not use Community Cloud for Vectolith training data until the third-party host, isolation, support and data-handling implications have been separately reviewed.
-- The public region list does not establish a Nigeria-based region or prove that a Nigerian customer can pass account/payment checks. In v2, placement is constrained through explicit data-center IDs discovered from the catalog; that is not evidence of Nigerian billing eligibility.
-- Published prices are indicative only. The final hourly rate, storage charges, taxes, network costs, GPU availability and payment acceptance must be checked in the authenticated account.
-- New automation must target REST API v2, not v1. v1 has been retired. v2 was described as public beta in RunPod's August 2026 announcement; pin and validate against the live OpenAPI specification before production use. v2 uses nested create request bodies, paginated/wrapped list responses and standardized errors.
-- v2 Pod lifecycle: `POST /v2/pods`, poll `GET /v2/pods/{id}`, stop/start/restart with `POST /v2/pods/{id}/action`, and permanently remove with `DELETE /v2/pods/{id}`. Stop releases compute but can leave volume-storage charges; termination is the cleanup operation and deletes local Pod data, so artifacts must be exported first.
-- v2 removed spot/interruptible Pods and country-code placement. Do not use v1-only flags such as `countryCodes`, `interruptible`, or legacy stop-after/terminate-after controls in new integrations.
-- RunPod documents a hosted MCP with OAuth. That is the intended account-connection path if available in this ChatGPT environment; the account holder must still approve OAuth. An API key must never be pasted into chat or committed to GitHub.
-- No customer-data approval is granted by this assessment. Start only with synthetic/non-sensitive test data after the legal, security and data-handling review.
+These entries are not procurement recommendations or future spend requests. No provider API has been called, no account has been connected, and no paid resource has been provisioned.
 
-**Qualification state: discovered, not approved.** Next evidence required: successful account onboarding and billing from the actual account holder's country, an available Secure Cloud datacenter and exact GPU SKU, current quote/quota, data-processing/retention terms, support path, and a controlled test instance with a verified cleanup and cost report. The official hosted MCP OAuth path is documented, but no RunPod connector is currently exposed in this ChatGPT session.
+## Training-readiness implications
 
-### 2. Lambda Cloud
+1. GitHub Actions public standard runners are suitable for CPU-only CI and bounded evaluation, not evidence of GPU training capacity.
+2. Kaggle and Colab remain conditional until a real session and exact workload probe succeed. Do not assume GPU availability or rely on promotional access claims.
+3. The selected foundation must fit the actual verified free resource. Do not substitute a different model, architecture, quantization or revision without a separate candidate record and explicit decision.
+4. A run-specific execution manifest must bind the exact resource observation, environment approval and measured capacity.
+5. If no suitable free accelerator is available, keep training blocked. Do not start a paid job, enable billing, or weaken the model/data/evaluation gates to fit an unverified resource.
 
-Official evidence:
-- [GPU pricing](https://lambda.com/pricing) — lists public-cloud instance options and prices, including V100, A100, H100 and B200 configurations.
-- [Managing billing](https://docs.lambda.com/public-cloud/manage-billing/) — says Lambda currently supports purchases only from a specified list of regions, which does not include Nigeria. It also states that Lambda accepts major credit cards, not prepaid or debit cards, and performs a $10 pre-authorization.
-
-Assessment:
-
-**Qualification state: blocked for Nigeria-based billing at the time of this review.** Reassess only if Lambda changes its supported-country policy or Vectolith has a separately eligible billing entity and account that complies with its terms. Do not attempt to bypass the country or payment restrictions.
-
-### 3. NVIDIA DGX Cloud Lepton
-
-Official evidence:
-- [NeMo-Run Lepton executor](https://docs.nvidia.com/nemo/run/nightly/guides/executors/lepton.html) — requires the Lepton CLI to be installed and authenticated, a node group with sufficient GPU capacity, and remote storage accessible to job pods.
-- [Nemotron environment profiles and executors](https://docs.nvidia.com/nemotron/latest/train-models/how-to/env-and-executors.html) — describes NeMo-Run execution profiles and local, Slurm, Lepton and other configured backends.
-
-Assessment:
-
-**Qualification state: discovered, access unverified.** The integration is technically relevant to Nemotron, but public documentation is not a capacity grant. Require a real workspace, node-group availability, quota, pricing/contract, region, data-handling terms and an approved Vectolith adapter before qualification.
-
-## Qualification gates before any paid workload
-
-1. **Identity and eligibility:** confirm the legal account holder, country, account verification and payment method are accepted without geographic workarounds.
-2. **Capacity:** verify exact GPU model/VRAM, region, availability, quota, maximum runtime and storage.
-3. **Economics:** record the exact hourly rate, billing granularity, storage, egress, tax, minimum charge and an explicit run budget.
-4. **Security and data governance:** review data location, retention/deletion, encryption, isolation, access control, network exposure, support and incident terms. Use synthetic data until approval.
-5. **Execution compatibility:** pin the container image, CUDA/driver, framework, Nemotron revision, foundation model revision and tokenizer revision; run preflight and a no-training environment smoke test first.
-6. **Artifact portability:** export logs, checkpoints and run metadata to Vectolith-controlled storage with content hashes and restore verification.
-7. **Cost controls:** require a host-verified budget reference, operator approval, automatic stop/termination, and a tested cleanup path.
-
-## Current operating decision
-
-- Local CPU remains the development and contract-test environment.
-- RunPod Secure Cloud is the first candidate to verify for a small, bounded GPU smoke test, but it is not approved or connected.
-- Lambda is excluded for the current Nigeria-based billing context.
-- DGX Cloud Lepton remains an unverified enterprise/contracted option.
-- Do not run model training until the foundation model, dataset, evaluation gates, compute budget and provider qualification are all approved.
+**Qualification state:** CPU CI is available through public standard runners; local semantic grader capacity is not yet load-tested; no GPU training capacity is verified. Training remains blocked.

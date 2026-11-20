@@ -1,0 +1,280 @@
+{
+  "schema_version": "vectolith-teacher-rights-register/1.0",
+  "status": "teacher_and_grader_capture_completed_pending_authorized_legal_review_and_teacher_output_permission",
+  "reviewed_at": "2026-11-18",
+  "policy": "A public model-weight license declaration is not a substitute for an approved exact-revision license review or a separate written permission record for using generated outputs in student training.",
+  "candidates": [
+    {
+      "candidate_id": "ibm-granite/granite-3.1-3b-a800m-instruct",
+      "immutable_revision": "a02780686e08a03fe0d2679a293b5c74a90efa89",
+      "published_license": "Apache-2.0",
+      "license_source": "https://huggingface.co/ibm-granite/granite-3.1-3b-a800m-instruct/blob/a02780686e08a03fe0d2679a293b5c74a90efa89/README.md",
+      "license_text_sha256": "074e6e32c86a4c0ef8b3ed25b721ca23aca83df277cd88106ef7177c354615ff",
+      "exact_revision_license_capture": "captured_spdx_reference",
+      "legal_review": "pending_authorized_review",
+      "output_generation_permission": "not_verified",
+      "permission_document_sha256": null,
+      "authorized_by": null,
+      "notes": "Exact model-card revision and SHA-256 captured. Repository has no LICENSE/COPYING file; canonical Apache-2.0 text was captured from the pinned SPDX License List commit as a reference, not represented as a repository-supplied license. Authorized legal review and separate output-training permission remain pending.",
+      "model_card_revision_url": "https://huggingface.co/ibm-granite/granite-3.1-3b-a800m-instruct/blob/a02780686e08a03fe0d2679a293b5c74a90efa89/README.md",
+      "notice_file_sha256": null,
+      "model_card_sha256": "5a875520c70d9faae1255eb9aad66fdacf023db595d5e57a9c70026d0ffc0f77",
+      "captured_file_digests": [
+        {
+          "path": "README.md",
+          "size_bytes": 20460,
+          "sha256": "5a875520c70d9faae1255eb9aad66fdacf023db595d5e57a9c70026d0ffc0f77",
+          "source_kind": "repository_revision",
+          "url": "https://huggingface.co/ibm-granite/granite-3.1-3b-a800m-instruct/blob/a02780686e08a03fe0d2679a293b5c74a90efa89/README.md"
+        },
+        {
+          "path": "SPDX/Apache-2.0.txt",
+          "size_bytes": 10280,
+          "sha256": "074e6e32c86a4c0ef8b3ed25b721ca23aca83df277cd88106ef7177c354615ff",
+          "source_kind": "spdx_license_list",
+          "revision": "31ba1a50e5397e00a304dbadc76531740e89ee48",
+          "url": "https://raw.githubusercontent.com/spdx/license-list-data/31ba1a50e5397e00a304dbadc76531740e89/text/Apache-2.0.txt"
+        }
+      ],
+      "repository_license_file_present": false,
+      "license_text_source_kind": "spdx_license_list",
+      "capture_artifact_id": 14422519458,
+      "capture_artifact_sha256": "3c8ba24c66b862d3142d6e5677d93439e5d56a06652b746ee4b0ed6bfea9d9eb",
+      "capture_summary_sha256": "b813c058e371e30392586678bbc92578b5feeac2412d84c22bafe3d3fdc4a862",
+      "captured_at": "2026-11-18T11:35:27.641526+00:00"
+    },
+    {
+      "candidate_id": "ibm-granite/granite-4.2-3b",
+      "immutable_revision": "4e9c275e232f10211ec88644d106a1f6a1b60e06",
+      "published_license": "Apache-2.0",
+      "license_source": "https://huggingface.co/ibm-granite/granite-4.2-3b/blob/4e9c275e232f10211ec88644d106a1f6a1b60e06/README.md",
+      "license_text_sha256": "074e6e32c86a4c0ef8b3ed25b721ca23aca83df277cd88106ef7177c354615ff",
+      "exact_revision_license_capture": "captured_spdx_reference",
+      "legal_review": "pending_authorized_review",
+      "output_generation_permission": "not_verified",
+      "permission_document_sha256": null,
+      "authorized_by": null,
+      "notes": "Exact model-card revision and SHA-256 captured. Repository has no LICENSE/COPYING file; canonical Apache-2.0 text was captured from the pinned SPDX License List commit as a reference, not represented as a repository-supplied license. Authorized legal review and separate output-training permission remain pending.",
+      "model_card_revision_url": "https://huggingface.co/ibm-granite/granite-4.2-3b/blob/4e9c275e232f10211ec88644d106a1f6a1b60e06/README.md",
+      "notice_file_sha256": null,
+      "model_card_sha256": "8f22ddce440f0c15ecb58fc9f8501b882baf5f2b7ab0d13872fe77d88c1ad792",
+      "captured_file_digests": [
+        {
+          "path": "README.md",
+          "size_bytes": 35640,
+          "sha256": "8f22ddce440f0c15ecb58fc9f8501b882baf5f2b7ab0d13872fe77d88c1ad792",
+          "source_kind": "repository_revision",
+          "url": "https://huggingface.co/ibm-granite/granite-4.2-3b/blob/4e9c275e232f10211ec88644d106a1f6a1b60e06/README.md"
+        },
+        {
+          "path": "SPDX/Apache-2.0.txt",
+          "size_bytes": 10280,
+          "sha256": "074e6e32c86a4c0ef8b3ed25b721ca23aca83df277cd88106ef7177c354615ff",
+          "source_kind": "spdx_license_list",
+          "revision": "31ba1a50e5397e00a304dbadc76531740e89ee48",
+          "url": "https://raw.githubusercontent.com/spdx/license-list-data/31ba1a50e5397e00a304dbadc76531740e89/text/Apache-2.0.txt"
+        }
+      ],
+      "repository_license_file_present": false,
+      "license_text_source_kind": "spdx_license_list",
+      "capture_artifact_id": 14422519458,
+      "capture_artifact_sha256": "3c8ba24c66b862d3142d6e5677d93439e5d56a06652b746ee4b0ed6bfea9d9eb",
+      "capture_summary_sha256": "b813c058e371e30392586678bbc92578b5feeac2412d84c22bafe3d3fdc4a862",
+      "captured_at": "2026-11-18T11:35:27.641526+00:00"
+    },
+    {
+      "candidate_id": "openbmb/MiniCPM5-2B",
+      "immutable_revision": "42433e90dad95123ab87729fd7011e7110629556",
+      "published_license": "Apache-2.0",
+      "license_source": "https://huggingface.co/openbmb/MiniCPM5-2B/blob/42433e90dad95123ab87729fd7011e7110629556/README.md",
+      "license_text_sha256": "074e6e32c86a4c0ef8b3ed25b721ca23aca83df277cd88106ef7177c354615ff",
+      "exact_revision_license_capture": "captured_spdx_reference",
+      "legal_review": "pending_authorized_review",
+      "output_generation_permission": "not_verified",
+      "permission_document_sha256": null,
+      "authorized_by": null,
+      "notes": "Exact model-card revision and SHA-256 captured. Repository has no LICENSE/COPYING file; canonical Apache-2.0 text was captured from the pinned SPDX License List commit as a reference, not represented as a repository-supplied license. Authorized legal review and separate output-training permission remain pending.",
+      "model_card_revision_url": "https://huggingface.co/openbmb/MiniCPM5-2B/blob/42433e90dad95123ab87729fd7011e7110629556/README.md",
+      "notice_file_sha256": null,
+      "model_card_sha256": "59e93770502358d56b30b8e2ef7e744cf7fc91bfb923c7c787876defac35cdbe",
+      "captured_file_digests": [
+        {
+          "path": "README.md",
+          "size_bytes": 112168,
+          "sha256": "59e93770502358d56b30b8e2ef7e744cf7fc91bfb923c7c787876defac35cdbe",
+          "source_kind": "repository_revision",
+          "url": "https://huggingface.co/openbmb/MiniCPM5-2B/blob/42433e90dad95123ab87729fd7011e7110629556/README.md"
+        },
+        {
+          "path": "SPDX/Apache-2.0.txt",
+          "size_bytes": 10280,
+          "sha256": "074e6e32c86a4c0ef8b3ed25b721ca23aca83df277cd88106ef7177c354615ff",
+          "source_kind": "spdx_license_list",
+          "revision": "31ba1a50e5397e00a304dbadc76531740e89ee48",
+          "url": "https://raw.githubusercontent.com/spdx/license-list-data/31ba1a50e5397e00a304dbadc76531740e89/text/Apache-2.0.txt"
+        }
+      ],
+      "repository_license_file_present": false,
+      "license_text_source_kind": "spdx_license_list",
+      "capture_artifact_id": 14422519458,
+      "capture_artifact_sha256": "3c8ba24c66b862d3142d6e5677d93439e5d56a06652b746ee4b0ed6bfea9d9eb",
+      "capture_summary_sha256": "b813c058e371e30392586678bbc92578b5feeac2412d84c22bafe3d3fdc4a862",
+      "captured_at": "2026-11-18T11:35:27.641526+00:00"
+    },
+    {
+      "candidate_id": "LiquidAI/LFM2.5-2.6B",
+      "immutable_revision": "7141b56cd4650af95c7c7b86983443aed050c96a",
+      "published_license": "LFM Open License v1.0 (custom; model-card identifier lfm1.0)",
+      "license_source": "https://huggingface.co/LiquidAI/LFM2.5-2.6B/blob/7141b56cd4650af95c7c7b86983443aed050c96a/README.md",
+      "license_text_sha256": "4d28ca14dedc0b3d0fcc2b3339f0e79931faa33874f3d24f522183a8fc70068c",
+      "exact_revision_license_capture": "captured",
+      "legal_review": "pending_authorized_review",
+      "output_generation_permission": "not_verified",
+      "permission_document_sha256": null,
+      "authorized_by": null,
+      "notes": "Exact-revision README and LICENSE bytes captured and SHA-256 reconciled. Model card declares custom LFM Open License v1.0 (lfm1.0); authorized review of the full terms and actual project entity/use remains pending. Separate output-training permission remains unverified.",
+      "model_card_revision_url": "https://huggingface.co/LiquidAI/LFM2.5-2.6B/blob/7141b56cd4650af95c7c7b86983443aed050c96a/README.md",
+      "license_terms_reference": "https://www.liquid.ai/lfm-license",
+      "notice_file_sha256": null,
+      "model_card_sha256": "206383f9e7d86fb44fb260474c5a0793830c5691b5ca6f7d5f955058de320886",
+      "captured_file_digests": [
+        {
+          "path": "README.md",
+          "size_bytes": 18300,
+          "sha256": "206383f9e7d86fb44fb260474c5a0793830c5691b5ca6f7d5f955058de320886",
+          "source_kind": "repository_revision",
+          "url": "https://huggingface.co/LiquidAI/LFM2.5-2.6B/blob/7141b56cd4650af95c7c7b86983443aed050c96a/README.md"
+        },
+        {
+          "path": "LICENSE",
+          "size_bytes": 10574,
+          "sha256": "4d28ca14dedc0b3d0fcc2b3339f0e79931faa33874f3d24f522183a8fc70068c",
+          "source_kind": "repository_revision",
+          "url": "https://huggingface.co/LiquidAI/LFM2.5-2.6B/blob/7141b56cd4650af95c7c7b86983443aed050c96a/LICENSE"
+        }
+      ],
+      "repository_license_file_present": true,
+      "license_text_source_kind": "repository_revision",
+      "capture_artifact_id": 14422519458,
+      "capture_artifact_sha256": "3c8ba24c66b862d3142d6e5677d93439e5d56a06652b746ee4b0ed6bfea9d9eb",
+      "capture_summary_sha256": "b813c058e371e30392586678bbc92578b5feeac2412d84c22bafe3d3fdc4a862",
+      "captured_at": "2026-11-18T11:35:27.641526+00:00"
+    },
+    {
+      "candidate_id": "microsoft/Phi-4-mini-instruct",
+      "immutable_revision": "cfbefacb99257ffa30c83adab238a50856ac3083",
+      "published_license": "MIT",
+      "license_source": "https://huggingface.co/microsoft/Phi-4-mini-instruct/blob/cfbefacb99257ffa30c83adab238a50856ac3083/README.md",
+      "license_text_sha256": "fa8235e5b48faca34e3ca98cf4f694ef08bd216d28b58071a1f85b1d50cb814d",
+      "exact_revision_license_capture": "captured",
+      "legal_review": "pending_authorized_review",
+      "output_generation_permission": "not_verified",
+      "permission_document_sha256": null,
+      "authorized_by": null,
+      "notes": "Exact-revision README, LICENSE and NOTICE bytes captured and SHA-256 reconciled. Authorized legal review and separate output-training permission remain pending.",
+      "model_card_revision_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct/blob/cfbefacb99257ffa30c83adab238a50856ac3083/README.md",
+      "notice_file_sha256": "a3386cc7125ec75ed34d4f0a340c47782982095e251d322e01d8ecab22d87ba4",
+      "model_card_sha256": "c4f34916182a3ee87d95d00c92847cfa687ab21dc338a577275f0c34cf0e1dfd",
+      "captured_file_digests": [
+        {
+          "path": "README.md",
+          "size_bytes": 29246,
+          "sha256": "c4f34916182a3ee87d95d00c92847cfa687ab21dc338a577275f0c34cf0e1dfd",
+          "source_kind": "repository_revision",
+          "url": "https://huggingface.co/microsoft/Phi-4-mini-instruct/blob/cfbefacb99257ffa30c83adab238a50856ac3083/README.md"
+        },
+        {
+          "path": "LICENSE",
+          "size_bytes": 1084,
+          "sha256": "fa8235e5b48faca34e3ca98cf4f694ef08bd216d28b58071a1f85b1d50cb814d",
+          "source_kind": "repository_revision",
+          "url": "https://huggingface.co/microsoft/Phi-4-mini-instruct/blob/cfbefacb99257ffa30c83adab238a50856ac3083/LICENSE"
+        },
+        {
+          "path": "NOTICE.md",
+          "size_bytes": 1809,
+          "sha256": "a3386cc7125ec75ed34d4f0a340c47782982095e251d322e01d8ecab22d87ba4",
+          "source_kind": "repository_revision",
+          "url": "https://huggingface.co/microsoft/Phi-4-mini-instruct/blob/cfbefacb99257ffa30c83adab238a50856ac3083/NOTICE.md"
+        }
+      ],
+      "repository_license_file_present": true,
+      "license_text_source_kind": "repository_revision",
+      "capture_artifact_id": 14422519458,
+      "capture_artifact_sha256": "3c8ba24c66b862d3142d6e5677d93439e5d56a06652b746ee4b0ed6bfea9d9eb",
+      "capture_summary_sha256": "b813c058e371e30392586678bbc92578b5feeac2412d84c22bafe3d3fdc4a862",
+      "captured_at": "2026-11-18T11:35:27.641526+00:00"
+    }
+  ],
+  "required_completion": [
+    "Preserve exact-revision model-card and repository-supplied LICENSE, NOTICE/COPYING files; where no repository license file exists, preserve a canonical SPDX text reference tied to the declared model-card identifier and explicitly mark it as not repository-supplied. Record exact byte lengths, SHA-256 digests and immutable source URLs.",
+    "Have an authorized legal reviewer record the applicable license, notices, model-specific terms, jurisdiction, intended commercial/non-commercial use and any upstream data/output caveats.",
+    "Obtain a separate written permission record for use of outputs from that exact model revision in Core Prime training, or document the legal basis and have the authorized rights reviewer approve it.",
+    "Do not set any gate to approved/granted until the supporting documents are present and verified."
+  ],
+  "capture_evidence": {
+    "workflow_run_id": 44296033163,
+    "artifact_id": 14422519458,
+    "artifact_sha256": "3c8ba24c66b862d3142d6e5677d93439e5d56a06652b746ee4b0ed6bfea9d9eb",
+    "summary_sha256": "b813c058e371e30392586678bbc92578b5feeac2412d84c22bafe3d3fdc4a862",
+    "captured_at": "2026-11-18T11:35:27.641526+00:00",
+    "captured_teacher_candidates": 5,
+    "captured_evaluation_graders": 1,
+    "captured_models": 6,
+    "failed_candidates": 0,
+    "capture_job": {
+      "weights_downloaded": false,
+      "inference_performed": false,
+      "training_started": false
+    },
+    "separate_grader_smoke_job": {
+      "workflow_run_id": 44081839834,
+      "weights_downloaded": true,
+      "inference_performed": true,
+      "request_type": "synthetic",
+      "request_count": 1,
+      "training_started": false,
+      "status": "success",
+      "note": "The pinned Qwen grader loaded on CPU, graded one synthetic blinded request and passed structured-output validation. This is a smoke test only, not the 30-response Run 42 pilot."
+    },
+    "note": "All five Run 42 teacher revisions and the pinned local evaluation grader have exact-revision model-card/license capture manifests. The rights-capture job downloaded no weights and performed no inference. The separate local-grader smoke job downloaded the Qwen checkpoint and performed one synthetic evaluation. The SPDX fallback is explicitly distinguished from repository-supplied license files. Authorized legal review and separate teacher-output training permission remain pending."
+  },
+  "evaluation_grader": {
+    "candidate_id": "qwen3.5-2b-local-grader",
+    "role": "local_evaluation_grader",
+    "repo_id": "Qwen/Qwen3.5-2B",
+    "immutable_revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+    "model_card_license_metadata": {
+      "license": "apache-2.0"
+    },
+    "model_card_sha256": "c0e83a849c776e6fa843d011f023132d942a0f0140d903205bf1c363adad2275",
+    "license_text_sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a",
+    "repository_license_file_present": true,
+    "capture_manifest_sha256": "6848ad5a2e8bf13f941bf66bfb9901f84010189a09a9dc57bb1a5ed2ef53bd55",
+    "captured_file_digests": [
+      {
+        "path": "README.md",
+        "size_bytes": 62814,
+        "sha256": "c0e83a849c776e6fa843d011f023132d942a0f0140d903205bf1c363adad2275",
+        "source_kind": "repository_revision",
+        "url": "https://huggingface.co/Qwen/Qwen3.5-2B/blob/15852e8c16360a2fea060d615a32b45270f8a8fc/README.md"
+      },
+      {
+        "path": "LICENSE",
+        "size_bytes": 11544,
+        "sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a",
+        "source_kind": "repository_revision",
+        "url": "https://huggingface.co/Qwen/Qwen3.5-2B/blob/15852e8c16360a2fea060d615a32b45270f8a8fc/LICENSE"
+      }
+    ],
+    "capture_artifact_id": 14422519458,
+    "capture_artifact_sha256": "3c8ba24c66b862d3142d6e5677d93439e5d56a06652b746ee4b0ed6bfea9d9eb",
+    "capture_summary_sha256": "b813c058e371e30392586678bbc92578b5feeac2412d84c22bafe3d3fdc4a862",
+    "captured_at": "2026-11-18T11:35:27.641526+00:00",
+    "capture_status": "captured",
+    "legal_review": "pending_authorized_review",
+    "training_output_permission": "not_applicable_to_evaluation_only_grader",
+    "teacher_qualification": "not_applicable",
+    "use_boundary": "evaluation_only; not a teacher, foundation candidate, training dependency, or source of training targets"
+  }
+}

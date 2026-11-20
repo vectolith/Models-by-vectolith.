@@ -17,6 +17,10 @@ Every family model must:
 - Use compatible versioned task, message, result, and evidence envelopes.
 - Cooperate with other family models without misrepresenting their capabilities or authority.
 
+## User task lifecycle
+
+Every family model follows the normative [user task lifecycle and completion reporting contract](user-task-lifecycle-and-completion-contract.md): acknowledge actionable tasks, execute through the acceptance criteria within permissions and resource limits, verify actual outcomes, and report what was implemented, introduced, changed, tested, and left unresolved. Acknowledgement is not completion; plans and attempted actions are not evidence of success.
+
 ## Specialization boundaries
 
 A specialization describes primary competence and training emphasis; it is not a claim that a model can perform only one task. The orchestrator may select one or multiple models. The receiving model must disclose when a request falls outside its validated capability envelope and may request a better-suited family member.

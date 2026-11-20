@@ -79,7 +79,7 @@
           "revision": null,
           "license_review": "pending",
           "training_output_permission": "not_verified",
-          "reason": "Cross-family reasoning and agentic reference; 24B dense weight footprint may make it inefficient under zero-cost compute constraints."
+          "reason": "Cross-family reasoning and agentic reference; 24B dense weight footprint may make it inefficient under the verified execution environment's resource constraints."
         },
         {
           "id": "qwen3.8-27b",
@@ -169,7 +169,9 @@
           "training_output_permission": "not_verified",
           "reason": "Smaller size within the current Qwen3.5 family for quality-per-compute comparison."
         }
-      ]
+      ],
+      "lifecycle": "active",
+      "qualification_campaign_status": "active"
     },
     "core_prima": {
       "specialization": "software engineering, coding, debugging, mathematics, code review, secure coding, structured tool use, execution recovery, repository-level completion",
@@ -183,7 +185,7 @@
           "revision": null,
           "license_review": "pending",
           "training_output_permission": "not_verified",
-          "reason": "Coding-agent specialist with 3B active but 80B total parameters; include only if free compute can load it efficiently."
+          "reason": "Coding-agent specialist with 3B active but 80B total parameters; include only if the verified execution environment can load it efficiently."
         },
         {
           "id": "granite-4.2-8b",
@@ -328,7 +330,17 @@
           "training_output_permission": "not_verified",
           "reason": "Smaller Qwen3.5 technical baseline to quantify quality per compute."
         }
-      ]
+      ],
+      "lifecycle": "paused",
+      "qualification_campaign_status": "dormant_not_scheduled",
+      "notes": "Historical candidate pool retained for possible reactivation only. No current foundation evaluation, teacher inference, qualification, ranking, or training is authorized for Core Prima while paused."
     }
-  }
+  },
+  "active_students": [
+    "core_prime"
+  ],
+  "paused_students": [
+    "core_prima"
+  ],
+  "required_qualified_teachers_per_active_student": 4
 }
