@@ -44,41 +44,23 @@ def git_head():
  root=Path(__file__).resolve().parents[3]
  result=subprocess.run(["git","rev-parse","HEAD"],cwd=root,capture_output=True,text=True,check=True)
  return result.stdout.strip()
-def verify_evidence_file(base,relative,digest,label):
- if not isinstance(relative,str) or not relative.strip():raise ValueError(f"{label} evidence path missing")
- rel=Path(relative)
- if rel.is_absolute() or ".." in rel.parts:raise ValueError(f"{label} evidence path must be relative and confined")
- if not isinstance(digest,str) or not SHA64.fullmatch(digest):raise ValueError(f"{label} evidence SHA-256 invalid")
- root=Path(base).resolve();cursor=root
- for part in rel.parts:
-  cursor=cursor/part
-  if cursor.is_symlink():raise ValueError(f"{label} evidence path contains symlink components")
- target=(root/rel).resolve()
- try:target.relative_to(root)
- except ValueError:raise ValueError(f"{label} evidence path escapes evidence root")
- if not target.is_file():raise ValueError(f"{label} evidence file missing")
- if sha256_file(target)!=digest:raise ValueError(f"{label} evidence hash mismatch")
- return target
-def read_verified_evidence_bytes(base,relative,digest,label):
- """Read a confined evidence file through no-follow directory descriptors and bind the bytes to its SHA-256."""
+def read_confined_bytes(base,relative,label):
+ """Read a confined regular file using no-follow directory/file descriptors."""
  if not isinstance(relative,str) or not relative.strip():raise ValueError(f"{label} evidence path missing")
  rel=Path(relative)
  if rel.is_absolute() or ".." in rel.parts or not rel.parts:raise ValueError(f"{label} evidence path must be relative and confined")
- if not isinstance(digest,str) or not SHA64.fullmatch(digest):raise ValueError(f"{label} evidence SHA-256 invalid")
  root=Path(base).resolve();nofollow=getattr(os,"O_NOFOLLOW",0);directory=getattr(os,"O_DIRECTORY",0);flags=os.O_RDONLY
- descriptors=[]
+ descriptors=[];chunks=[]
  try:
   current=os.open(root,flags|directory);descriptors.append(current)
   for part in rel.parts[:-1]:
    current=os.open(part,flags|directory|nofollow,dir_fd=current);descriptors.append(current)
   file_fd=os.open(rel.parts[-1],flags|nofollow,dir_fd=current);descriptors.append(file_fd)
   if not stat.S_ISREG(os.fstat(file_fd).st_mode):raise ValueError(f"{label} evidence file is not regular")
-  chunks=[]
   while True:
    chunk=os.read(file_fd,1024*1024)
    if not chunk:break
    chunks.append(chunk)
-  raw=b"".join(chunks)
  except FileNotFoundError as exc:
   raise ValueError(f"{label} evidence file missing: {exc}") from exc
  except OSError as exc:
@@ -87,8 +69,16 @@ def read_verified_evidence_bytes(base,relative,digest,label):
   for fd in reversed(descriptors):
    try:os.close(fd)
    except OSError:pass
+ return (root/rel),b"".join(chunks)
+def read_verified_evidence_bytes(base,relative,digest,label):
+ """Read and hash the same confined bytes, avoiding path-check/open races."""
+ if not isinstance(digest,str) or not SHA64.fullmatch(digest):raise ValueError(f"{label} evidence SHA-256 invalid")
+ target,raw=read_confined_bytes(base,relative,label)
  if hashlib.sha256(raw).hexdigest()!=digest:raise ValueError(f"{label} evidence hash mismatch")
- return (root/rel),raw
+ return target,raw
+def verify_evidence_file(base,relative,digest,label):
+ target,raw=read_verified_evidence_bytes(base,relative,digest,label)
+ return target
 def verify_dataset_provenance_evidence(base,relative,digest,dataset_sha256):
  target,raw=read_verified_evidence_bytes(base,relative,digest,"dataset provenance")
  try:record=strict_json_loads(raw.decode("utf-8"))
@@ -134,7 +124,9 @@ def verify_model_snapshot(record,record_path):
  actual={}
  for path in sorted(snapshot.rglob("*")):
   if path.is_symlink():raise ValueError("model snapshot contains symlinks")
-  if path.is_file():actual[str(path.relative_to(root))]=sha256_file(path)
+  if path.is_file():
+   relative=str(path.relative_to(root));_,raw=read_confined_bytes(root,relative,"candidate snapshot")
+   actual[relative]=hashlib.sha256(raw).hexdigest()
  if set(expected)!=set(actual):raise ValueError("model snapshot inventory incomplete or contains unlisted files")
  for path,digest in expected.items():
   if actual[path]!=digest:raise ValueError(f"model snapshot hash mismatch: {path}")
