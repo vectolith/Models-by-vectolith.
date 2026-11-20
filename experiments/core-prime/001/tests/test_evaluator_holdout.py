@@ -97,7 +97,7 @@ class HoldoutTests(unittest.TestCase):
    root=Path(tmp);tasks=root/"tasks.jsonl";tasks.write_text('{"task_id":"a","prompt":"p","category":"c","split":"development"}'+chr(10),encoding="utf-8")
    freeze=root/"freeze.json";freeze.write_text("freeze",encoding="utf-8")
    compute=root/"compute.json";compute.write_text("free",encoding="utf-8")
-   provenance=root/"provenance.json";provenance.write_text("reviewed dev dataset provenance",encoding="utf-8")
+   provenance=root/"provenance.json";provenance.write_text(json.dumps({"dataset_sha256":evaluator.sha256_file(tasks),"review_status":"reviewed","reviewer":"independent-reviewer","review_scope":"task provenance and rights review","reviewed_at_utc":"2026-11-20T08:00:00+00:00"}),encoding="utf-8")
    auth={"approval":"approved","candidate_record_sha256":"c"*64,"candidate_revision":"a"*40,"tasks_sha256":evaluator.sha256_file(tasks),"freeze_manifest_sha256":evaluator.sha256_file(freeze),"code_commit":"d"*40,"package_inventory_sha256":"e"*64,"dataset_provenance":{"status":"reviewed","evidence_path":"provenance.json","evidence_sha256":evaluator.sha256_file(provenance)},"hardware":{"verified_free_budget":True,"provider":"free","session_id":"s","evidence_path":"compute.json","evidence_sha256":evaluator.sha256_file(compute)},"budget":{"max_task_count":1,"max_new_tokens":20,"max_wall_seconds":30},"holdout_access":"sealed"}
    authpath=root/"auth.json";authpath.write_text(json.dumps(auth),encoding="utf-8")
    result,digest=evaluator.evaluation_gate.verify_evaluation_authorization(authpath,"c"*64,evaluator.sha256_file(tasks),freeze,"d"*40,"e"*64,1,20)
@@ -108,7 +108,7 @@ class HoldoutTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as tmp:
    root=Path(tmp);tasks=root/"tasks";tasks.write_text("task",encoding="utf-8");freeze=root/"freeze";freeze.write_text("freeze")
    compute=root/"compute";compute.write_text("free")
-   provenance=root/"provenance";provenance.write_text("reviewed")
+   provenance=root/"provenance";provenance.write_text(json.dumps({"dataset_sha256":evaluator.sha256_file(tasks),"review_status":"reviewed","reviewer":"independent-reviewer","review_scope":"task provenance and rights review","reviewed_at_utc":"2026-11-20T08:00:00+00:00"}))
    auth={"approval":"approved","candidate_record_sha256":"c"*64,"candidate_revision":"a"*40,"tasks_sha256":evaluator.evaluation_gate.sha256_file(tasks),"freeze_manifest_sha256":evaluator.evaluation_gate.sha256_file(freeze),"code_commit":"d"*40,"package_inventory_sha256":"e"*64,"dataset_provenance":{"status":"reviewed","evidence_path":"provenance","evidence_sha256":evaluator.sha256_file(provenance)},"hardware":{"verified_free_budget":True,"provider":"free","session_id":"s","evidence_path":"compute","evidence_sha256":evaluator.evaluation_gate.sha256_file(compute)},"budget":{"max_task_count":1,"max_new_tokens":20,"max_wall_seconds":30},"holdout_access":"sealed"}
    path=root/"auth";path.write_text(json.dumps(auth))
    with self.assertRaisesRegex(ValueError,"selected tasks exceed"):evaluator.evaluation_gate.verify_evaluation_authorization(path,"c"*64,evaluator.sha256_file(tasks),freeze,"d"*40,"e"*64,2,20)
@@ -122,7 +122,7 @@ class HoldoutTests(unittest.TestCase):
  def test_dataset_provenance_gate_requires_review_and_hash(self):
   with tempfile.TemporaryDirectory() as tmp:
    root=Path(tmp);tasks=root/"tasks";tasks.write_text("tasks",encoding="utf-8");freeze=root/"freeze";freeze.write_text("freeze",encoding="utf-8")
-   compute=root/"compute";compute.write_text("free",encoding="utf-8");provenance=root/"provenance";provenance.write_text("reviewed",encoding="utf-8")
+   compute=root/"compute";compute.write_text("free",encoding="utf-8");provenance=root/"provenance";provenance.write_text(json.dumps({"dataset_sha256":evaluator.sha256_file(tasks),"review_status":"reviewed","reviewer":"independent-reviewer","review_scope":"task provenance and rights review","reviewed_at_utc":"2026-11-20T08:00:00+00:00"}),encoding="utf-8")
    auth={"approval":"approved","candidate_record_sha256":"c"*64,"candidate_revision":"a"*40,"tasks_sha256":evaluator.sha256_file(tasks),"freeze_manifest_sha256":evaluator.sha256_file(freeze),"code_commit":"d"*40,"package_inventory_sha256":"e"*64,"dataset_provenance":{"status":"pending","evidence_path":"provenance","evidence_sha256":evaluator.sha256_file(provenance)},"hardware":{"verified_free_budget":True,"provider":"free","session_id":"s","evidence_path":"compute","evidence_sha256":evaluator.sha256_file(compute)},"budget":{"max_task_count":1,"max_new_tokens":20,"max_wall_seconds":30},"holdout_access":"sealed"}
    path=root/"auth.json";path.write_text(json.dumps(auth),encoding="utf-8")
    with self.assertRaisesRegex(ValueError,"dataset provenance must be independently reviewed"):evaluator.evaluation_gate.verify_evaluation_authorization(path,"c"*64,evaluator.sha256_file(tasks),freeze,"d"*40,"e"*64,1,20)
