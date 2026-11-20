@@ -17,7 +17,7 @@ class HoldoutTests(unittest.TestCase):
    with self.assertRaisesRegex(ValueError,"limit"):evaluator.verify_frozen_config(manifest,"m","r",tasks,7,20,0.0,False,False,0,["a"],"c"*64,"d"*40,"e"*64,30)
  def test_fallback_prompt_tokenization_matches_training_template(self):
   source=EVALUATOR.read_text(encoding="utf-8")
-  self.assertIn('encoded=f"User:\n{prompt}\nAssistant:\n"',source)
+  self.assertIn('encoded=f"User:\\n{prompt}\\nAssistant:\\n"',source)
   self.assertIn("add_special_tokens=False",source)
  def fixture_candidate(self,root):
   snapshot=root/"snapshot";snapshot.mkdir()
@@ -64,7 +64,13 @@ class HoldoutTests(unittest.TestCase):
    code=evaluator.evaluation_gate.git_head()
    result=subprocess.run([sys.executable,str(EVALUATOR),"--model","unused","--revision","unused","--tasks",str(tasks),"--output",str(Path(tmp)/"out"),"--freeze-manifest",str(Path(tmp)/"freeze.json"),"--candidate-record",str(Path(tmp)/"candidate.json"),"--authorization",str(Path(tmp)/"auth.json"),"--code-commit",code,"--allow-holdout"],capture_output=True,text=True)
    self.assertNotEqual(result.returncode,0);self.assertIn("holdout inference blocked",result.stderr);self.assertFalse((Path(tmp)/"out").exists())
- def test_train_split_rejected(self):
+ def test_trust_remote_code_rejected(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   tasks=Path(tmp)/"dev.jsonl";tasks.write_text(json.dumps({"task_id":"d","prompt":"p","category":"c","split":"development"})+chr(10),encoding="utf-8")
+   code=evaluator.evaluation_gate.git_head()
+   result=subprocess.run([sys.executable,str(EVALUATOR),"--model","unused","--revision","unused","--tasks",str(tasks),"--output",str(Path(tmp)/"out"),"--freeze-manifest",str(Path(tmp)/"freeze.json"),"--candidate-record",str(Path(tmp)/"candidate.json"),"--authorization",str(Path(tmp)/"auth.json"),"--code-commit",code,"--trust-remote-code"],capture_output=True,text=True)
+   self.assertNotEqual(result.returncode,0);self.assertIn("trust-remote-code is forbidden",result.stderr);self.assertFalse((Path(tmp)/"out").exists())
+ def test_train_split_rejected(self)
   with tempfile.TemporaryDirectory() as tmp:
    tasks=Path(tmp)/"train.jsonl";tasks.write_text(json.dumps({"task_id":"t","prompt":"p","category":"c","split":"train"})+chr(10),encoding="utf-8")
    code=evaluator.evaluation_gate.git_head()

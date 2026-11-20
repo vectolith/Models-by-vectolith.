@@ -24,8 +24,12 @@ class Tests(unittest.TestCase):
   self.a={"approval":"approved","candidate_revision":"a"*40,"candidate_record_sha256":trainer.sha256_file(self.candidate_path),"environment_package_inventory_sha256":trainer.package_inventory_sha256(),"dataset_sha256":trainer.sha256_file(self.dataset),"code_commit":"c"*40,"hardware":{"verified_free_budget":True,"provider":"p","session_id":"s","evidence_path":"compute.json","evidence_sha256":trainer.sha256_file(compute)},"dataset_provenance":{"status":"reviewed","evidence_path":"provenance.json","evidence_sha256":trainer.sha256_file(provenance)},"budget":{"max_steps":10,"max_wall_seconds":60},"holdout_access":"sealed"}
  def tearDown(self):self.tmp.cleanup()
  def test_all_gates_pass(self):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
- def test_pending_permission_blocked(self):self.c["output_training_permission"]="pending";self.assertRaisesRegex(ValueError,"output_training_permission",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
- def test_legal_review_blocked(self):self.c["human_legal_review"]="pending";self.assertRaisesRegex(ValueError,"human_legal_review",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
+ def test_pending_permission_blocked(self):
+  self.c["output_training_permission"]="pending";self.candidate_path.write_text(json.dumps(self.c,sort_keys=True));self.a["candidate_record_sha256"]=trainer.sha256_file(self.candidate_path)
+  self.assertRaisesRegex(ValueError,"output_training_permission",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
+ def test_legal_review_blocked(self):
+  self.c["human_legal_review"]="pending";self.candidate_path.write_text(json.dumps(self.c,sort_keys=True));self.a["candidate_record_sha256"]=trainer.sha256_file(self.candidate_path)
+  self.assertRaisesRegex(ValueError,"human_legal_review",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_dataset_hash_blocked(self):self.a["dataset_sha256"]="0"*64;self.assertRaisesRegex(ValueError,"dataset hash",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_code_hash_blocked(self):self.a["code_commit"]="d"*40;self.assertRaisesRegex(ValueError,"code commit",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_free_compute_blocked(self):self.a["hardware"]["verified_free_budget"]=False;self.assertRaisesRegex(ValueError,"free compute",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
@@ -46,7 +50,7 @@ class Tests(unittest.TestCase):
   (self.d/"snapshot"/"extra.bin").write_bytes(b"unlisted")
   with self.assertRaisesRegex(ValueError,"inventory incomplete"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_candidate_record_hash_mismatch(self):
-  self.candidate_path.write_text("tampered")
+  self.a["candidate_record_sha256"]="0"*64
   with self.assertRaisesRegex(ValueError,"candidate record hash mismatch"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_environment_package_inventory_mismatch(self):
   self.a["environment_package_inventory_sha256"]="0"*64

@@ -93,6 +93,7 @@ def main()->int:
     if a.temperature<0:p.error("--temperature cannot be negative")
     if a.seed<0:p.error("--seed must be non-negative")
     if a.limit<0:p.error("--limit must be non-negative")
+    if a.trust_remote_code:p.error("--trust-remote-code is forbidden; verified local snapshots are loaded with remote code disabled")
     if not evaluation_gate.SHA40.fullmatch(a.code_commit):p.error("--code-commit must be a 40-character lowercase SHA")
     try:actual_code_commit=evaluation_gate.git_head()
     except Exception as e:p.error(f"Git commit capture failed: {e}")
@@ -129,6 +130,7 @@ def main()->int:
             "raw_file_sha256":sha256_file(raw),"model":a.model,"revision":a.revision,"seed":a.seed,
             "effective_limit":a.limit,"selected_task_count":len(selected_task_ids),"selected_task_ids_sha256":selected_task_ids_sha256,
             "freeze_manifest":str(a.freeze_manifest.resolve()),"freeze_manifest_sha256":freeze_sha,
+            "candidate_record_sha256":candidate_sha,"authorization_sha256":authorization_sha256,"code_commit":a.code_commit,"max_wall_seconds":max_wall_seconds,
             "package_inventory":inventory,"package_inventory_sha256":inventory_sha256}
         summary_file.write_text(json.dumps(summary,indent=2),encoding="utf-8");print(json.dumps(summary,indent=2));return 2
     seed_python(a.seed)

@@ -21,6 +21,7 @@ def verify(root,manifest):
  gates=manifest.get("gates")
  if not isinstance(gates,dict):errors.append("gates object required")
  else:
+  seen_gate_paths=set()
   for name in REQUIRED_GATES:
    item=gates.get(name)
    if not isinstance(item,dict) or item.get("status")!="approved" or not isinstance(item.get("evidence_path"),str) or not isinstance(item.get("sha256"),str) or not SHA.fullmatch(item["sha256"]):
@@ -29,6 +30,8 @@ def verify(root,manifest):
     if "holdout" in item["evidence_path"].lower():
      errors.append(f"gate {name}: holdout evidence forbidden: {item['evidence_path']}")
      continue
+    if item["evidence_path"] in seen_gate_paths:errors.append(f"duplicate gate evidence path: {item['evidence_path']}")
+    seen_gate_paths.add(item["evidence_path"])
     try:verify_file(root,item["evidence_path"],item["sha256"])
     except ValueError as e:errors.append(f"gate {name}: {e}")
  artifacts=manifest.get("artifacts")
