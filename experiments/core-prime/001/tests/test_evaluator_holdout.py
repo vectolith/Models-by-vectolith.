@@ -15,6 +15,15 @@ class HoldoutTests(unittest.TestCase):
    self.assertEqual(digest,evaluator.sha256_file(manifest))
    with self.assertRaisesRegex(ValueError,"revision"):evaluator.verify_frozen_config(manifest,"m","other",tasks_sha,7,20,0.0,False,False,1,["a"],"c"*64,"d"*40,"e"*64,30)
    with self.assertRaisesRegex(ValueError,"limit"):evaluator.verify_frozen_config(manifest,"m","r",tasks_sha,7,20,0.0,False,False,0,["a"],"c"*64,"d"*40,"e"*64,30)
+ def test_freeze_manifest_snapshot_hash_remains_bound_after_file_change(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   tasks_sha="f"*64;manifest=Path(tmp)/"freeze.json"
+   values={"model":"m","revision":"r","tasks_sha256":tasks_sha,"seed":7,"max_new_tokens":20,"temperature":0.0,"trust_remote_code":False,"qwen3_thinking":False,"limit":1,"selected_task_count":1,"selected_task_ids_sha256":evaluator.sha256_serialized(["a"]),"candidate_record_sha256":"c"*64,"code_commit":"d"*40,"package_inventory_sha256":"e"*64,"max_wall_seconds":30}
+   original=json.dumps(values,sort_keys=True).encode("utf-8");manifest.write_bytes(original)
+   parsed,digest=evaluator.evaluation_gate.load_json_snapshot(manifest,"freeze manifest")
+   manifest.write_text(json.dumps({"changed":True}),encoding="utf-8")
+   result=evaluator.verify_frozen_config(manifest,"m","r",tasks_sha,7,20,0.0,False,False,1,["a"],"c"*64,"d"*40,"e"*64,30,parsed,digest)
+   self.assertEqual(result,hashlib.sha256(original).hexdigest())
  def test_task_snapshot_hash_is_bound_to_bytes_read(self):
   with tempfile.TemporaryDirectory() as tmp:
    path=Path(tmp)/"tasks.jsonl";original='{"task_id":"a","prompt":"p","category":"c","split":"development"}'+chr(10);path.write_text(original,encoding="utf-8")
