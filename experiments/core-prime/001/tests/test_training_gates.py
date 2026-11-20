@@ -189,7 +189,7 @@ class Tests(unittest.TestCase):
   self.assertIn("control.should_save=True",source)
   self.assertIn("run_started_monotonic",source)
   self.assertIn("def on_save",source)
-  self.assertIn("seal_checkpoint(checkpoint)",source)
+  self.assertIn("seal_checkpoint(checkpoint,cumulative_elapsed_seconds=",source)
  def test_build_sequence_masks_prefix_boundary(self):
   class Tok:
    eos_token="<eos>"
