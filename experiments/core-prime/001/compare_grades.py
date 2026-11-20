@@ -36,7 +36,7 @@ def load_snapshot(path):
     rows={}
     for n,line in enumerate(text.splitlines(),1):
         if not line.strip(): continue
-        try:r=json.loads(line)
+        try:r=evaluation_gate.strict_json_loads(line)
         except Exception as e:raise ValueError(f"{path}:{n}: invalid JSON: {e}")
         if not isinstance(r,dict) or not isinstance(r.get("task_id"),str) or not r["task_id"].strip():
             raise ValueError(f"{path}:{n}: task_id required")
