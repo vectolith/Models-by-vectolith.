@@ -48,9 +48,37 @@ def verify_evidence_file(base,relative,digest,label):
  if not target.is_file():raise ValueError(f"{label} evidence file missing")
  if sha256_file(target)!=digest:raise ValueError(f"{label} evidence hash mismatch")
  return target
+def read_verified_evidence_bytes(base,relative,digest,label):
+ """Read a confined evidence file through no-follow directory descriptors and bind the bytes to its SHA-256."""
+ if not isinstance(relative,str) or not relative.strip():raise ValueError(f"{label} evidence path missing")
+ rel=Path(relative)
+ if rel.is_absolute() or ".." in rel.parts or not rel.parts:raise ValueError(f"{label} evidence path must be relative and confined")
+ if not isinstance(digest,str) or not SHA64.fullmatch(digest):raise ValueError(f"{label} evidence SHA-256 invalid")
+ root=Path(base).resolve();nofollow=getattr(os,"O_NOFOLLOW",0);directory=getattr(os,"O_DIRECTORY",0);flags=os.O_RDONLY
+ descriptors=[]
+ try:
+  current=os.open(root,flags|directory);descriptors.append(current)
+  for part in rel.parts[:-1]:
+   current=os.open(part,flags|directory|nofollow,dir_fd=current);descriptors.append(current)
+  file_fd=os.open(rel.parts[-1],flags|nofollow,dir_fd=current);descriptors.append(file_fd)
+  if not __import__("stat").S_ISREG(os.fstat(file_fd).st_mode):raise ValueError(f"{label} evidence file is not regular")
+  chunks=[]
+  while True:
+   chunk=os.read(file_fd,1024*1024)
+   if not chunk:break
+   chunks.append(chunk)
+  raw=b"".join(chunks)
+ except OSError as exc:
+  raise ValueError(f"{label} evidence path contains symlink components or is unreadable: {exc}") from exc
+ finally:
+  for fd in reversed(descriptors):
+   try:os.close(fd)
+   except OSError:pass
+ if hashlib.sha256(raw).hexdigest()!=digest:raise ValueError(f"{label} evidence hash mismatch")
+ return (root/rel),raw
 def verify_dataset_provenance_evidence(base,relative,digest,dataset_sha256):
- target=verify_evidence_file(base,relative,digest,"dataset provenance")
- try:record=json.loads(target.read_text(encoding="utf-8"))
+ target,raw=read_verified_evidence_bytes(base,relative,digest,"dataset provenance")
+ try:record=json.loads(raw.decode("utf-8"))
  except Exception as exc:raise ValueError(f"dataset provenance evidence must be valid JSON: {exc}") from exc
  if not isinstance(record,dict):raise ValueError("dataset provenance evidence must be a JSON object")
  if record.get("dataset_sha256")!=dataset_sha256:raise ValueError("dataset provenance evidence dataset SHA-256 mismatch")
