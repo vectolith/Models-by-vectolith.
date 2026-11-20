@@ -65,6 +65,14 @@ class ComparisonTests(unittest.TestCase):
     with self.assertRaisesRegex(OSError,"forced replace failure"):m.atomic_write_json(out,{"new":True})
    self.assertEqual(out.read_text(encoding="utf-8"),"previous")
    self.assertEqual(list(root.glob(out.name+".*.tmp")),[])
+
+ def test_grade_comparison_output_syncs_parent_directory(self):
+  from unittest.mock import patch
+  with tempfile.TemporaryDirectory() as d:
+   path=Path(d)/"result.json"
+   with patch.object(m.evaluation_gate,"fsync_directory",wraps=m.evaluation_gate.fsync_directory) as sync:
+    m.atomic_write_json(path,{"durable":True})
+   sync.assert_called_once_with(path.parent)
  def test_main_records_input_hashes_and_atomic_output(self):
   import sys
   from unittest.mock import patch
