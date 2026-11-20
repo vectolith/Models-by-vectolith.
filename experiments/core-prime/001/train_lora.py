@@ -40,6 +40,32 @@ def telemetry_elapsed(records):
   else:
    legacy[session]=max(legacy.get(session,0.0),float(elapsed))
  return sum(by_run.values())+sum(legacy.values())
+def telemetry_steps(records):
+ by_run={}
+ legacy={}
+ for n,r in enumerate(records,1):
+  if not isinstance(r,dict):raise ValueError(f"telemetry record {n} must be an object")
+  step=r.get("step")
+  start=r.get("start_global_step",0)
+  if isinstance(step,bool) or not isinstance(step,int) or step<0:raise ValueError(f"telemetry record {n} has invalid step")
+  if isinstance(start,bool) or not isinstance(start,int) or start<0 or start>step:raise ValueError(f"telemetry record {n} has invalid start_global_step")
+  run_id=r.get("run_id")
+  session=r.get("session_id","unknown")
+  key=run_id if run_id else session
+  bucket=by_run if run_id else legacy
+  if run_id and (not isinstance(run_id,str) or not run_id):raise ValueError(f"telemetry record {n} has invalid run_id")
+  prior=bucket.get(key)
+  if prior and prior[0]!=start:raise ValueError(f"telemetry records for {key} disagree on start_global_step")
+  bucket[key]=(start,max(prior[1] if prior else start,step))
+ return sum(max_step-start for start,max_step in by_run.values())+sum(max_step-start for start,max_step in legacy.values())
+def check_step_budget(prior_steps,target_step,start_step,approved_steps):
+ if any(isinstance(v,bool) or not isinstance(v,int) or v<0 for v in (prior_steps,target_step,start_step,approved_steps)):
+  raise ValueError("step budget values must be non-negative integers")
+ if target_step<=start_step:raise ValueError("target max_steps must exceed recovery checkpoint global_step")
+ planned=target_step-start_step
+ cumulative=prior_steps+planned
+ if cumulative>approved_steps:raise ValueError(f"cumulative step budget exceeded: {prior_steps} prior steps + {planned} planned steps = {cumulative}, approved maximum {approved_steps}")
+ return cumulative
 def checkpoint_step(path):
  state=path/"trainer_state.json"
  if not path.is_dir() or not state.is_file():raise ValueError("checkpoint missing trainer_state.json")
@@ -171,13 +197,26 @@ def main():
  try:from peft import LoraConfig,get_peft_model
  except Exception as e:p.error(f"peft unavailable: {e}")
  if not torch.cuda.is_available():p.error("free-GPU requirement not met; CPU training blocked")
- started=time.time();x.output.mkdir(parents=True,exist_ok=True);telemetry_path=x.output/"telemetry.jsonl";session_id=str(a.get("hardware",{}).get("session_id"));run_id=str(uuid.uuid4());prior_elapsed=0.0
+ started=time.time();x.output.mkdir(parents=True,exist_ok=True);telemetry_path=x.output/"telemetry.jsonl";session_id=str(a.get("hardware",{}).get("session_id"));run_id=str(uuid.uuid4());prior_elapsed=0.0;prior_steps=0
+ records=[]
  if telemetry_path.exists():
   try:
    records=[json.loads(line) for line in telemetry_path.read_text(encoding="utf-8").splitlines() if line.strip()]
-   prior_elapsed=telemetry_elapsed(records)
+   prior_elapsed=telemetry_elapsed(records);prior_steps=telemetry_steps(records)
   except Exception as e:p.error(f"telemetry history invalid; recovery blocked: {e}")
  if prior_elapsed>=x.max_wall_seconds:p.error("cumulative wall-time budget already exhausted")
+ resume=None
+ checkpoint_dir=x.output/"checkpoints"
+ if x.resume:
+  try:resume=select_recovery_checkpoint(checkpoint_dir)
+  except Exception as e:p.error(f"recovery selection blocked: {e}")
+  if resume is None:p.error("--resume requested but no checkpoint exists")
+ else:
+  if checkpoint_dir.is_dir() and any(p.is_dir() and p.name.startswith("checkpoint-") for p in checkpoint_dir.iterdir()):
+   p.error("existing checkpoints require --resume; refusing to restart and overwrite recovery state")
+ start_step=checkpoint_step(resume) if resume else 0
+ try:planned_cumulative_steps=check_step_budget(prior_steps,x.max_steps,start_step,a.get("budget",{}).get("max_steps"))
+ except Exception as e:p.error(f"cumulative step budget blocked: {e}")
  run_started_monotonic=time.monotonic()
  tok=AutoTokenizer.from_pretrained(str(snapshot),local_files_only=True,trust_remote_code=False);model=AutoModelForCausalLM.from_pretrained(str(snapshot),local_files_only=True,trust_remote_code=False,torch_dtype=torch.float16,device_map="auto")
  model=get_peft_model(model,LoraConfig(r=x.rank,lora_alpha=x.alpha,target_modules=[s.strip() for s in x.target_modules.split(",") if s.strip()],lora_dropout=0,bias="none",task_type="CAUSAL_LM"))
@@ -197,7 +236,7 @@ def main():
  class TelemetryAndBudget(TrainerCallback):
   def __init__(self):self.started=time.monotonic();self.telemetry=telemetry_path
   def on_log(self,args,state,control,logs=None,**kwargs):
-   record={"timestamp":time.time(),"step":state.global_step,"session_id":session_id,"run_id":run_id,"session_elapsed_seconds":time.monotonic()-run_started_monotonic,"cumulative_elapsed_seconds":prior_elapsed+time.monotonic()-run_started_monotonic,"logs":logs or {}}
+   record={"timestamp":time.time(),"step":state.global_step,"start_global_step":start_step,"session_id":session_id,"run_id":run_id,"session_elapsed_seconds":time.monotonic()-run_started_monotonic,"cumulative_elapsed_seconds":prior_elapsed+time.monotonic()-run_started_monotonic,"logs":logs or {}}
    with self.telemetry.open("a",encoding="utf-8") as f:f.write(json.dumps(record,default=str)+"\n")
    return control
   def on_step_end(self,args,state,control,**kwargs):
@@ -211,17 +250,12 @@ def main():
    if prior_elapsed+time.monotonic()-run_started_monotonic>=x.max_wall_seconds:
     control.should_training_stop=True
    return control
- args=TrainingArguments(output_dir=str(x.output/"checkpoints"),max_steps=x.max_steps,per_device_train_batch_size=1,gradient_accumulation_steps=4,learning_rate=2e-4,logging_steps=1,save_steps=max(1,min(25,x.max_steps)),save_total_limit=2,fp16=True,report_to=[],seed=42,data_seed=42)
+ args=TrainingArguments(output_dir=str(checkpoint_dir),max_steps=x.max_steps,per_device_train_batch_size=1,gradient_accumulation_steps=4,learning_rate=2e-4,logging_steps=1,save_steps=1,save_total_limit=2,fp16=True,report_to=[],seed=42,data_seed=42)
  trainer=Trainer(model=model,args=args,train_dataset=DS(),data_collator=collate,callbacks=[TelemetryAndBudget()])
  if prior_elapsed+time.monotonic()-run_started_monotonic>=x.max_wall_seconds:p.error("wall-time budget exhausted before training started")
- resume=None
- if x.resume:
-  try:resume=select_recovery_checkpoint(x.output/"checkpoints")
-  except Exception as e:p.error(f"recovery selection blocked: {e}")
-  if resume is None:p.error("--resume requested but no checkpoint exists")
  trainer.train(resume_from_checkpoint=str(resume) if resume else None)
  model.save_pretrained(x.output/"adapter");tok.save_pretrained(x.output/"adapter")
  packages=package_inventory()
- manifest={"candidate_id":c["candidate_id"],"candidate_repository":c["repository_id"],"candidate_revision":c["revision"],"dataset_path":str(x.dataset.resolve()),"dataset_sha256":sha256_file(x.dataset),"code_commit":x.code_commit,"run_id":run_id,"provider_session_id":session_id,"steps_limit":x.max_steps,"wall_limit_seconds":x.max_wall_seconds,"rank":x.rank,"alpha":x.alpha,"target_modules":[s.strip() for s in x.target_modules.split(",") if s.strip()],"learning_rate":2e-4,"batch_size":1,"gradient_accumulation_steps":4,"seed":42,"data_seed":42,"max_sequence_length":2048,"duration_seconds":time.time()-started,"prior_session_elapsed_seconds":prior_elapsed,"cumulative_wall_seconds":prior_elapsed+time.time()-started,"gpu":torch.cuda.get_device_name(0),"gpu_memory_total_bytes":torch.cuda.get_device_properties(0).total_memory,"cuda_version":torch.version.cuda,"python":sys.version,"platform":platform.platform(),"torch":torch.__version__,"transformers_version":__import__("transformers").__version__,"peft_version":__import__("peft").__version__,"package_inventory":packages,"package_inventory_sha256":package_inventory_sha256(),"environment_package_inventory_sha256":package_inventory_sha256(),"candidate_record_sha256":sha256_file(x.candidate),"model_snapshot_path":str(snapshot.resolve()),"model_snapshot_inventory_sha256":evaluation_gate.sha256_serialized(c["weight_inventory"]),"adapter_sha256_inventory":[{"path":str(f.relative_to(x.output)),"sha256":sha256_file(f)} for f in sorted((x.output/"adapter").rglob("*")) if f.is_file()],"status":"trained_pending_evaluation","holdout_evaluated":False}
+ manifest={"candidate_id":c["candidate_id"],"candidate_repository":c["repository_id"],"candidate_revision":c["revision"],"dataset_path":str(x.dataset.resolve()),"dataset_sha256":sha256_file(x.dataset),"code_commit":x.code_commit,"run_id":run_id,"provider_session_id":session_id,"steps_limit":x.max_steps,"start_global_step":start_step,"actual_steps_run":trainer.state.global_step-start_step,"prior_steps_consumed":prior_steps,"cumulative_steps_consumed":prior_steps+trainer.state.global_step-start_step,"planned_cumulative_steps":planned_cumulative_steps,"wall_limit_seconds":x.max_wall_seconds,"rank":x.rank,"alpha":x.alpha,"target_modules":[s.strip() for s in x.target_modules.split(",") if s.strip()],"learning_rate":2e-4,"batch_size":1,"gradient_accumulation_steps":4,"seed":42,"data_seed":42,"max_sequence_length":2048,"duration_seconds":time.time()-started,"prior_session_elapsed_seconds":prior_elapsed,"cumulative_wall_seconds":prior_elapsed+time.time()-started,"gpu":torch.cuda.get_device_name(0),"gpu_memory_total_bytes":torch.cuda.get_device_properties(0).total_memory,"cuda_version":torch.version.cuda,"python":sys.version,"platform":platform.platform(),"torch":torch.__version__,"transformers_version":__import__("transformers").__version__,"peft_version":__import__("peft").__version__,"package_inventory":packages,"package_inventory_sha256":package_inventory_sha256(),"environment_package_inventory_sha256":package_inventory_sha256(),"candidate_record_sha256":sha256_file(x.candidate),"model_snapshot_path":str(snapshot.resolve()),"model_snapshot_inventory_sha256":evaluation_gate.sha256_serialized(c["weight_inventory"]),"adapter_sha256_inventory":[{"path":str(f.relative_to(x.output)),"sha256":sha256_file(f)} for f in sorted((x.output/"adapter").rglob("*")) if f.is_file()],"status":"trained_pending_evaluation","holdout_evaluated":False}
  (x.output/"training-manifest.json").write_text(json.dumps(manifest,indent=2));print(json.dumps(manifest,indent=2))
 if __name__=="__main__":main()
