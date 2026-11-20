@@ -91,10 +91,21 @@ def load_cases(path: Path) -> list[dict[str, Any]]:
     return cases
 
 
+class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Fail closed on redirects so evaluation API credentials stay at the chosen endpoint."""
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def _open_without_redirects(request: urllib.request.Request, timeout: float):
+    opener = urllib.request.build_opener(_NoRedirectHandler)
+    return opener.open(request, timeout=timeout)
+
+
 def run_case(
     case: dict[str, Any],
     config: RunConfig,
-    opener: Callable[..., Any] = urllib.request.urlopen,
+    opener: Callable[..., Any] | None = None,
 ) -> dict[str, Any]:
     started_at = utc_now()
     messages_json = json.dumps(case["messages"], ensure_ascii=False, sort_keys=True)
@@ -117,7 +128,7 @@ def run_case(
     )
     started = time.perf_counter()
     try:
-        with opener(request, timeout=config.timeout_seconds) as response:
+        with (opener or _open_without_redirects)(request, timeout=config.timeout_seconds) as response:
             status_code = getattr(response, "status", 200)
             body = response.read()
         decoded = json.loads(body.decode("utf-8"))
