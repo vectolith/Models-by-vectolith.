@@ -184,3 +184,16 @@ This is a public-document screen only. It is not independent legal review, evide
 - **Gemma 4 vs older Gemma**: Gemma 4's official documentation identifies Apache-2.0. [Gemma 4 overview](https://ai.google.dev/gemma/docs/core) and [Apache license](https://ai.google.dev/gemma/apache_2). Older Gemma models covered by the April 1, 2026 custom Terms remain distinct; those Terms expressly address output-based Model Derivatives. [Older Gemma Terms](https://ai.google.dev/gemma/terms). Do not apply older terms to Gemma 4 or the Gemma 4 license to older variants.
 
 This screen did not find an explicit separate permission artifact for output collection/distillation for the reviewed candidates. This is not a legal conclusion that the use is prohibited or permitted. Exact revision/provider terms, source rights, privacy, student distribution, jurisdiction, and independent review remain open. License bytes and hashes are still not captured in the experiment evidence directory. No inference or training was performed.
+
+
+## Primary-source re-screening (2026-11-20)
+
+This is a source review, not legal advice or approval. No candidate or teacher-output source is cleared for this experiment.
+
+- **Qwen3-0.6B:** the model repository currently declares Apache-2.0. The project’s existing pinned revision is `c1899de289a04d12100db370d81485cdf75e47ca`; use its revision-specific license page rather than mutable `main` for any future artifact capture: https://huggingface.co/Qwen/Qwen3-0.6B/blob/c1899de289a04d12100db370d81485cdf75e47ca/LICENSE . The upstream page is a research source only; the project still lacks downloaded license bytes and hash evidence.
+- **SmolLM2-360M-Instruct:** the upstream card identifies Apache-2.0. A license-file history page records an Apache-2.0 license file: https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct/commit/cbcad7f4d160a10174f725b968ab6faf2a76399e . This is not a captured local artifact or output-use grant.
+- **Phi-4-mini-instruct:** upstream card/license identifies MIT. The MIT text grants rights concerning the licensed Software; this screen did not find a separate explicit output-distillation permission: https://huggingface.co/microsoft/Phi-4-mini-instruct/blob/main/LICENSE .
+- **Granite 4.2:** IBM’s official repository states that Granite 4.2 language models are released under Apache-2.0: https://github.com/ibm-granite/granite-4.2-language-models . No separate explicit output-to-student-training grant was identified in the source screen.
+- **Gemma:** do not generalize terms across versions. The Gemma 4 Apache-2.0 signal must be assessed against its exact revision and artifacts; older Gemma terms are distinct and may impose derivative-model conditions. No Gemma candidate is selected here.
+
+A permissive model-weight license is not a documented, independent permission for this project to collect or use generated outputs as distillation training data. This screen did not establish such a permission for the above candidates, and did not assess a particular teacher service’s contractual terms, privacy obligations, or applicable law. Each exact teacher/revision/provider and output collection method needs its own rights record and independent review before outputs are collected.
