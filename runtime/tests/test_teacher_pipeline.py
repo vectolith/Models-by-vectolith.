@@ -43,6 +43,14 @@ class TeacherPipelineTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "byte limit"):
                 OpenAICompatibleTeacher(endpoint).generate([{"role":"user","content":"test"}], max_tokens=1)
 
+    def test_endpoint_rejects_embedded_credentials_and_non_http_scheme(self):
+        from vectolith_runtime.teacher_pipeline import OpenAICompatibleTeacher
+        with patch.dict("os.environ", {"TEST_KEY": "secret"}):
+            for url in ("https://user:pass@example.com/v1", "file:///tmp", "https://example.com/v1?token=secret"):
+                endpoint = TeacherEndpoint("teacher-x", "model-x", url, "TEST_KEY", REV)
+                with self.subTest(url=url), self.assertRaises(ValueError):
+                    OpenAICompatibleTeacher(endpoint).generate([{"role": "user", "content": "test"}], max_tokens=1)
+
     def test_teaching_corpus_digest_uses_same_nul_separator_as_training_preflight(self):
         import hashlib
         from vectolith_runtime.teacher_pipeline import _digest
