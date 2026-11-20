@@ -8,6 +8,10 @@ class ComparisonTests(unittest.TestCase):
   r=m.compare(a,b);self.assertEqual(r["baseline_candidate_id"],"base");self.assertEqual(r["adapter_candidate_id"],"adapter");self.assertEqual(r["criteria"]["quality"]["mean_delta"],0);self.assertEqual(r["criteria"]["quality"]["improved"],1);self.assertEqual(r["criteria"]["quality"]["regressed"],1);self.assertEqual(r["criteria"]["format"]["mean_delta"],0.5)
  def test_mismatch_ids_rejected(self):
   with self.assertRaises(ValueError):m.compare({"1":{"candidate_id":"b","scores":{"x":1}}},{"2":{"candidate_id":"a","scores":{"x":1}}})
+ def test_inconsistent_criteria_across_tasks_rejected(self):
+  base={"1":{"candidate_id":"base","scores":{"quality":1}},"2":{"candidate_id":"base","scores":{"format":2}}}
+  adapter={"1":{"candidate_id":"adapter","scores":{"quality":2}},"2":{"candidate_id":"adapter","scores":{"format":3}}}
+  with self.assertRaisesRegex(ValueError,"criterion set differs across tasks"):m.compare(base,adapter)
  def test_mismatch_criteria_rejected(self):
   with self.assertRaises(ValueError):m.compare({"1":{"candidate_id":"b","scores":{"x":1}}},{"1":{"candidate_id":"a","scores":{"y":1}}})
  def test_load_duplicate_rejected(self):
