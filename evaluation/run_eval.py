@@ -15,6 +15,7 @@ import re
 import sys
 import tempfile
 import time
+import uuid
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -269,11 +270,34 @@ def write_records(
         prefix=f".{output_path.name}.", suffix=".tmp", dir=output_path.parent
     )
     temporary_path = Path(temporary_name)
+    canonical_suite = json.dumps(cases, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    canonical_suite_sha256 = hashlib.sha256(canonical_suite).hexdigest()
+    config_snapshot = {
+        "endpoint": safe_endpoint(config.base_url),
+        "model": config.model,
+        "role": config.role,
+        "candidate_id": config.candidate_id,
+        "revision": config.revision,
+        "temperature": config.temperature,
+        "top_p": config.top_p,
+        "max_tokens": config.max_tokens,
+        "timeout_seconds": config.timeout_seconds,
+    }
+    run_config_sha256 = hashlib.sha256(
+        json.dumps(config_snapshot, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    run_id = uuid.uuid4().hex
     failures = 0
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as output:
             for case in cases:
                 record = run_case(case, config, opener=opener)
+                record.update({
+                    "run_id": run_id,
+                    "canonical_suite_sha256": canonical_suite_sha256,
+                    "run_config_sha256": run_config_sha256,
+                    "suite_case_count": len(cases),
+                })
                 output.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
                 if record["error"]:
                     failures += 1

@@ -213,6 +213,25 @@ class RunnerTests(unittest.TestCase):
             record = json.loads(output.read_text(encoding="utf-8"))
             self.assertEqual(record["response_text"], "ok")
             self.assertIsNone(record["error"])
+            canonical_suite = json.dumps([self.case], ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+            self.assertEqual(record["canonical_suite_sha256"], hashlib.sha256(canonical_suite).hexdigest())
+            self.assertEqual(record["suite_case_count"], 1)
+            self.assertEqual(len(record["run_id"]), 32)
+            config_snapshot = {
+                "endpoint": safe_endpoint(self.config.base_url),
+                "model": self.config.model,
+                "role": self.config.role,
+                "candidate_id": self.config.candidate_id,
+                "revision": self.config.revision,
+                "temperature": self.config.temperature,
+                "top_p": self.config.top_p,
+                "max_tokens": self.config.max_tokens,
+                "timeout_seconds": self.config.timeout_seconds,
+            }
+            expected_config_sha256 = hashlib.sha256(
+                json.dumps(config_snapshot, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+            ).hexdigest()
+            self.assertEqual(record["run_config_sha256"], expected_config_sha256)
             if os.name == "posix":
                 self.assertEqual(output.stat().st_mode & 0o777, 0o600)
             with self.assertRaises(FileExistsError):
