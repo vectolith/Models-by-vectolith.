@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Reproducible baseline evaluator; outputs raw per-task records and integrity summary."""
 from __future__ import annotations
-import argparse, hashlib, json, math, platform, random, sys, time, uuid, importlib.metadata
+import argparse, hashlib, json, math, platform, random, sys, time, uuid, importlib.metadata, os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -17,9 +17,21 @@ def sha256_serialized(value: Any) -> str:
     text=value if isinstance(value,str) else json.dumps(value,sort_keys=True,ensure_ascii=False,separators=(",",":"))
     return sha256_text(text)
 def seed_python(seed: int) -> None: random.seed(seed)
+def append_jsonl(path: Path, record: dict[str,Any]) -> None:
+    with path.open("a",encoding="utf-8") as f:
+        f.write(json.dumps(record,ensure_ascii=False)+"\n")
+        f.flush();os.fsync(f.fileno())
 def write_jsonl(path: Path, records: list[dict[str,Any]]) -> None:
-    with path.open("w",encoding="utf-8") as f:
+    temp=path.with_suffix(path.suffix+".tmp")
+    with temp.open("w",encoding="utf-8") as f:
         for record in records: f.write(json.dumps(record,ensure_ascii=False)+"\n")
+        f.flush();os.fsync(f.fileno())
+    os.replace(temp,path)
+def write_json(path: Path, record: dict[str,Any]) -> None:
+    temp=path.with_suffix(path.suffix+".tmp")
+    with temp.open("w",encoding="utf-8") as f:
+        f.write(json.dumps(record,indent=2,ensure_ascii=False));f.flush();os.fsync(f.fileno())
+    os.replace(temp,path)
 def package_version(name: str) -> str | None:
     try: return importlib.metadata.version(name)
     except importlib.metadata.PackageNotFoundError: return None
@@ -135,7 +147,7 @@ def main()->int:
             "freeze_manifest":str(a.freeze_manifest.resolve()),"freeze_manifest_sha256":freeze_sha,
             "candidate_record_sha256":candidate_sha,"authorization_sha256":authorization_sha256,"code_commit":a.code_commit,"max_wall_seconds":max_wall_seconds,
             "package_inventory":inventory,"package_inventory_sha256":inventory_sha256}
-        summary_file.write_text(json.dumps(summary,indent=2),encoding="utf-8");print(json.dumps(summary,indent=2));return 2
+        write_json(summary_file,summary);print(json.dumps(summary,indent=2));return 2
     seed_python(a.seed)
     torch.manual_seed(a.seed)
     if torch.cuda.is_available():torch.cuda.manual_seed_all(a.seed)
@@ -157,7 +169,9 @@ def main()->int:
             def __call__(self,input_ids,scores,**kwargs):return time.monotonic()-run_started_monotonic>=max_wall_seconds
         for task_index,task in enumerate(tasks):
             if time.monotonic()-run_started_monotonic>=max_wall_seconds:
-                records.extend({"run_id":run_id,"task_id":remaining["task_id"],"category":remaining["category"],"split":remaining["split"],"prompt_sha256":sha256_text(remaining["prompt"]),"status":"budget_exhausted"} for remaining in tasks[task_index:])
+                exhausted=[{"run_id":run_id,"task_id":remaining["task_id"],"category":remaining["category"],"split":remaining["split"],"prompt_sha256":sha256_text(remaining["prompt"]),"status":"budget_exhausted"} for remaining in tasks[task_index:]]
+                records.extend(exhausted)
+                for item in exhausted:append_jsonl(raw,item)
                 break
             prompt=task["prompt"];t0=time.perf_counter()
             try:
@@ -185,11 +199,12 @@ def main()->int:
                     "input_tokens":input_tokens,"output_tokens":int(new.shape[-1]),"generation_seconds":elapsed,
                     "tokens_per_second":int(new.shape[-1])/elapsed if elapsed else None,"status":"completed"}
                 if time.monotonic()-run_started_monotonic>=max_wall_seconds:record["status"]="budget_exhausted"
-                records.append(record)
+                records.append(record);append_jsonl(raw,record)
             except Exception as e:
                 errors+=1
-                records.append({"run_id":run_id,"task_id":task["task_id"],"category":task["category"],"split":task["split"],
-                    "prompt_sha256":sha256_text(prompt),"status":"failed","error":repr(e),"generation_seconds":time.perf_counter()-t0})
+                record={"run_id":run_id,"task_id":task["task_id"],"category":task["category"],"split":task["split"],
+                    "prompt_sha256":sha256_text(prompt),"status":"failed","error":repr(e),"generation_seconds":time.perf_counter()-t0}
+                records.append(record);append_jsonl(raw,record)
     write_jsonl(raw,records)
     completed,failed,status=tally_records(records,len(tasks),selected_task_ids)
     capture_warnings=[];peak_memory=None;config_hash=None;template_hash=None
@@ -219,6 +234,6 @@ def main()->int:
         "started_at_epoch":started,"duration_seconds":time.time()-started,"max_new_tokens":a.max_new_tokens,
         "temperature":a.temperature,"qwen3_thinking":bool(a.qwen3_thinking),"trust_remote_code":a.trust_remote_code,
         "freeze_manifest":str(a.freeze_manifest.resolve()),"freeze_manifest_sha256":freeze_sha,"candidate_record_sha256":candidate_sha,"authorization_sha256":authorization_sha256,"code_commit":a.code_commit,"max_wall_seconds":max_wall_seconds,"raw_file":str(raw),"raw_file_sha256":sha256_file(raw)}
-    summary_file.write_text(json.dumps(summary,indent=2),encoding="utf-8");print(json.dumps(summary,indent=2))
+    write_json(summary_file,summary);print(json.dumps(summary,indent=2))
     return 0 if status=="completed" else 1
 if __name__=="__main__":raise SystemExit(main())
