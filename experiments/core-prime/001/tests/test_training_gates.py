@@ -205,6 +205,41 @@ class Tests(unittest.TestCase):
     trainer.append_telemetry_record(path,{"run_id":"r","step":1})
     sync.assert_called_once()
    self.assertEqual(json.loads(path.read_text())["step"],1)
+ def test_checkpoint_inventory_uses_confined_descriptor_reads(self):
+  ck=self.make_checkpoint(self.d,"checkpoint-13",13)
+  from unittest.mock import patch
+  secure=trainer.evaluation_gate.read_confined_bytes
+  observed=[]
+  def wrapped(base,relative,label):
+   observed.append((Path(base),relative,label))
+   return secure(base,relative,label)
+  with patch.object(trainer.evaluation_gate,"read_confined_bytes",side_effect=wrapped):
+   inventory=trainer.checkpoint_inventory(ck)
+  self.assertTrue(observed)
+  self.assertTrue(all(label=="checkpoint" for _,_,label in observed))
+  self.assertTrue(any(relative.startswith(ck.name+"/") for _,relative,_ in observed))
+  expected_count=len([p for p in ck.iterdir() if p.is_file() and p.name not in ("checkpoint-integrity.json","checkpoint-integrity.json.tmp","checkpoint-budget.json.tmp")])
+  self.assertEqual(len(inventory),expected_count)
+
+ def test_checkpoint_inventory_rejects_symlink_swap_before_hash(self):
+  ck=self.make_checkpoint(self.d,"checkpoint-14",14)
+  target=ck/"trainer_state.json"
+  outside=self.d/"outside.json";outside.write_text("outside",encoding="utf-8")
+  secure=trainer.evaluation_gate.read_confined_bytes
+  swapped=False
+  def swap_then_read(base,relative,label):
+   nonlocal swapped
+   if not swapped and relative.endswith("/trainer_state.json"):
+    target.unlink()
+    target.symlink_to(outside)
+    swapped=True
+   return secure(base,relative,label)
+  from unittest.mock import patch
+  with patch.object(trainer.evaluation_gate,"read_confined_bytes",side_effect=swap_then_read):
+   with self.assertRaisesRegex(ValueError,"symlink components or is unreadable"):
+    trainer.checkpoint_inventory(ck)
+  self.assertTrue(swapped)
+
  def test_checkpoint_validation(self):
   ck=self.make_checkpoint(self.d,"checkpoint-3",3)
   self.assertEqual(trainer.validate_checkpoint(ck),3)
