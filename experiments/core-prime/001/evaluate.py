@@ -50,14 +50,23 @@ def load_jsonl_snapshot(path: Path) -> tuple[list[dict[str,Any]],str]:
     try:text=raw.decode("utf-8")
     except UnicodeDecodeError as e:raise ValueError(f"{path}: invalid UTF-8: {e}") from e
     rows=[]
+    allowed_fields={"task_id","category","prompt","split","rubric_id","reference_answer","expected_constraints","provenance","content_sha256"}
     for n,line in enumerate(text.splitlines(),1):
         if not line.strip(): continue
         try: row=json.loads(line)
         except json.JSONDecodeError as e: raise ValueError(f"{path}:{n}: invalid JSON: {e}") from e
         if not isinstance(row,dict): raise ValueError(f"{path}:{n}: expected object")
-        for k in ("task_id","prompt","category"):
+        unknown=set(row)-allowed_fields
+        if unknown: raise ValueError(f"{path}:{n}: unexpected task fields: {sorted(unknown)}")
+        for k in ("task_id","prompt","category","rubric_id","provenance"):
             if not isinstance(row.get(k),str) or not row[k].strip(): raise ValueError(f"{path}:{n}: invalid {k}")
         if row.get("split") not in ("train","development","holdout"): raise ValueError(f"{path}:{n}: invalid split")
+        if "reference_answer" in row and row["reference_answer"] is not None and not isinstance(row["reference_answer"],str): raise ValueError(f"{path}:{n}: reference_answer must be text or null")
+        if "expected_constraints" in row and (not isinstance(row["expected_constraints"],list) or any(not isinstance(item,str) for item in row["expected_constraints"])): raise ValueError(f"{path}:{n}: expected_constraints must be a string array")
+        if "content_sha256" in row and row["content_sha256"] is not None:
+            digest=row["content_sha256"]
+            if not isinstance(digest,str) or not evaluation_gate.SHA64.fullmatch(digest): raise ValueError(f"{path}:{n}: content_sha256 must be a lowercase SHA-256 or null")
+            if digest!=sha256_text(row["prompt"]): raise ValueError(f"{path}:{n}: content_sha256 mismatch")
         rows.append(row)
     ids=[r["task_id"] for r in rows]
     if len(ids)!=len(set(ids)): raise ValueError("task_id values must be unique")
