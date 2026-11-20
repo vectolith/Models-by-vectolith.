@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 SHA40=re.compile(r"^[a-f0-9]{40}$")
 SHA64=re.compile(r"^[a-f0-9]{64}$")
+MAX_CONFined_EVIDENCE_BYTES=64*1024*1024
 def strict_json_loads(text):
  """Parse JSON while rejecting duplicate object keys at every nesting level."""
  def unique_pairs(pairs):
@@ -66,6 +67,7 @@ def read_confined_bytes(base,relative,label):
   while True:
    chunk=os.read(file_fd,1024*1024)
    if not chunk:break
+   if sum(map(len,chunks))+len(chunk)>MAX_CONFined_EVIDENCE_BYTES:raise ValueError(f"{label} evidence exceeds {MAX_CONFined_EVIDENCE_BYTES} byte limit")
    chunks.append(chunk)
  except FileNotFoundError as exc:
   raise ValueError(f"{label} evidence file missing: {exc}") from exc
