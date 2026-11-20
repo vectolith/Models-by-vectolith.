@@ -15,7 +15,7 @@ from pathlib import Path
 import time
 from typing import Any, Protocol
 from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
+from urllib.request import Request, urlopen, build_opener, HTTPRedirectHandler
 
 from .distillation import TeacherContribution, TeacherPanel
 
@@ -46,7 +46,14 @@ class OpenAICompatibleTeacher:
         key = os.environ.get(self.endpoint.api_key_env, "")
         if not key:
             raise RuntimeError(f"missing credential environment variable: {self.endpoint.api_key_env}")
-        url = self.endpoint.base_url.rstrip("/") + "/chat/completions"
+        from urllib.parse import urlsplit
+        base = self.endpoint.base_url
+        parsed = urlsplit(base)
+        if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment:
+            raise ValueError("teacher endpoint must be a valid HTTP(S) URL without credentials, query, or fragment")
+        if self.endpoint.timeout_seconds <= 0:
+            raise ValueError("teacher endpoint timeout must be positive")
+        url = base.rstrip("/") + "/chat/completions"
         payload = json.dumps({
             "model": self.endpoint.model,
             "messages": messages,
@@ -58,7 +65,7 @@ class OpenAICompatibleTeacher:
             "Content-Type": "application/json",
         })
         try:
-            with urlopen(request, timeout=self.endpoint.timeout_seconds) as response:
+            with build_opener(_RejectRedirects()).open(request, timeout=self.endpoint.timeout_seconds) as response:
                 raw = response.read(self.MAX_RESPONSE_BYTES + 1)
                 if len(raw) > self.MAX_RESPONSE_BYTES:
                     raise RuntimeError("teacher response exceeds configured byte limit")
