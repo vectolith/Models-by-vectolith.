@@ -55,7 +55,7 @@ def read_confined_bytes(base,relative,label):
   current=os.open(root,flags|directory);descriptors.append(current)
   for part in rel.parts[:-1]:
    current=os.open(part,flags|directory|nofollow,dir_fd=current);descriptors.append(current)
-  file_fd=os.open(rel.parts[-1],flags|nofollow,dir_fd=current);descriptors.append(file_fd)
+  file_fd=os.open(rel.parts[-1],flags|nofollow|getattr(os,"O_NONBLOCK",0),dir_fd=current);descriptors.append(file_fd)
   if not stat.S_ISREG(os.fstat(file_fd).st_mode):raise ValueError(f"{label} evidence file is not regular")
   while True:
    chunk=os.read(file_fd,1024*1024)
@@ -83,7 +83,7 @@ def hash_confined_file(base,relative,label,chunk_size=1024*1024):
   current=os.open(root,flags|directory);descriptors.append(current)
   for part in rel.parts[:-1]:
    current=os.open(part,flags|directory|nofollow,dir_fd=current);descriptors.append(current)
-  file_fd=os.open(rel.parts[-1],flags|nofollow,dir_fd=current);descriptors.append(file_fd)
+  file_fd=os.open(rel.parts[-1],flags|nofollow|getattr(os,"O_NONBLOCK",0),dir_fd=current);descriptors.append(file_fd)
   if not stat.S_ISREG(os.fstat(file_fd).st_mode):raise ValueError(f"{label} evidence file is not regular")
   while True:
    chunk=os.read(file_fd,chunk_size)
