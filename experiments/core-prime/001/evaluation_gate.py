@@ -57,7 +57,7 @@ def read_confined_bytes(base,relative,label):
  rel=Path(relative)
  if rel.is_absolute() or ".." in rel.parts or not rel.parts:raise ValueError(f"{label} evidence path must be relative and confined")
  root=Path(base).resolve();nofollow=getattr(os,"O_NOFOLLOW",0);directory=getattr(os,"O_DIRECTORY",0);flags=os.O_RDONLY
- descriptors=[];chunks=[]
+ descriptors=[];chunks=[];total=0
  try:
   current=os.open(root,flags|directory);descriptors.append(current)
   for part in rel.parts[:-1]:
@@ -67,8 +67,8 @@ def read_confined_bytes(base,relative,label):
   while True:
    chunk=os.read(file_fd,1024*1024)
    if not chunk:break
-   if sum(map(len,chunks))+len(chunk)>MAX_CONFined_EVIDENCE_BYTES:raise ValueError(f"{label} evidence exceeds {MAX_CONFined_EVIDENCE_BYTES} byte limit")
-   chunks.append(chunk)
+   if total+len(chunk)>MAX_CONFined_EVIDENCE_BYTES:raise ValueError(f"{label} evidence exceeds {MAX_CONFined_EVIDENCE_BYTES} byte limit")
+   total+=len(chunk);chunks.append(chunk)
  except FileNotFoundError as exc:
   raise ValueError(f"{label} evidence file missing: {exc}") from exc
  except OSError as exc:
