@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 SHA40=re.compile(r"^[a-f0-9]{40}$")
 SHA64=re.compile(r"^[a-f0-9]{64}$")
+MAX_CONFined_EVIDENCE_BYTES=64*1024*1024
 def strict_json_loads(text):
  """Parse JSON while rejecting duplicate object keys at every nesting level."""
  def unique_pairs(pairs):
@@ -44,13 +45,19 @@ def git_head():
  root=Path(__file__).resolve().parents[3]
  result=subprocess.run(["git","rev-parse","HEAD"],cwd=root,capture_output=True,text=True,check=True)
  return result.stdout.strip()
+def require_confined_open_support(label="evidence"):
+ required=("O_NOFOLLOW","O_NONBLOCK","O_DIRECTORY")
+ missing=[name for name in required if not getattr(os,name,0)]
+ if missing or os.open not in getattr(os,"supports_dir_fd",set()):
+  raise ValueError(f"{label} access requires descriptor-relative opens and O_NOFOLLOW/O_NONBLOCK/O_DIRECTORY; unsupported platform")
 def read_confined_bytes(base,relative,label):
+ require_confined_open_support(label)
  """Read a confined regular file using no-follow directory/file descriptors."""
  if not isinstance(relative,str) or not relative.strip():raise ValueError(f"{label} evidence path missing")
  rel=Path(relative)
  if rel.is_absolute() or ".." in rel.parts or not rel.parts:raise ValueError(f"{label} evidence path must be relative and confined")
  root=Path(base).resolve();nofollow=getattr(os,"O_NOFOLLOW",0);directory=getattr(os,"O_DIRECTORY",0);flags=os.O_RDONLY
- descriptors=[];chunks=[]
+ descriptors=[];chunks=[];total=0
  try:
   current=os.open(root,flags|directory);descriptors.append(current)
   for part in rel.parts[:-1]:
@@ -60,7 +67,8 @@ def read_confined_bytes(base,relative,label):
   while True:
    chunk=os.read(file_fd,1024*1024)
    if not chunk:break
-   chunks.append(chunk)
+   if total+len(chunk)>MAX_CONFined_EVIDENCE_BYTES:raise ValueError(f"{label} evidence exceeds {MAX_CONFined_EVIDENCE_BYTES} byte limit")
+   total+=len(chunk);chunks.append(chunk)
  except FileNotFoundError as exc:
   raise ValueError(f"{label} evidence file missing: {exc}") from exc
  except OSError as exc:
@@ -71,6 +79,7 @@ def read_confined_bytes(base,relative,label):
    except OSError:pass
  return (root/rel),b"".join(chunks)
 def hash_confined_file(base,relative,label,chunk_size=1024*1024):
+ require_confined_open_support(label)
  """Hash a confined regular file incrementally without buffering its contents."""
  if isinstance(chunk_size,bool) or not isinstance(chunk_size,int) or chunk_size<=0:
   raise ValueError("hash chunk size must be a positive integer")

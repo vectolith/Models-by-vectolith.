@@ -1,4 +1,5 @@
-import importlib.util, tempfile, hashlib, unittest
+import importlib.util, tempfile, hashlib, unittest, os, tracemalloc
+from unittest.mock import patch
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location("release_verifier",ROOT/"verify_release_bundle.py")
@@ -55,6 +56,12 @@ class ReleaseVerifierTests(unittest.TestCase):
    m={"model_name":"Core Prime","release_version":"x","release_status":"qualified","holdout_included":False,"artifacts":[{"path":"artifact.bin","sha256":digest},{"path":"artifact.bin","sha256":digest}],"gates":gates}
    self.assertTrue(any("duplicate artifact file" in e for e in v.verify(root,m)))
 
+ def test_confined_verifier_fails_closed_without_no_follow(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);path=root/"evidence.txt";path.write_bytes(b"evidence")
+   with patch.object(os,"O_NOFOLLOW",0):
+    with self.assertRaisesRegex(ValueError,"requires descriptor-relative opens"):
+     v.verify_file(root,path.name,hashlib.sha256(b"evidence").hexdigest())
  def test_symlink_evidence_path_rejected(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);outside=root/"outside.txt";outside.write_text("evidence");link=root/"link.txt";link.symlink_to(outside)
@@ -75,6 +82,32 @@ class ReleaseVerifierTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);manifest=root/"release.json";manifest.write_text('{"model_name":"Core Prime","model_name":"Other"}')
    with self.assertRaisesRegex(ValueError,"duplicate JSON object key"):v.evaluation_gate.strict_json_loads(manifest.read_text())
+ def test_large_evidence_hashing_has_bounded_memory(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);path=root/"large.bin";chunk=b"x"*(1024*1024);expected=hashlib.sha256()
+   with path.open("wb") as f:
+    for _ in range(16):
+     f.write(chunk);expected.update(chunk)
+   tracemalloc.start()
+   try:
+    v.verify_file(root,path.name,expected.hexdigest())
+    _,peak=tracemalloc.get_traced_memory()
+   finally:
+    tracemalloc.stop()
+   self.assertLess(peak,8*1024*1024,"release verifier retained whole-file data in memory")
+
+ @unittest.skipUnless(hasattr(os,"mkfifo"),"FIFO tests require POSIX")
+ def test_fifo_evidence_is_rejected_without_blocking(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);fifo=root/"evidence.fifo";os.mkfifo(fifo)
+   with self.assertRaisesRegex(ValueError,"not regular"):
+    v.verify_file(root,fifo.name,hashlib.sha256(b"").hexdigest())
+
+ def test_verified_path_return_is_rooted_without_re_resolving(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);path=root/"evidence.txt";path.write_bytes(b"verified")
+   result=v.verify_file(root,path.name,hashlib.sha256(b"verified").hexdigest())
+   self.assertEqual(result,root.resolve()/path.name)
  def test_hash_mismatch(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);(root/"x").write_text("actual")

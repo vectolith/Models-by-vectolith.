@@ -55,23 +55,29 @@ def verify(root,manifest):
  if manifest.get("holdout_included") is not False:errors.append("holdout_included must be explicitly false")
  if manifest.get("release_status")!="qualified":errors.append("release_status must be qualified")
  return errors
+def require_confined_open_support(label="evidence"):
+ required=("O_NOFOLLOW","O_NONBLOCK","O_DIRECTORY")
+ missing=[name for name in required if not getattr(os,name,0)]
+ if missing or os.open not in getattr(os,"supports_dir_fd",set()):
+  raise ValueError(f"{label} access requires descriptor-relative opens and O_NOFOLLOW/O_NONBLOCK/O_DIRECTORY; unsupported platform")
 def verify_file(root,relative,digest):
  base=Path(root).resolve();rel=Path(relative)
  if rel.is_absolute() or ".." in rel.parts or not rel.parts:raise ValueError("path must be relative and confined")
  # Verify and hash the same bytes through no-follow descriptors. A path check
  # followed by a separate open/hash would leave a symlink replacement race.
- nofollow=getattr(os,"O_NOFOLLOW",0);directory=getattr(os,"O_DIRECTORY",0);flags=os.O_RDONLY
- descriptors=[];chunks=[]
+ require_confined_open_support("release evidence")
+ nofollow=os.O_NOFOLLOW;directory=os.O_DIRECTORY;flags=os.O_RDONLY
+ descriptors=[];digest_state=hashlib.sha256()
  try:
   current=os.open(base,flags|directory);descriptors.append(current)
   for part in rel.parts[:-1]:
    current=os.open(part,flags|directory|nofollow,dir_fd=current);descriptors.append(current)
-  file_fd=os.open(rel.parts[-1],flags|nofollow,dir_fd=current);descriptors.append(file_fd)
+  file_fd=os.open(rel.parts[-1],flags|nofollow|getattr(os,"O_NONBLOCK",0),dir_fd=current);descriptors.append(file_fd)
   if not stat.S_ISREG(os.fstat(file_fd).st_mode):raise ValueError("evidence file is not regular")
   while True:
    chunk=os.read(file_fd,1024*1024)
    if not chunk:break
-   chunks.append(chunk)
+   digest_state.update(chunk)
  except FileNotFoundError as exc:
   raise ValueError(f"evidence file missing: {exc}") from exc
  except OSError as exc:
@@ -80,12 +86,10 @@ def verify_file(root,relative,digest):
   for fd in reversed(descriptors):
    try:os.close(fd)
    except OSError:pass
- raw=b"".join(chunks)
- if hashlib.sha256(raw).hexdigest()!=digest:raise ValueError("SHA-256 mismatch")
- p=base/rel
- try:p.resolve().relative_to(base)
- except ValueError:raise ValueError("path escapes evidence root")
- return p.resolve()
+ if digest_state.hexdigest()!=digest:raise ValueError("SHA-256 mismatch")
+ # The opened descriptor established the hash. Do not resolve/reopen the path
+ # after closing it: a concurrent replacement would change the returned identity.
+ return base/rel
 def main():
  p=argparse.ArgumentParser();p.add_argument("manifest",type=Path);a=p.parse_args()
  try:m=evaluation_gate.strict_json_loads(a.manifest.read_text(encoding="utf-8"))
