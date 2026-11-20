@@ -129,3 +129,20 @@ The screening did not find an explicit, separate output-to-training permission s
 ### Granite output-use caveat and source cross-check
 
 IBM's official Granite page additionally states that Granite users may not use the model to generate outputs that infringe, misappropriate or otherwise violate third-party copyright rights. Source: https://www.ibm.com/granite. This is a copyright-output restriction, not a specific authorization to use Granite-generated text for student training. The Apache-2.0 LICENSE at the exact Granite 4.2 repository is still the model-weight license signal (https://github.com/ibm-granite/granite-4.2-language-models/blob/main/LICENSE); the official model-family page and individual revision must be rechecked before selection. The screening does not treat a license badge alone as output-training clearance.
+
+
+## Static compatibility and resource screening (2026-11-20)
+
+This comparison is limited to official model-card/documentation observations; no weights were staged, no resource measurements were made, and it does not rank or approve a candidate.
+
+| Candidate | Static compatibility/resource observation | License/output-training status |
+|---|---|---|
+| SmolLM2-360M-Instruct | 360M parameters; small footprint; official card demonstrates Transformers loading without remote code. | Apache-2.0 model-card metadata; no separate output-to-training permission statement located. |
+| Qwen3-0.6B | Compact candidate; exact revision is pinned in the provisional record but not staged or measured. | Apache-2.0 at the pinned upstream LICENSE page; no separate output-to-training grant located. |
+| Phi-4-mini-instruct | 3.8B, 128K context; official card examples use `trust_remote_code=True`, which this runner currently forbids. It is therefore not runner-compatible without code review and a policy/runner change. | MIT; no separate output-distillation permission located. |
+| Granite 4.2 3B | IBM's selector lists 128K context, T4 support and an estimated 8GB BF16 / lower memory with quantization; these are vendor estimates, not measurements. Current LoRA runner does not quantize. | Apache-2.0 model license signal; IBM also prohibits using Granite to generate outputs that infringe third-party copyright. No separate output-training grant located. |
+| Gemma 4 E2B | 2B effective parameters, 128K context; Google reports 11.4GB BF16 and 2.9GB Q4 estimates. The current runner uses FP16 LoRA without quantization, so the Q4 estimate is not directly applicable. | Gemma 4 Apache-2.0 license; no separate output-to-training permission statement located. Distinct from older Gemma models under the April 2026 custom ToU. |
+
+Sources: SmolLM2 model card (https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct); Qwen3 model card and pinned LICENSE (https://huggingface.co/Qwen/Qwen3-0.6B/blob/c1899de289a04d12100db370d81485cdf75e47ca/LICENSE); Phi-4-mini-instruct model card (https://huggingface.co/microsoft/Phi-4-mini-instruct); IBM Granite model selector (https://www.ibm.com/granite/playground/model-selector/models) and usage restriction (https://www.ibm.com/granite); Gemma 4 overview/license (https://ai.google.dev/gemma/docs/core; https://ai.google.dev/gemma/apache_2); older Gemma terms (https://ai.google.dev/gemma/terms).
+
+All output-training permissions remain unresolved. License metadata and vendor resource estimates are not independent legal review, compute verification, measured suitability or model qualification.
