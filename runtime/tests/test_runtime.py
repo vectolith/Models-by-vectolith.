@@ -116,6 +116,23 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(ValueError):
             await store.transition("task-1", TaskStatus.COMPLETED, "bypass")
 
+    async def test_store_rejects_invalid_nonterminal_transition(self):
+        from vectolith_runtime.engine import TaskStore
+        store = TaskStore()
+        await store.create(request())
+        with self.assertRaisesRegex(ValueError, "invalid task transition"):
+            await store.transition("task-1", TaskStatus.RUNNING, "skip delegation")
+
+    async def test_store_allows_valid_transition_sequence(self):
+        from vectolith_runtime.engine import TaskStore
+        store = TaskStore()
+        await store.create(request())
+        await store.transition("task-1", TaskStatus.DELEGATED, "assigned")
+        await store.transition("task-1", TaskStatus.RUNNING, "started")
+        await store.transition("task-1", TaskStatus.VERIFYING, "verify")
+        record = await store.get("task-1")
+        self.assertEqual(record.status, TaskStatus.VERIFYING)
+
     async def test_reviewer_must_return_literal_true(self):
         async def prima(task):
             return TaskResult(task.task_id, TaskStatus.COMPLETED, "done", evidence=("build log",))
