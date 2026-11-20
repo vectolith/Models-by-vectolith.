@@ -139,7 +139,6 @@ def main()->int:
     except Exception as e:
         records=initialization_failure_records(run_id,tasks,e,status="dependency_blocked")
         write_jsonl(raw,records)
-        inventory,inventory_sha256=package_inventory_snapshot()
         summary={"run_id":run_id,"status":"blocked","error":repr(e),"task_file_sha256":task_hash,
             "task_count":len(tasks),"completed_count":0,"failed_count":len(tasks),"raw_file":str(raw),
             "raw_file_sha256":sha256_file(raw),"model":a.model,"revision":a.revision,"seed":a.seed,
@@ -221,7 +220,6 @@ def main()->int:
             template_text=getattr(tokenizer,"chat_template",None)
             template_hash=sha256_serialized(template_text) if template_text else None
         except Exception as e:capture_warnings.append("Chat-template hash capture failed: "+repr(e))
-    inventory,inventory_sha256=package_inventory_snapshot()
     summary={"run_id":run_id,"status":status,"model":a.model,"revision":a.revision,"task_file":str(a.tasks),
         "task_file_sha256":task_hash,"task_count":len(tasks),"completed_count":completed,"failed_count":failed,
         "device":device,"hardware":hardware,"peak_cuda_memory_allocated_bytes":peak_memory,
