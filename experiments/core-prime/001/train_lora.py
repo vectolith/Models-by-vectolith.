@@ -174,12 +174,13 @@ def verify_evidence_file(base,relative_path,digest,label):
  if not target.is_file():raise ValueError(f"{label} evidence file missing")
  if sha256_file(target)!=digest:raise ValueError(f"{label} evidence hash mismatch")
  return target
-def gates(c,a,rows,x):
+def gates(c,a,rows,x,package_hash=None):
  candidate,candidate_sha,snapshot=evaluation_gate.verify_candidate_record(x.candidate,c.get("repository_id"),c.get("revision"))
  if candidate!=c:raise ValueError("candidate record content mismatch")
  if not isinstance(x.code_commit,str) or not evaluation_gate.SHA40.fullmatch(x.code_commit):raise ValueError("code commit must be a 40-character lowercase SHA")
  if a.get("candidate_record_sha256")!=candidate_sha:raise ValueError("candidate record hash mismatch")
- if a.get("environment_package_inventory_sha256")!=package_inventory_sha256():raise ValueError("environment package inventory hash mismatch")
+ if package_hash is None:package_hash=package_inventory_sha256()
+ if a.get("environment_package_inventory_sha256")!=package_hash:raise ValueError("environment package inventory hash mismatch")
  if a.get("approval")!="approved":raise ValueError("training approval not approved")
  if a.get("candidate_revision")!=c.get("revision"):raise ValueError("candidate revision mismatch")
  if a.get("dataset_sha256")!=sha256_file(x.dataset):raise ValueError("dataset hash mismatch")
@@ -202,7 +203,7 @@ def main():
  try:
   actual_code_commit=evaluation_gate.git_head()
   if actual_code_commit!=x.code_commit:p.error("--code-commit does not match training runner checkout HEAD")
-  c=json.loads(x.candidate.read_text());a=json.loads(x.authorization.read_text());rows=load_rows(x.dataset);snapshot=gates(c,a,rows,x)
+  c=json.loads(x.candidate.read_text());a=json.loads(x.authorization.read_text());rows=load_rows(x.dataset);packages,packages_hash=package_inventory_snapshot();snapshot=gates(c,a,rows,x,packages_hash)
  except Exception as e:p.error(f"preflight blocked: {e}")
  try:import torch
  except Exception as e:p.error(f"torch unavailable: {e}")
@@ -269,7 +270,6 @@ def main():
  if prior_elapsed+time.monotonic()-run_started_monotonic>=x.max_wall_seconds:p.error("wall-time budget exhausted before training started")
  trainer.train(resume_from_checkpoint=str(resume) if resume else None)
  model.save_pretrained(x.output/"adapter");tok.save_pretrained(x.output/"adapter")
- packages,packages_hash=package_inventory_snapshot()
  manifest={"candidate_id":c["candidate_id"],"candidate_repository":c["repository_id"],"candidate_revision":c["revision"],"dataset_path":str(x.dataset.resolve()),"dataset_sha256":sha256_file(x.dataset),"code_commit":x.code_commit,"run_id":run_id,"provider_session_id":session_id,"steps_limit":x.max_steps,"start_global_step":start_step,"actual_steps_run":trainer.state.global_step-start_step,"prior_steps_consumed":prior_steps,"cumulative_steps_consumed":prior_steps+trainer.state.global_step-start_step,"planned_cumulative_steps":planned_cumulative_steps,"wall_limit_seconds":x.max_wall_seconds,"rank":x.rank,"alpha":x.alpha,"target_modules":[s.strip() for s in x.target_modules.split(",") if s.strip()],"learning_rate":2e-4,"batch_size":1,"gradient_accumulation_steps":4,"seed":42,"data_seed":42,"max_sequence_length":2048,"duration_seconds":time.time()-started,"prior_session_elapsed_seconds":prior_elapsed,"cumulative_wall_seconds":prior_elapsed+time.time()-started,"gpu":torch.cuda.get_device_name(0),"gpu_memory_total_bytes":torch.cuda.get_device_properties(0).total_memory,"cuda_version":torch.version.cuda,"python":sys.version,"platform":platform.platform(),"torch":torch.__version__,"transformers_version":__import__("transformers").__version__,"peft_version":__import__("peft").__version__,"package_inventory":packages,"package_inventory_sha256":packages_hash,"environment_package_inventory_sha256":packages_hash,"candidate_record_sha256":sha256_file(x.candidate),"model_snapshot_path":str(snapshot.resolve()),"model_snapshot_inventory_sha256":evaluation_gate.sha256_serialized(c["weight_inventory"]),"adapter_sha256_inventory":[{"path":str(f.relative_to(x.output)),"sha256":sha256_file(f)} for f in sorted((x.output/"adapter").rglob("*")) if f.is_file()],"status":"trained_pending_evaluation","holdout_evaluated":False}
  (x.output/"training-manifest.json").write_text(json.dumps(manifest,indent=2));print(json.dumps(manifest,indent=2))
 if __name__=="__main__":main()
