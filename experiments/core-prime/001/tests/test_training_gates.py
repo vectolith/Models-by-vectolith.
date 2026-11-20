@@ -152,6 +152,14 @@ class Tests(unittest.TestCase):
    record=json.loads((ck/"checkpoint-budget.json").read_text(encoding="utf-8"))
    self.assertEqual(record["global_step"],1);self.assertEqual(record["cumulative_elapsed_seconds"],3.5)
    self.assertFalse(any(p.name.startswith("checkpoint-budget.json.") and p.name.endswith(".tmp") and p!=ck/"checkpoint-budget.json.tmp" for p in ck.iterdir()))
+ def test_checkpoint_atomic_write_cleans_temp_on_replace_failure(self):
+  from unittest.mock import patch
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);target=root/"state.json";target.write_text("previous",encoding="utf-8")
+   with patch.object(trainer.os,"replace",side_effect=OSError("forced replace failure")):
+    with self.assertRaisesRegex(OSError,"forced replace failure"):trainer.atomic_write_text(target,"new")
+   self.assertEqual(target.read_text(encoding="utf-8"),"previous")
+   self.assertEqual(list(root.glob(target.name+".*.tmp")),[])
  def test_checkpoint_budget_state_and_recovery(self):
   ck=self.make_checkpoint(self.d,"checkpoint-3",3)
   trainer.seal_checkpoint(ck,cumulative_elapsed_seconds=42.5)
