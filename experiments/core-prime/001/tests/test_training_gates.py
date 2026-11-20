@@ -30,7 +30,14 @@ class Tests(unittest.TestCase):
  def test_legal_review_blocked(self):
   self.c["human_legal_review"]="pending";self.candidate_path.write_text(json.dumps(self.c,sort_keys=True));self.a["candidate_record_sha256"]=trainer.sha256_file(self.candidate_path)
   self.assertRaisesRegex(ValueError,"independent human legal review",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
- def test_dataset_hash_blocked(self):self.a["dataset_sha256"]="0"*64;self.assertRaisesRegex(ValueError,"dataset hash",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
+
+ def test_dataset_authorization_binds_loaded_snapshot_bytes(self):
+  rows,digest=trainer.load_rows_snapshot(self.dataset)
+  self.dataset.write_text(json.dumps({"task_id":"changed","prompt":"changed","response":"changed","provenance":"changed","split":"train"})+"\\n",encoding="utf-8")
+  self.assertEqual(rows[0]["task_id"],"x")
+  self.assertEqual(digest,self.a["dataset_sha256"])
+  trainer.gates(self.c,self.a,rows,self.x,dataset_sha256=digest)
+\n def test_dataset_hash_blocked(self):self.a["dataset_sha256"]="0"*64;self.assertRaisesRegex(ValueError,"dataset hash",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_code_hash_blocked(self):self.a["code_commit"]="d"*40;self.assertRaisesRegex(ValueError,"code commit",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_free_compute_blocked(self):self.a["hardware"]["verified_free_budget"]=False;self.assertRaisesRegex(ValueError,"free compute",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_budget_limit(self):self.x.max_steps=11;self.a["training_config_sha256"]=trainer.training_config_sha256(self.x);self.assertRaisesRegex(ValueError,"max_steps",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
@@ -79,7 +86,7 @@ class Tests(unittest.TestCase):
   self.assertEqual(inventory,items);self.assertEqual(digest,trainer.evaluation_gate.sha256_serialized(items));self.assertEqual(capture.call_count,1)
  def test_training_manifest_uses_preflight_package_snapshot(self):
   source=(ROOT/"train_lora.py").read_text(encoding="utf-8")
-  self.assertIn("packages,packages_hash=package_inventory_snapshot();training_config_hash=training_config_sha256(x);snapshot=gates(c,a,rows,x,packages_hash,training_config_hash)",source)
+  self.assertIn("rows,dataset_sha256=load_rows_snapshot(x.dataset);packages,packages_hash=package_inventory_snapshot();training_config_hash=training_config_sha256(x);snapshot=gates(c,a,rows,x,packages_hash,training_config_hash,dataset_sha256)",source)
   self.assertIn('"training_config":cfg,"training_config_sha256":training_config_hash',source)
   self.assertIn('"package_inventory":packages,"package_inventory_sha256":packages_hash,"environment_package_inventory_sha256":packages_hash',source)
  def test_telemetry_run_cumulative_accounting(self):
