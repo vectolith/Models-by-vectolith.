@@ -264,6 +264,30 @@ class Tests(unittest.TestCase):
     trainer.checkpoint_inventory(ck)
   self.assertTrue(swapped)
 
+ def test_checkpoint_step_rejects_symlink_state(self):
+  ck=self.make_checkpoint(self.d,"checkpoint-15",15)
+  target=ck/"trainer_state.json";target.unlink()
+  outside=self.d/"outside-state.json";outside.write_text(json.dumps({"global_step":15}),encoding="utf-8")
+  target.symlink_to(outside)
+  with self.assertRaisesRegex(ValueError,"symlink components or is unreadable"):
+   trainer.checkpoint_step(ck)
+
+ def test_checkpoint_budget_state_rejects_symlink(self):
+  ck=self.make_checkpoint(self.d,"checkpoint-16",16)
+  target=ck/"checkpoint-budget.json";target.unlink()
+  outside=self.d/"outside-budget.json";outside.write_text(json.dumps({"schema_version":1,"global_step":16,"cumulative_elapsed_seconds":10}),encoding="utf-8")
+  target.symlink_to(outside)
+  with self.assertRaisesRegex(ValueError,"symlink components or is unreadable"):
+   trainer.checkpoint_budget_state(ck)
+
+ def test_checkpoint_integrity_manifest_rejects_symlink(self):
+  ck=self.make_checkpoint(self.d,"checkpoint-17",17)
+  target=ck/"checkpoint-integrity.json";target.unlink()
+  outside=self.d/"outside-manifest.json";outside.write_text(json.dumps({"schema_version":1,"step":17,"files":[]}),encoding="utf-8")
+  target.symlink_to(outside)
+  with self.assertRaisesRegex(ValueError,"symlink components or is unreadable"):
+   trainer.validate_checkpoint(ck)
+
  def test_checkpoint_validation(self):
   ck=self.make_checkpoint(self.d,"checkpoint-3",3)
   self.assertEqual(trainer.validate_checkpoint(ck),3)
