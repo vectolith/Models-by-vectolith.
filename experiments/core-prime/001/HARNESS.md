@@ -7,7 +7,11 @@ This directory contains an inference CLI, JSONL task validator, candidate-record
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -r experiments/core-prime/001/requirements.txt
+# Training stack (only after authorization gates pass):
+python -m pip install -r experiments/core-prime/001/requirements-training.txt
 ```
+The direct dependency versions are pinned. The full transitive dependency set is not yet hash-locked; capture and hash the resolved package inventory for each authorized run. The CI compatibility job installs the CPU PyTorch wheel and checks imports, exact direct versions and `pip check`; it does not load weights, run inference or train.
+
 
 ## Tests
 ```bash
