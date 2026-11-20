@@ -45,6 +45,10 @@ class EvaluatorTests(unittest.TestCase):
    self.assertEqual(inventory,expected)
    self.assertEqual(digest,evaluator.sha256_serialized(expected))
    capture.assert_called_once()
+ def test_main_binds_summary_to_preimport_inventory_snapshot(self):
+  source=(ROOT/"evaluate.py").read_text(encoding="utf-8")
+  self.assertEqual(source.count("inventory,inventory_sha256=package_inventory_snapshot()"),1)
+  self.assertIn('"package_inventory":inventory,"package_inventory_sha256":inventory_sha256',source)
  def test_task_load_valid(self):self.assertEqual(len(evaluator.load_jsonl(file_rows([row("1","prompt")]))),1)
  def test_duplicate_task_id_rejected(self):
   with self.assertRaises(ValueError):evaluator.load_jsonl(file_rows([row("1","a"),row("1","b")]))
