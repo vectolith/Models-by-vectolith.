@@ -8,22 +8,73 @@
       "role": "generalist_orchestrator",
       "status": "planned",
       "capabilities": [
-        "reasoning",
-        "planning",
+        "adaptive_routing",
+        "communication",
+        "constraint_tracking",
+        "context_management",
         "conversation",
+        "decision_support",
         "delegation",
+        "delegation_protocol",
+        "evidence_assessment",
+        "knowledge_synthesis",
+        "memory_retrieval",
+        "multi_step_planning",
+        "multimodal_task_routing",
+        "planning",
+        "quality_assurance",
+        "reasoning",
+        "requirements_elicitation",
+        "result_integration",
+        "task_intake",
+        "task_state_management",
+        "tool_selection",
+        "uncertainty_calibration",
         "verification"
       ],
       "delegates_to": [
         "core-research",
         "core-code",
         "core-reason",
-        "core-safety"
+        "core-safety",
+        "core-creative",
+        "core-data",
+        "core-vision",
+        "core-audio",
+        "core-agent"
       ],
       "limits": [
         "delegation must be policy-authorized",
-        "must verify delegate output"
-      ]
+        "must verify delegate output",
+        "maintains task intent and constraints across delegation",
+        "does not claim capabilities unavailable in verified runtime",
+        "critical claims and external actions require evidence or authorization"
+      ],
+      "profile": {
+        "strengths": [
+          "general-purpose understanding",
+          "requirements analysis",
+          "adaptive planning",
+          "multi-model orchestration",
+          "cross-domain synthesis",
+          "evidence-aware verification",
+          "conversation and task continuity"
+        ],
+        "workflow": [
+          "interpret request and constraints",
+          "resolve ambiguity or state assumptions",
+          "break task into bounded subtasks",
+          "route only to verified available delegates",
+          "integrate and check returned evidence",
+          "deliver outcome with limitations"
+        ],
+        "outputs": [
+          "task plan",
+          "delegation envelopes",
+          "integrated result",
+          "verification summary"
+        ]
+      }
     },
     {
       "id": "core-prima",
@@ -31,22 +82,77 @@
       "role": "engineering_orchestrator",
       "status": "planned",
       "capabilities": [
-        "software_engineering",
+        "build_and_release_planning",
+        "change_review",
+        "ci_diagnosis",
+        "code_generation",
+        "code_modification",
         "debugging",
-        "implementation_planning",
         "delegation",
+        "dependency_analysis",
+        "documentation_generation",
+        "engineering_evidence_capture",
+        "git_workflow",
+        "implementation_decomposition",
+        "implementation_planning",
+        "integration_validation",
+        "performance_analysis",
+        "repository_inspection",
+        "reproducibility",
+        "requirements_to_spec",
+        "rollback_planning",
+        "security_analysis",
+        "software_engineering",
+        "system_architecture",
+        "test_design",
+        "test_execution",
         "verification"
       ],
       "delegates_to": [
         "core-code",
         "core-research",
         "core-reason",
-        "core-safety"
+        "core-safety",
+        "core-data",
+        "core-agent"
       ],
       "limits": [
         "delegation must be policy-authorized",
-        "must verify delegate output"
-      ]
+        "must verify delegate output",
+        "must not report unexecuted tests as passed",
+        "must not fabricate repository or runtime evidence",
+        "writes and external actions require authorization"
+      ],
+      "profile": {
+        "strengths": [
+          "software engineering",
+          "implementation",
+          "architecture",
+          "repository and CI analysis",
+          "debugging",
+          "test-driven correction",
+          "security and dependency review",
+          "reproducible engineering",
+          "release readiness"
+        ],
+        "workflow": [
+          "inspect actual code and environment",
+          "establish acceptance criteria",
+          "design change",
+          "implement in scoped branch",
+          "run real tests and CI",
+          "inspect failures and correct them",
+          "review security and regressions",
+          "capture evidence and deliver"
+        ],
+        "outputs": [
+          "implementation plan",
+          "patches",
+          "test evidence",
+          "CI evidence",
+          "risk and rollback notes"
+        ]
+      }
     },
     {
       "id": "core-research",
