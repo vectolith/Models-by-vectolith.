@@ -200,6 +200,21 @@ class RunnerTests(unittest.TestCase):
         self.assertNotIn("secret-token echo", json.dumps(result))
         self.assertNotIn("secret-token", json.dumps(result))
 
+    def test_config_fingerprint_distinguishes_auth_mode_without_logging_secret(self):
+        with tempfile.TemporaryDirectory() as directory:
+            plain_output = Path(directory) / "plain.jsonl"
+            bearer_output = Path(directory) / "bearer.jsonl"
+            payload = {"choices": [{"message": {"content": "ok"}}]}
+            fake_opener = lambda *_args, **_kwargs: FakeResponse(payload)
+            write_records([self.case], self.config, plain_output, opener=fake_opener)
+            secret = "private-api-key-not-in-evidence"
+            bearer_config = RunConfig(**{**self.config.__dict__, "api_key": secret})
+            write_records([self.case], bearer_config, bearer_output, opener=fake_opener)
+            plain = json.loads(plain_output.read_text(encoding="utf-8"))
+            bearer = json.loads(bearer_output.read_text(encoding="utf-8"))
+            self.assertNotEqual(plain["run_config_sha256"], bearer["run_config_sha256"])
+            self.assertNotIn(secret, bearer_output.read_text(encoding="utf-8"))
+
     def test_output_capture_is_atomic_private_and_no_overwrite(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "evidence.jsonl"
@@ -228,6 +243,7 @@ class RunnerTests(unittest.TestCase):
                 "top_p": self.config.top_p,
                 "max_tokens": self.config.max_tokens,
                 "timeout_seconds": self.config.timeout_seconds,
+                "auth_mode": "bearer" if self.config.api_key else "none",
                 "runner_sha256": runner_source_sha256(),
             }
             self.assertEqual(record["runner_sha256"], runner_source_sha256())

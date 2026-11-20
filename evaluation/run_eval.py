@@ -293,6 +293,7 @@ def write_records(
             "top_p": config.top_p,
             "max_tokens": config.max_tokens,
             "timeout_seconds": config.timeout_seconds,
+            "auth_mode": "bearer" if config.api_key else "none",
             "runner_sha256": runner_sha256,
         }
         run_config_sha256 = hashlib.sha256(
