@@ -222,16 +222,20 @@ class Tests(unittest.TestCase):
  def test_checkpoint_inventory_uses_confined_descriptor_reads(self):
   ck=self.make_checkpoint(self.d,"checkpoint-13",13)
   from unittest.mock import patch
-  secure=trainer.evaluation_gate.read_confined_bytes
+  secure_read=trainer.evaluation_gate.read_confined_bytes
+  secure_hash=trainer.evaluation_gate.hash_confined_file
   observed=[]
-  def wrapped(base,relative,label):
-   observed.append((Path(base),relative,label))
-   return secure(base,relative,label)
-  with patch.object(trainer.evaluation_gate,"read_confined_bytes",side_effect=wrapped):
+  def wrapped_read(base,relative,label):
+   observed.append((Path(base),relative,label,"read"))
+   return secure_read(base,relative,label)
+  def wrapped_hash(base,relative,label,chunk_size=1024*1024):
+   observed.append((Path(base),relative,label,"hash"))
+   return secure_hash(base,relative,label,chunk_size)
+  with patch.object(trainer.evaluation_gate,"read_confined_bytes",side_effect=wrapped_read),patch.object(trainer.evaluation_gate,"hash_confined_file",side_effect=wrapped_hash):
    inventory=trainer.checkpoint_inventory(ck)
   self.assertTrue(observed)
-  self.assertTrue(all(label=="checkpoint" for _,_,label in observed))
-  self.assertTrue(any(relative.startswith(ck.name+"/") for _,relative,_ in observed))
+  self.assertTrue(all(label=="checkpoint" for _,_,label,_ in observed))
+  self.assertTrue(any(relative.startswith(ck.name+"/") for _,relative,_,_ in observed))
   expected_count=len([p for p in ck.iterdir() if p.is_file() and p.name not in ("checkpoint-integrity.json","checkpoint-integrity.json.tmp","checkpoint-budget.json.tmp")])
   self.assertEqual(len(inventory),expected_count)
 
@@ -239,17 +243,23 @@ class Tests(unittest.TestCase):
   ck=self.make_checkpoint(self.d,"checkpoint-14",14)
   target=ck/"trainer_state.json"
   outside=self.d/"outside.json";outside.write_text("outside",encoding="utf-8")
-  secure=trainer.evaluation_gate.read_confined_bytes
+  secure_read=trainer.evaluation_gate.read_confined_bytes
+  secure_hash=trainer.evaluation_gate.hash_confined_file
   swapped=False
-  def swap_then_read(base,relative,label):
+  def swap():
    nonlocal swapped
-   if not swapped and relative.endswith("/trainer_state.json"):
+   if not swapped:
     target.unlink()
     target.symlink_to(outside)
     swapped=True
-   return secure(base,relative,label)
+  def swap_then_read(base,relative,label):
+   if relative.endswith("/trainer_state.json"):swap()
+   return secure_read(base,relative,label)
+  def swap_then_hash(base,relative,label,chunk_size=1024*1024):
+   if relative.endswith("/trainer_state.json"):swap()
+   return secure_hash(base,relative,label,chunk_size)
   from unittest.mock import patch
-  with patch.object(trainer.evaluation_gate,"read_confined_bytes",side_effect=swap_then_read):
+  with patch.object(trainer.evaluation_gate,"read_confined_bytes",side_effect=swap_then_read),patch.object(trainer.evaluation_gate,"hash_confined_file",side_effect=swap_then_hash):
    with self.assertRaisesRegex(ValueError,"symlink components or is unreadable"):
     trainer.checkpoint_inventory(ck)
   self.assertTrue(swapped)
