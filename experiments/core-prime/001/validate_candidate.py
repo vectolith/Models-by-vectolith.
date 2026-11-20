@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Strict standard-library validator for candidate records (not a legal review)."""
 from __future__ import annotations
-import argparse,json,re
+import argparse,json,re,sys
 from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+import evaluation_gate
 SHA40=re.compile(r"^[a-f0-9]{40}$");SHA64=re.compile(r"^[a-f0-9]{64}$")
 REQUIRED={"record_version","candidate_id","repository_id","revision","status","output_training_permission","human_legal_review","compatibility_status","model_snapshot_path"}
 STATUSES={"pending","verified","blocked","measured","not_applicable"}
@@ -46,7 +48,7 @@ def validate(record):
  return errors
 def main():
  p=argparse.ArgumentParser();p.add_argument("file",type=Path);a=p.parse_args()
- try:r=json.loads(a.file.read_text(encoding="utf-8"))
+ try:r=evaluation_gate.strict_json_loads(a.file.read_text(encoding="utf-8"))
  except Exception as e:print(f"input error: {e}");return 2
  err=validate(r)
  if err:print("\n".join(err));return 1
