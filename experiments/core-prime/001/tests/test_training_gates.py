@@ -101,7 +101,10 @@ class Tests(unittest.TestCase):
   self.assertEqual(inventory,items);self.assertEqual(digest,trainer.evaluation_gate.sha256_serialized(items));self.assertEqual(capture.call_count,1)
  def test_training_manifest_uses_preflight_package_snapshot(self):
   source=(ROOT/"train_lora.py").read_text(encoding="utf-8")
-  self.assertIn("rows,dataset_sha256=load_rows_snapshot(x.dataset);packages,packages_hash=package_inventory_snapshot();training_config_hash=training_config_sha256(x);snapshot=gates(c,a,rows,x,packages_hash,training_config_hash,dataset_sha256)",source)
+  self.assertIn('evaluation_gate.load_json_snapshot(x.candidate,"candidate record")',source)
+  self.assertIn('evaluation_gate.load_json_snapshot(x.authorization,"training authorization")',source)
+  self.assertIn("snapshot=gates(c,a,rows,x,packages_hash,training_config_hash,dataset_sha256,candidate_record_sha256)",source)
+  self.assertIn('"candidate_record_sha256":candidate_record_sha256,"authorization_sha256":authorization_sha256',source)
   self.assertIn('"training_config":cfg,"training_config_sha256":training_config_hash',source)
   self.assertIn('"package_inventory":packages,"package_inventory_sha256":packages_hash,"environment_package_inventory_sha256":packages_hash',source)
  def test_telemetry_run_cumulative_accounting(self):
