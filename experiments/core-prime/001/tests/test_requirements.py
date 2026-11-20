@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
-REPOSITORY_ROOT=ROOT.parents[3]
+REPOSITORY_ROOT=ROOT.parents[2]
 class RequirementsTests(unittest.TestCase):
  def test_baseline_requirements_are_directly_pinned(self):
   lines=(ROOT/"requirements.txt").read_text(encoding="utf-8").splitlines()
