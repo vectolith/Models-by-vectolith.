@@ -115,4 +115,15 @@ class HoldoutTests(unittest.TestCase):
    with self.assertRaisesRegex(ValueError,"verified model config is invalid"):helper(snapshot,True)
  def test_qwen3_thinking_disabled_does_not_require_config(self):
   with tempfile.TemporaryDirectory() as tmp:evaluator.validate_qwen3_thinking_mode(Path(tmp),False)
+
+ def test_candidate_evidence_symlink_rejected(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp);outside=root/"outside.txt";outside.write_text("evidence");link=root/"link.txt";link.symlink_to(outside)
+   with self.assertRaisesRegex(ValueError,"symlink components"):evaluator.evaluation_gate.verify_evidence_file(root,"link.txt",hashlib.sha256(b"evidence").hexdigest(),"fixture")
+
+ def test_candidate_evidence_parent_symlink_rejected(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp);outside=root/"outside";outside.mkdir();(outside/"evidence.txt").write_text("evidence");link=root/"linked-dir";link.symlink_to(outside,target_is_directory=True)
+   with self.assertRaisesRegex(ValueError,"symlink components"):evaluator.evaluation_gate.verify_evidence_file(root,"linked-dir/evidence.txt",hashlib.sha256(b"evidence").hexdigest(),"fixture")
+
 if __name__=="__main__":unittest.main()
