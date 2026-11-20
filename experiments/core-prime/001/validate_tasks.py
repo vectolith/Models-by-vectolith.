@@ -21,7 +21,7 @@ def validate(files):
             if not line.strip(): continue
             count += 1
             try: row=evaluation_gate.strict_json_loads(line)
-            except json.JSONDecodeError as exc: errors.append(f"{file}:{n}: JSON parse error: {exc}"); continue
+            except ValueError as exc: errors.append(f"{file}:{n}: JSON parse error: {exc}"); continue
             if not isinstance(row,dict): errors.append(f"{file}:{n}: record must be an object"); continue
             unknown=set(row)-ALLOWED
             if unknown: errors.append(f"{file}:{n}: unexpected fields: {sorted(unknown)}")
