@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Integrity gates for baseline inference; this module does not decide legal rights."""
 from __future__ import annotations
-import hashlib,json,re,subprocess
+import hashlib,json,re,subprocess,os
 from datetime import datetime
 from pathlib import Path
 SHA40=re.compile(r"^[a-f0-9]{40}$")
@@ -11,6 +11,13 @@ def sha256_file(path):
  with Path(path).open("rb") as f:
   for chunk in iter(lambda:f.read(1024*1024),b""):h.update(chunk)
  return h.hexdigest()
+def fsync_directory(path):
+ """Persist directory-entry changes after atomic replacement on POSIX."""
+ directory=Path(path)
+ if directory.is_file():directory=directory.parent
+ fd=os.open(directory,os.O_RDONLY)
+ try:os.fsync(fd)
+ finally:os.close(fd)
 def sha256_serialized(value):
  text=value if isinstance(value,str) else json.dumps(value,sort_keys=True,ensure_ascii=False,separators=(",",":"))
  return hashlib.sha256(text.encode("utf-8")).hexdigest()
