@@ -120,6 +120,14 @@ class Tests(unittest.TestCase):
   ck=self.make_checkpoint(self.d,"checkpoint-5",5)
   (ck/"optimizer.pt").write_bytes(b"tampered")
   with self.assertRaisesRegex(ValueError,"integrity hash mismatch"):trainer.validate_checkpoint(ck)
+ def test_checkpoint_symlink_file_rejected(self):
+  ck=self.make_checkpoint(self.d,"checkpoint-11",11);outside=self.d/"outside.bin";outside.write_bytes(b"outside")
+  target=ck/"adapter_model.safetensors";target.unlink();target.symlink_to(outside)
+  with self.assertRaisesRegex(ValueError,"contains symlinks"):trainer.validate_checkpoint(ck)
+ def test_checkpoint_directory_symlink_rejected(self):
+  outside=self.d/"external";outside.mkdir();valid=self.make_checkpoint(outside,"checkpoint-12",12)
+  root=self.d/"checkpoints";root.mkdir();link=root/"checkpoint-12";link.symlink_to(valid,target_is_directory=True)
+  with self.assertRaisesRegex(ValueError,"directory symlink"):trainer.select_recovery_checkpoint(root)
  def test_checkpoint_manifest_duplicate_paths_rejected(self):
   ck=self.make_checkpoint(self.d,"checkpoint-7",7)
   manifest=json.loads((ck/"checkpoint-integrity.json").read_text())
