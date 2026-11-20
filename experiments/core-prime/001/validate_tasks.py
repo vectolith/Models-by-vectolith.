@@ -14,7 +14,7 @@ def validate(files):
     errors, seen_ids, prompts, count = [], {}, {}, 0
     for file in files:
         try: lines = file.read_text(encoding="utf-8").splitlines()
-        except OSError as exc: errors.append(f"{file}: read error: {exc}"); continue
+        except (OSError,UnicodeError) as exc: errors.append(f"{file}: read error: {exc}"); continue
         for n,line in enumerate(lines,1):
             if not line.strip(): continue
             count += 1
@@ -26,7 +26,7 @@ def validate(files):
             for key in REQUIRED:
                 if not isinstance(row.get(key),str) or not row[key].strip(): errors.append(f"{file}:{n}: {key} must be a non-empty string")
             split=row.get("split")
-            if split not in SPLITS: errors.append(f"{file}:{n}: invalid split")
+            if not isinstance(split,str) or split not in SPLITS: errors.append(f"{file}:{n}: invalid split")
             if "reference_answer" in row and row["reference_answer"] is not None and not isinstance(row["reference_answer"],str): errors.append(f"{file}:{n}: reference_answer must be text or null")
             if "expected_constraints" in row and (not isinstance(row["expected_constraints"],list) or any(not isinstance(item,str) for item in row["expected_constraints"])): errors.append(f"{file}:{n}: expected_constraints must be a string array")
             tid=row.get("task_id")
@@ -34,7 +34,7 @@ def validate(files):
                 if tid in seen_ids: errors.append(f"{file}:{n}: duplicate task_id {tid!r} (also {seen_ids[tid]})")
                 else: seen_ids[tid]=f"{file}:{n}"
             prompt=row.get("prompt")
-            if isinstance(prompt,str) and prompt.strip() and split in SPLITS:
+            if isinstance(prompt,str) and prompt.strip() and isinstance(split,str) and split in SPLITS:
                 key=sha256(normalized_prompt(prompt))
                 if key in prompts:
                     prior_split,prior_location=prompts[key]
