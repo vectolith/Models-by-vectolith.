@@ -2,7 +2,7 @@ import json, unittest
 from pathlib import Path
 from models.runtime.capability_registry import validate_registry,route,delegation_targets,RegistryError
 
-REG=Path(__file__).parents[1]/"registry"/"registry.json"
+REG=Path(__file__).parents[2]/"registry"/"registry.json"
 
 class RegistryTests(unittest.TestCase):
  def setUp(self): self.registry=json.loads(REG.read_text())
