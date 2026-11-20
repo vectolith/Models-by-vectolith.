@@ -8,7 +8,7 @@ class Tests(unittest.TestCase):
  def setUp(self):
   self.tmp=tempfile.TemporaryDirectory();self.d=Path(self.tmp.name);self.dataset=self.d/"train.jsonl";self.dataset.write_text(json.dumps({"task_id":"x","prompt":"p","response":"r","provenance":"authored","split":"train"})+"\n")
   self.candidate_path=self.d/"candidate.json";self.authorization_path=self.d/"authorization.json"
-  self.x=type("X",(),{"dataset":self.dataset,"candidate":self.candidate_path,"authorization":self.authorization_path,"max_steps":10,"max_wall_seconds":60,"code_commit":"c"*40})()
+  self.x=type("X",(),{"dataset":self.dataset,"candidate":self.candidate_path,"authorization":self.authorization_path,"max_steps":10,"max_wall_seconds":60,"rank":8,"alpha":16,"target_modules":"q_proj,k_proj,v_proj,o_proj","code_commit":"c"*40})()
   snapshot=self.d/"snapshot";snapshot.mkdir()
   weights=snapshot/"weights.bin";weights.write_bytes(b"candidate weight fixture")
   config=snapshot/"config.json";config.write_text("{}")
@@ -33,7 +33,7 @@ class Tests(unittest.TestCase):
  def test_dataset_hash_blocked(self):self.a["dataset_sha256"]="0"*64;self.assertRaisesRegex(ValueError,"dataset hash",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_code_hash_blocked(self):self.a["code_commit"]="d"*40;self.assertRaisesRegex(ValueError,"code commit",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_free_compute_blocked(self):self.a["hardware"]["verified_free_budget"]=False;self.assertRaisesRegex(ValueError,"free compute",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
- def test_budget_limit(self):self.x.max_steps=11;self.assertRaisesRegex(ValueError,"max_steps",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
+ def test_budget_limit(self):self.x.max_steps=11;self.a["training_config_sha256"]=trainer.training_config_sha256(self.x);self.assertRaisesRegex(ValueError,"max_steps",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_holdout_access_blocked(self):self.a["holdout_access"]="open";self.assertRaisesRegex(ValueError,"holdout",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_dev_split_rejected(self):self.dataset.write_text(json.dumps({"task_id":"x","prompt":"p","response":"r","provenance":"authored","split":"development"}));self.assertRaisesRegex(ValueError,"split must be train",trainer.load_rows,self.dataset)
  def test_empty_data_rejected(self):self.dataset.write_text("");self.assertRaisesRegex(ValueError,"empty",trainer.load_rows,self.dataset)
