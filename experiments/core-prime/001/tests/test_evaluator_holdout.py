@@ -113,6 +113,12 @@ class HoldoutTests(unittest.TestCase):
    path=root/"auth";path.write_text(json.dumps(auth))
    with self.assertRaisesRegex(ValueError,"selected tasks exceed"):evaluator.evaluation_gate.verify_evaluation_authorization(path,"c"*64,evaluator.sha256_file(tasks),freeze,"d"*40,"e"*64,2,20)
 
+
+ def test_evaluation_authorization_template_includes_pending_provenance_evidence(self):
+  template=json.loads((ROOT/"evaluation-authorization.template.json").read_text(encoding="utf-8"))
+  self.assertEqual(template["dataset_provenance"]["status"],"pending")
+  self.assertIsNone(template["dataset_provenance"]["evidence_path"])
+  self.assertIsNone(template["dataset_provenance"]["evidence_sha256"])
  def test_dataset_provenance_gate_requires_review_and_hash(self):
   with tempfile.TemporaryDirectory() as tmp:
    root=Path(tmp);tasks=root/"tasks";tasks.write_text("tasks",encoding="utf-8");freeze=root/"freeze";freeze.write_text("freeze",encoding="utf-8")
