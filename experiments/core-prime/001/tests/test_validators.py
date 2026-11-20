@@ -57,6 +57,10 @@ class CandidateTests(unittest.TestCase):
  def test_hash_validation(self):r=self.record();r["license_evidence_sha256"]="z"*64;self.assertTrue(any("license_evidence" in e for e in candidate.validate(r)))
  def test_extra_fields(self):r=self.record();r["arbitrary"]=1;self.assertTrue(any("unexpected fields" in e for e in candidate.validate(r)))
 class EvaluatorTests(unittest.TestCase):
+ def test_strict_json_rejects_duplicate_and_nonstandard_numeric_values(self):
+  with self.assertRaisesRegex(ValueError,"duplicate JSON object key"):evaluator.evaluation_gate.strict_json_loads('{"a":1,"a":2}')
+  with self.assertRaisesRegex(ValueError,"non-standard JSON numeric constant"):evaluator.evaluation_gate.strict_json_loads('{"score":NaN}')
+  with self.assertRaisesRegex(ValueError,"non-standard JSON numeric constant"):evaluator.evaluation_gate.strict_json_loads('{"score":Infinity}')
  def test_hash_text(self):self.assertEqual(evaluator.sha256_text("abc"),"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")
  def test_serialized_hash_stable_for_object(self):
   self.assertEqual(evaluator.sha256_serialized({"b":2,"a":1}),evaluator.sha256_serialized({"a":1,"b":2}))
