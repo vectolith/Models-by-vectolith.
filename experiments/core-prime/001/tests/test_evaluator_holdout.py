@@ -40,6 +40,10 @@ class HoldoutTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as tmp:
    path,candidate=self.fixture_candidate(Path(tmp));(Path(tmp)/"snapshot"/"extra.bin").write_bytes(b"extra")
    with self.assertRaisesRegex(ValueError,"inventory incomplete"):evaluator.evaluation_gate.verify_candidate_record(path,"m","a"*40)
+ def test_candidate_snapshot_duplicate_inventory_path_rejected(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   path,candidate=self.fixture_candidate(Path(tmp));candidate["weight_inventory"].append(candidate["weight_inventory"][0]);path.write_text(json.dumps(candidate))
+   with self.assertRaisesRegex(ValueError,"duplicate path"):evaluator.evaluation_gate.verify_candidate_record(path,"m","a"*40)
  def test_evaluation_authorization_binds_freeze_and_environment(self):
   with tempfile.TemporaryDirectory() as tmp:
    root=Path(tmp);tasks=root/"tasks.jsonl";tasks.write_text('{"task_id":"a","prompt":"p","category":"c","split":"development"}'+chr(10),encoding="utf-8")
