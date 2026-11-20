@@ -4,9 +4,10 @@
 Grade JSONL rows: task_id, candidate_id, scores (criterion->number), optional notes.
 This script computes paired score deltas; it does not grade responses or invent scores.
 """
-import argparse, json, math, hashlib, os, tempfile
-import evaluation_gate
+import argparse, json, math, hashlib, os, tempfile, sys
 from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+import evaluation_gate
 
 
 def sha256_file(path):
