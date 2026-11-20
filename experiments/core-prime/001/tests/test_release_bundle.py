@@ -1,4 +1,5 @@
 import importlib.util, tempfile, hashlib, unittest, os, tracemalloc
+from unittest.mock import patch
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location("release_verifier",ROOT/"verify_release_bundle.py")
@@ -55,6 +56,12 @@ class ReleaseVerifierTests(unittest.TestCase):
    m={"model_name":"Core Prime","release_version":"x","release_status":"qualified","holdout_included":False,"artifacts":[{"path":"artifact.bin","sha256":digest},{"path":"artifact.bin","sha256":digest}],"gates":gates}
    self.assertTrue(any("duplicate artifact file" in e for e in v.verify(root,m)))
 
+ def test_confined_verifier_fails_closed_without_no_follow(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);path=root/"evidence.txt";path.write_bytes(b"evidence")
+   with patch.object(os,"O_NOFOLLOW",0):
+    with self.assertRaisesRegex(ValueError,"requires descriptor-relative opens"):
+     v.verify_file(root,path.name,hashlib.sha256(b"evidence").hexdigest())
  def test_symlink_evidence_path_rejected(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);outside=root/"outside.txt";outside.write_text("evidence");link=root/"link.txt";link.symlink_to(outside)

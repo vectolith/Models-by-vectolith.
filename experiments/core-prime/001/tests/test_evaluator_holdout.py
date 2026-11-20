@@ -189,6 +189,12 @@ class HoldoutTests(unittest.TestCase):
    with patch.object(evaluator.evaluation_gate,"fsync_directory",wraps=evaluator.evaluation_gate.fsync_directory) as sync:
     evaluator.write_json(path,{"durable":True})
    sync.assert_called_once_with(path.parent)
+ def test_confined_evidence_access_fails_closed_without_no_follow(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp);path=root/"evidence.txt";path.write_text("evidence")
+   with patch.object(os,"O_NOFOLLOW",0):
+    with self.assertRaisesRegex(ValueError,"requires descriptor-relative opens"):
+     evaluator.evaluation_gate.read_confined_bytes(root,path.name,"fixture")
  def test_candidate_evidence_symlink_rejected(self):
   with tempfile.TemporaryDirectory() as tmp:
    root=Path(tmp);outside=root/"outside.txt";outside.write_text("evidence");link=root/"link.txt";link.symlink_to(outside)

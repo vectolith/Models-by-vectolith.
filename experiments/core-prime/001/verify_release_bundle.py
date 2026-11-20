@@ -55,12 +55,18 @@ def verify(root,manifest):
  if manifest.get("holdout_included") is not False:errors.append("holdout_included must be explicitly false")
  if manifest.get("release_status")!="qualified":errors.append("release_status must be qualified")
  return errors
+def require_confined_open_support(label="evidence"):
+ required=("O_NOFOLLOW","O_NONBLOCK","O_DIRECTORY")
+ missing=[name for name in required if not getattr(os,name,0)]
+ if missing or os.open not in getattr(os,"supports_dir_fd",set()):
+  raise ValueError(f"{label} access requires descriptor-relative opens and O_NOFOLLOW/O_NONBLOCK/O_DIRECTORY; unsupported platform")
 def verify_file(root,relative,digest):
  base=Path(root).resolve();rel=Path(relative)
  if rel.is_absolute() or ".." in rel.parts or not rel.parts:raise ValueError("path must be relative and confined")
  # Verify and hash the same bytes through no-follow descriptors. A path check
  # followed by a separate open/hash would leave a symlink replacement race.
- nofollow=getattr(os,"O_NOFOLLOW",0);directory=getattr(os,"O_DIRECTORY",0);flags=os.O_RDONLY
+ require_confined_open_support("release evidence")
+ nofollow=os.O_NOFOLLOW;directory=os.O_DIRECTORY;flags=os.O_RDONLY
  descriptors=[];digest_state=hashlib.sha256()
  try:
   current=os.open(base,flags|directory);descriptors.append(current)

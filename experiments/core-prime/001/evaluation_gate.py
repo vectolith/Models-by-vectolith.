@@ -44,7 +44,13 @@ def git_head():
  root=Path(__file__).resolve().parents[3]
  result=subprocess.run(["git","rev-parse","HEAD"],cwd=root,capture_output=True,text=True,check=True)
  return result.stdout.strip()
+def require_confined_open_support(label="evidence"):
+ required=("O_NOFOLLOW","O_NONBLOCK","O_DIRECTORY")
+ missing=[name for name in required if not getattr(os,name,0)]
+ if missing or os.open not in getattr(os,"supports_dir_fd",set()):
+  raise ValueError(f"{label} access requires descriptor-relative opens and O_NOFOLLOW/O_NONBLOCK/O_DIRECTORY; unsupported platform")
 def read_confined_bytes(base,relative,label):
+ require_confined_open_support(label)
  """Read a confined regular file using no-follow directory/file descriptors."""
  if not isinstance(relative,str) or not relative.strip():raise ValueError(f"{label} evidence path missing")
  rel=Path(relative)
@@ -71,6 +77,7 @@ def read_confined_bytes(base,relative,label):
    except OSError:pass
  return (root/rel),b"".join(chunks)
 def hash_confined_file(base,relative,label,chunk_size=1024*1024):
+ require_confined_open_support(label)
  """Hash a confined regular file incrementally without buffering its contents."""
  if isinstance(chunk_size,bool) or not isinstance(chunk_size,int) or chunk_size<=0:
   raise ValueError("hash chunk size must be a positive integer")
