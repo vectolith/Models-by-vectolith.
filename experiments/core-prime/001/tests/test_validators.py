@@ -92,4 +92,10 @@ class EvaluatorTests(unittest.TestCase):
  def test_task_result_tally_extra_record(self):
   records=[{"task_id":"1","status":"completed"},{"task_id":"2","status":"completed"},{"task_id":"3","status":"completed"}]
   self.assertEqual(evaluator.tally_records(records,2),(2,1,"partial"))
+ def test_task_result_tally_unexpected_id_rejected_with_exact_task_set(self):
+  records=[{"task_id":"1","status":"completed"},{"task_id":"unexpected","status":"completed"}]
+  self.assertEqual(evaluator.tally_records(records,2,["1","2"]),(1,1,"partial"))
+ def test_task_result_tally_exact_task_set_required_for_completion(self):
+  records=[{"task_id":"1","status":"completed"},{"task_id":"2","status":"completed"}]
+  self.assertEqual(evaluator.tally_records(records,2,["1","2"]),(2,0,"completed"))
 if __name__=="__main__":unittest.main()
