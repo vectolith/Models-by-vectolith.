@@ -1,0 +1,43 @@
+{
+  "schema_version": "vectolith-compute-attestation/1.0",
+  "attestation_id": "kaggle-session-2026-11-18",
+  "provider": "kaggle",
+  "observed_at_date": "2026-11-18",
+  "attestation_source": "explicit_user_confirmation_in_chat",
+  "hardware_observation": {
+    "runner": "Kaggle Interactive Notebook",
+    "gpu_count": 2,
+    "gpu_model": "NVIDIA Tesla T4",
+    "vram_bytes_per_gpu": 16106127360,
+    "total_vram_bytes_across_independent_gpus": 32212254720,
+    "largest_single_gpu_free_vram_bytes_at_probe": 15633219584,
+    "system_ram_bytes": 33658155008,
+    "available_system_ram_bytes_at_probe": 31933947904,
+    "working_storage_bytes": 20957446144,
+    "available_working_storage_bytes_at_probe": 20938723328,
+    "cpu_count": 4
+  },
+  "software": {
+    "python": "3.13.16",
+    "pytorch": "2.11.0+cu130",
+    "cuda": "13.0",
+    "nvidia_driver": "580.178.04",
+    "transformers": "5.20.2",
+    "accelerate": "1.15.0",
+    "datasets": "4.8.5",
+    "peft": "0.21.2"
+  },
+  "resource_probe_sha256": "43f4e37a3648d2d30b4f0bf69ef8de0f63fb7fd6a1f0e4495393f34bcf4834db",
+  "safety_at_probe": {
+    "model_weights_downloaded": false,
+    "inference_started": false,
+    "training_started": false,
+    "network_requests_made": false
+  },
+  "interpretation": {
+    "gpu_vram_is_not_pooled": true,
+    "this_attestation_does_not_qualify_any_model": true,
+    "this_attestation_does_not_authorize_inference_or_training": true,
+    "recheck_quota_and_session_availability_before_each_run": true
+  }
+}

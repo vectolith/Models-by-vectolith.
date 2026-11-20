@@ -16,6 +16,10 @@ The current research shortlist is:
 
 These are exact repository identifiers, not family-level permission to substitute another checkpoint. Candidate roles are hypotheses for allocating evaluation effort, not rankings or selections. No candidate is selected. Core Prima is paused: its historical candidate material is retained, but no Prima foundation search, comparison run or training campaign is active. A future specialist model, including a reactivated Prima, requires a distinct approved scope and its own independent selection record.
 
+## Current hardware feasibility evidence
+
+The Kaggle session is user-attested to have two independent 15 GiB Tesla T4 GPUs. The preliminary candidate screen records the important T4 constraint: compute capability 7.5 supports FP16 Tensor Core acceleration but not BF16 Tensor Core acceleration. It also compares the existing 8B/9B/119B candidates with smaller 2B/3B alternatives and the current trainer's loader limitations. See [the 2026-11-18 hardware screen](foundation-candidate-hardware-screen-2026-11-18.md). This does not select a foundation or authorize model execution.
+
 ## Continuous verification and execution
 
 Work on identity, licensing, checkpoint availability, infrastructure, evaluation preparation, compatibility, and measured execution in parallel wherever practical. Update each candidate's evidence record as facts become available. Do not wait for an artificial phase transition to investigate or resolve an issue.
@@ -47,7 +51,7 @@ Use one active Core Prime scorecard and a common controlled curriculum. Include 
 - Structured tool selection, schema-valid arguments, multi-step execution, error recovery, and truthful reporting.
 - Global-English quality, regional registers, multilingual comprehension, translation, and code-switching.
 - Context retention, repeated-run variance, refusal correctness, and output validity.
-- Time-to-first-token, tokens/second, throughput, concurrency, cold start, peak RAM/VRAM, storage, and measured cost.
+- Time-to-first-token, tokens/second, throughput, concurrency, cold start, peak RAM/VRAM, storage, and measured resource consumption.
 
 Preserve raw outputs, per-case scores, grading rubrics, evaluator identity/version, disagreements, run configuration, and prompt/dataset hashes. Report dimensions separately; do not hide trade-offs in a single unqualified aggregate score. Provider benchmarks and model-card claims are discovery evidence, not measurements from this repository's own controlled runs.
 

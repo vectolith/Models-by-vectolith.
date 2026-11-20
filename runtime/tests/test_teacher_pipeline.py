@@ -1,10 +1,13 @@
+import asyncio
+import hashlib
+import json
 import tempfile
 import unittest
 from unittest.mock import patch
 from pathlib import Path
 
 from vectolith_runtime.teacher_pipeline import (
-    QualifiedTeacher, TeacherEndpoint, TeacherQualification, TeachingTask, qualify_teacher, finalize_teacher_panel, select_teacher_panel,
+    QualifiedTeacher, TeacherEndpoint, TeacherQualification, TeachingTask, qualify_teacher, finalize_teacher_panel, generate_teaching_corpus, select_teacher_panel,
 )
 from vectolith_runtime.distillation import IndependenceEvidence, TeacherContribution
 from vectolith_runtime.independent_evaluation import (
@@ -29,6 +32,37 @@ def candidate(index, competencies=("reasoning",)):
     return QualifiedTeacher(qualification, endpoint)
 
 class TeacherPipelineTests(unittest.TestCase):
+    def test_teaching_corpus_digest_uses_same_nul_separator_as_training_preflight(self):
+        import hashlib
+        from vectolith_runtime.teacher_pipeline import _digest
+        prompt = "Core Prime training prompt"
+        response = "Verified teaching response"
+        expected = hashlib.sha256((prompt + "\0" + response).encode("utf-8")).hexdigest()
+        self.assertEqual(_digest(prompt + "\0" + response), expected)
+
+    def test_generated_corpus_digest_passes_training_preflight_digest_contract(self):
+        assignment = select_teacher_panel(
+            "core_prime", REV, "run-corpus",
+            [candidate(i) for i in range(4)],
+            required_competencies={"reasoning"},
+        )
+        endpoints = {teacher.endpoint.teacher_id: teacher.endpoint for teacher in assignment.teachers}
+        task = TeachingTask("case-corpus", "reasoning", "Explain the invariant.", "Accurate, concise explanation")
+        def mocked_generate(self, messages, *, max_tokens):
+            if "You are a teacher contributing" in messages[0]["content"]:
+                return "The invariant is preserved by each transition."
+            return json.dumps({"score": 0.95, "verdict": "accept", "issues": []})
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "core-prime.jsonl"
+            with patch("vectolith_runtime.teacher_pipeline.OpenAICompatibleTeacher.generate", new=mocked_generate):
+                result = asyncio.run(generate_teaching_corpus(assignment, endpoints, [task], output))
+            rows = [json.loads(line) for line in output.read_text(encoding="utf-8").splitlines()]
+            self.assertEqual(result["records_accepted"], 4)
+            self.assertEqual(len(rows), 4)
+            for row in rows:
+                expected = hashlib.sha256((row["prompt"] + "\0" + row["response"]).encode("utf-8")).hexdigest()
+                self.assertEqual(row["content_sha256"], expected)
+
     def test_selects_four_or_more_distinct_qualified_teachers(self):
         candidates = [candidate(i, ("reasoning", "planning") if i == 0 else ("reasoning",)) for i in range(5)]
         panel = select_teacher_panel("core_prime", REV, "run-a", candidates, required_competencies={"reasoning", "planning"})

@@ -8,7 +8,7 @@ from typing import Any
 def classify_completion(
     token_ids: list[int],
     max_new_tokens: int,
-    eos_token_id: int | None,
+    eos_token_id: int | list[int] | tuple[int, ...] | None,
     response_text: str | None,
     error: str | None = None,
 ) -> str:
@@ -17,7 +17,8 @@ def classify_completion(
         return "error"
     if not token_ids or not isinstance(response_text, str) or not response_text.strip():
         return "empty_output"
-    if eos_token_id is not None and eos_token_id in token_ids:
+    eos_ids = set(eos_token_id) if isinstance(eos_token_id, (list, tuple, set)) else ({eos_token_id} if eos_token_id is not None else set())
+    if eos_ids.intersection(token_ids):
         return "eos_completed"
     if len(token_ids) >= max_new_tokens:
         return "token_cap_truncated"

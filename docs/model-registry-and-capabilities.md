@@ -15,7 +15,7 @@ A manifest declares:
 
 ## Discovery and routing
 
-Callers request required capabilities and optional modality constraints. Discovery returns every compatible registered candidate, not a hidden single winner. The orchestrator then applies policy: release eligibility, evaluation evidence, latency/resource budgets, availability, permissions, and task-specific suitability.
+Callers request required capabilities and optional modality constraints. Discovery returns every compatible registered candidate, not a hidden single winner. The orchestrator then applies policy: release eligibility, evaluation evidence, latency/resource limits, availability, permissions, and task-specific suitability.
 
 Capability identifiers should be stable, namespaced where useful, and documented. Free-form marketing descriptions must not substitute for machine-readable capabilities. An empty or unknown capability set is not a wildcard.
 

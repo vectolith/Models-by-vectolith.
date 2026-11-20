@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import torch, transformers
 from huggingface_hub import snapshot_download
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoProcessor
 from generation import render_prompt
 from run_real_checkpoint_suite import prompt_hash
 from run_eval import load_cases
@@ -17,6 +17,7 @@ def main() -> int:
     p.add_argument("--repo",required=True); p.add_argument("--revision",required=True)
     p.add_argument("--family",required=True); p.add_argument("--candidate-id"); p.add_argument("--suite",action="append",required=True,type=Path)
     p.add_argument("--dtype",choices=("bfloat16","float32"),default="bfloat16")
+    p.add_argument("--loader",choices=("causal","image_text","multimodal"),default="causal")
     p.add_argument("--max-new-tokens",type=int,default=64)
     p.add_argument("--cache-dir",type=Path,default=Path(".hf-cache"))
     p.add_argument("--output",type=Path,required=True); a=p.parse_args()
@@ -43,9 +44,19 @@ def main() -> int:
     if snapshot.name!=rev: raise RuntimeError(f"Hub snapshot revision {snapshot.name!r} does not match {rev!r}")
     snapshot_bytes=sum(x.stat().st_size for x in snapshot.rglob("*") if x.is_file())
     load=time.perf_counter()
-    tok=AutoTokenizer.from_pretrained(snapshot,local_files_only=True)
     dtype=torch.bfloat16 if a.dtype=="bfloat16" else torch.float32
-    model=AutoModelForCausalLM.from_pretrained(snapshot,local_files_only=True,torch_dtype=dtype,low_cpu_mem_usage=True)
+    if a.loader=="causal":
+        tok=AutoTokenizer.from_pretrained(snapshot,local_files_only=True)
+        loader=AutoModelForCausalLM
+    else:
+        tok=AutoProcessor.from_pretrained(snapshot,local_files_only=True)
+        if a.loader=="image_text":
+            from transformers import AutoModelForImageTextToText
+            loader=AutoModelForImageTextToText
+        else:
+            from transformers import AutoModelForMultimodalLM
+            loader=AutoModelForMultimodalLM
+    model=loader.from_pretrained(snapshot,local_files_only=True,torch_dtype=dtype,low_cpu_mem_usage=True,trust_remote_code=False)
     model.eval(); load_s=round(time.perf_counter()-load,3)
     gen=time.perf_counter(); results=[]
     raw_output=a.output.with_suffix('.jsonl')
@@ -63,16 +74,26 @@ def main() -> int:
               "generated_tokens":0,"response_text":None,"error":None}
             start=time.perf_counter()
             try:
-                encoded=render_prompt(tok,case["messages"])
+                if a.loader=="causal":
+                    encoded=render_prompt(tok,case["messages"])
+                else:
+                    encoded=tok.apply_chat_template(case["messages"],tokenize=True,add_generation_prompt=True,return_tensors="pt",return_dict=True)
+                    encoded.pop("token_type_ids",None)
+                tokenizer_for_eos = tok if a.loader=="causal" else tok.tokenizer
+                eos_id = tokenizer_for_eos.eos_token_id
+                pad_id = tokenizer_for_eos.pad_token_id
+                if pad_id is None:
+                    pad_id = eos_id[0] if isinstance(eos_id,(list,tuple)) else eos_id
                 with torch.inference_mode():
-                    output=model.generate(**encoded,max_new_tokens=a.max_new_tokens,do_sample=False,use_cache=True,pad_token_id=tok.eos_token_id)
+                    output=model.generate(**encoded,max_new_tokens=a.max_new_tokens,do_sample=False,use_cache=True,pad_token_id=pad_id)
                 latency=round(time.perf_counter()-start,3); n=int(encoded["input_ids"].shape[1]); new=output[0,n:]
-                response=tok.decode(new,skip_special_tokens=True)
+                response=(tok.decode(new,skip_special_tokens=True) if a.loader=="causal"
+                          else tok.tokenizer.decode(new,skip_special_tokens=True))
                 if new.numel()<1 or not response.strip():
                     base["completion_status"] = "empty_output"
                     raise RuntimeError("no visible generated output")
                 completion_status = classify_completion(
-                    new.tolist(), a.max_new_tokens, tok.eos_token_id, response
+                    new.tolist(), a.max_new_tokens, eos_id, response
                 )
                 hit_token_cap = completion_status == "token_cap_truncated"
                 base.update({"input_tokens":n,"generated_tokens":int(new.numel()),
@@ -92,16 +113,17 @@ def main() -> int:
             raw_handle.flush()
 
     generation_s=round(time.perf_counter()-gen,3)
+    tokenizer = tok if a.loader=="causal" else tok.tokenizer
     vocab=int(model.get_input_embeddings().weight.shape[0])
-    if len(tok)>vocab: raise RuntimeError("tokenizer vocabulary exceeds model embedding vocabulary")
+    if len(tokenizer)>vocab: raise RuntimeError("tokenizer vocabulary exceeds model embedding vocabulary")
     record={"schema_version":"vectolith-real-candidate-evaluation/1.2","completed_at":datetime.now(timezone.utc).isoformat(),
       "workflow_run_id":os.environ.get("GITHUB_RUN_ID"),
       "workflow_run_attempt":os.environ.get("GITHUB_RUN_ATTEMPT"),
       "workflow_job":os.environ.get("GITHUB_JOB"),
       "family":a.family,"candidate_id":candidate_id,"run_id":run_id,"started_at":run_started_at,"repo_id":a.repo,"immutable_revision":rev,"loaded_snapshot_path_revision":snapshot.name,
       "architectures":getattr(model.config,"architectures",None),"model_class":model.__class__.__name__,
-      "tokenizer_class":tok.__class__.__name__,"tokenizer_vocab_size":len(tok),"model_vocab_size":vocab,
-      "embedding_vocab_padding":vocab-len(tok),"device":"cpu","dtype":a.dtype,
+      "tokenizer_class":tokenizer.__class__.__name__,"processor_class":None if a.loader=="causal" else tok.__class__.__name__,"loader":a.loader,"tokenizer_vocab_size":len(tokenizer),"model_vocab_size":vocab,
+      "embedding_vocab_padding":vocab-len(tokenizer),"device":"cpu","dtype":a.dtype,
       "cpu_capability":torch.backends.cpu.get_cpu_capability(),"cpu_count_visible":os.cpu_count(),
       "snapshot_size_bytes":snapshot_bytes,"download_seconds":download_s,"model_load_seconds":load_s,
       "generation_seconds":generation_s,"total_seconds":round(time.perf_counter()-total,3),

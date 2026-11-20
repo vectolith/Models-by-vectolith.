@@ -52,6 +52,10 @@ RUN42_43_ARTIFACTS = {
         "workflow_run_id": "43820188813", "artifact_id": 14262556692, "job_id": 133332287803,
         "sha256": "f6502425a369cd3b86347c311445c729793f45f438e4f4aa4a6f155406216e64",
     },
+    "run42-prime-phi-4-mini-instruct.zip": {
+        "workflow_run_id": "43820188813", "artifact_id": 14280614317, "job_id": 133549417510,
+        "sha256": "9b34e52ef661236741bae16b7de0ce9b04b065fdb223e2aec3bfb4d812cbac4c",
+    },
     "run43-prime-granite-3.1-3b-a800m.zip": {
         "workflow_run_id": "43821046671", "artifact_id": 14208733041, "job_id": 133143953242,
         "sha256": "3e3e6d563c1deeb696f7004195de09172e4e2f2f49a2229a9c4d8d82d5218c05",

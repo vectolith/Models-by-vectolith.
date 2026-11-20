@@ -1,6 +1,6 @@
 """Evidence gates for Core Prime training preflight; no training dependencies imported."""
 from __future__ import annotations
-import hashlib, json, re
+import hashlib, json, math, re
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -85,6 +85,66 @@ def validate_foundation_selection(manifest: dict[str,Any], model_id: str, revisi
             ", ".join(sorted(required_kinds - {item["kind"] for item in evidence})))
     return errors
 
+def validate_training_dataset_rows(rows: list[dict[str, Any]], teacher_revisions: dict[str, str]) -> list[str]:
+    """Fail closed unless every row is revision-bound, peer-reviewed and human-adjudicated."""
+    errors: list[str] = []
+    seen_task_teacher: set[tuple[str, str]] = set()
+    for number, row in enumerate(rows, 1):
+        prefix = f"dataset row {number}"
+        if not isinstance(row, dict):
+            errors.append(f"{prefix}: row must be an object")
+            continue
+        required = ("schema_version", "student_model_id", "run_id", "task_id", "competency",
+                    "teacher_id", "teacher_revision", "reviewer_id", "prompt", "response", "content_sha256")
+        for field in required:
+            if not isinstance(row.get(field), str) or not row[field].strip():
+                errors.append(f"{prefix}: {field} missing")
+        if any(not isinstance(row.get(field), str) or not row[field].strip()
+               for field in ("teacher_id", "teacher_revision", "prompt", "response", "content_sha256")):
+            continue
+        if row.get("schema_version") != "1.0":
+            errors.append(f"{prefix}: unsupported corpus schema_version")
+        if row.get("student_model_id") != "core-prime":
+            errors.append(f"{prefix}: student_model_id must be core-prime")
+        if row.get("accepted") is not True:
+            errors.append(f"{prefix}: row is not accepted")
+        teacher_id = row["teacher_id"]
+        if teacher_id not in teacher_revisions:
+            errors.append(f"{prefix}: teacher has no approved qualification manifest")
+        elif row["teacher_revision"] != teacher_revisions[teacher_id]:
+            errors.append(f"{prefix}: teacher revision does not match qualification manifest")
+        pair = (row.get("task_id", ""), teacher_id)
+        if pair in seen_task_teacher:
+            errors.append(f"{prefix}: duplicate task_id/teacher_id contribution")
+        seen_task_teacher.add(pair)
+        reviewer_id = row.get("reviewer_id")
+        if not isinstance(reviewer_id, str) or not reviewer_id.strip() or reviewer_id == teacher_id or reviewer_id not in teacher_revisions:
+            errors.append(f"{prefix}: independent peer reviewer must be a different qualified teacher")
+        review = row.get("review")
+        if not isinstance(review, dict) or review.get("verdict") != "accept":
+            errors.append(f"{prefix}: peer review must explicitly accept the response")
+        else:
+            score = review.get("score")
+            if isinstance(score, bool) or not isinstance(score, (int, float)) or not math.isfinite(score) or not 0.75 <= score <= 1:
+                errors.append(f"{prefix}: peer review score is invalid or below acceptance threshold")
+        human = row.get("human_review")
+        if not isinstance(human, dict):
+            errors.append(f"{prefix}: per-example human review/adjudication missing")
+        else:
+            reviewers = human.get("independent_reviewer_ids")
+            distinct = {value for value in reviewers if isinstance(value, str) and value.strip()} if isinstance(reviewers, list) else set()
+            if human.get("status") != "approved" or len(distinct) < 2 or human.get("adjudication_complete") is not True or distinct.intersection(teacher_revisions):
+                errors.append(f"{prefix}: two independent human reviewers, separate from teachers, and completed adjudication required")
+            if not isinstance(human.get("adjudication_id"), str) or not human["adjudication_id"].strip():
+                errors.append(f"{prefix}: human adjudication identity missing")
+            if not _sha(human.get("review_report_sha256")) or not _sha(human.get("adjudication_sha256")):
+                errors.append(f"{prefix}: human review/adjudication evidence digest missing")
+        expected = hashlib.sha256((row["prompt"] + "\0" + row["response"]).encode("utf-8")).hexdigest()
+        if row["content_sha256"] != expected:
+            errors.append(f"{prefix}: content digest mismatch")
+    return errors
+
+
 def validate_training_preflight(*, dataset_path: str|Path, foundation_model: str, foundation_revision: str, foundation_selection_path: str|Path, teacher_manifest_dir: str|Path, holdout_deployment_manifest_path: str|Path, holdout_evaluation_results_dir: str|Path, training_execution_manifest_path: str|Path, training_code_revision: str, training_config: dict[str,Any]) -> tuple[list[dict[str,Any]],dict[str,Any]]:
     dataset=Path(dataset_path); selection_path=Path(foundation_selection_path); manifest_dir=Path(teacher_manifest_dir)
     if not dataset.is_file(): raise FileNotFoundError(dataset)
@@ -123,16 +183,13 @@ def validate_training_preflight(*, dataset_path: str|Path, foundation_model: str
     rows=[]
     for number,line in enumerate(dataset.read_text(encoding="utf-8").splitlines(),1):
         if not line.strip(): continue
-        row=json.loads(line)
-        if not isinstance(row,dict) or row.get("accepted") is not True: raise ValueError(f"dataset line {number}: row is not accepted")
-        for field in ("teacher_id","teacher_revision","prompt","response","content_sha256"):
-            if not isinstance(row.get(field),str) or not row[field]: raise ValueError(f"dataset line {number}: {field} missing")
-        if row["teacher_id"] not in manifests: raise ValueError(f"dataset line {number}: teacher has no approved qualification manifest")
-        if row["teacher_revision"]!=manifests[row["teacher_id"]]: raise ValueError(f"dataset line {number}: teacher revision does not match qualification manifest")
-        expected=hashlib.sha256((row["prompt"]+"\0"+row["response"]).encode("utf-8")).hexdigest()
-        if row["content_sha256"]!=expected: raise ValueError(f"dataset line {number}: content digest mismatch")
-        rows.append(row)
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"dataset line {number}: invalid JSON") from exc
     if not rows: raise ValueError("training dataset is empty")
+    row_errors = validate_training_dataset_rows(rows, manifests)
+    if row_errors: raise ValueError("training dataset row validation failed: " + "; ".join(row_errors))
     dataset_sha256=hashlib.sha256(dataset.read_bytes()).hexdigest()
     execution=json.loads(execution_path.read_text(encoding="utf-8"))
     execution_errors=validate_training_execution_manifest(
