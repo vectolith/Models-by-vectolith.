@@ -32,7 +32,7 @@ def atomic_write_json(path,record):
  fd,temp=tempfile.mkstemp(prefix=path.name+".",suffix=".tmp",dir=path.parent)
  try:
   with os.fdopen(fd,"w",encoding="utf-8") as f:
-   f.write(json.dumps(record,indent=2)+"\\n");f.flush();os.fsync(f.fileno())
+   f.write(json.dumps(record,indent=2)+"\n");f.flush();os.fsync(f.fileno())
   os.replace(temp,path)
  except BaseException:
   try:os.unlink(temp)
