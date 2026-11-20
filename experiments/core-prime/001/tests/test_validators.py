@@ -11,6 +11,11 @@ def file_rows(rows):
  f.close();return Path(f.name)
 def row(tid,prompt,split="train"):return {"task_id":tid,"category":"test","prompt":prompt,"split":split,"rubric_id":"r1","provenance":"fixture"}
 class TaskTests(unittest.TestCase):
+ def test_duplicate_json_keys_report_record_location(self):
+  f=tempfile.NamedTemporaryFile(mode="w",encoding="utf-8",delete=False);f.write('{"task_id":"a","task_id":"b","prompt":"p","category":"test","split":"train","rubric_id":"r","provenance":"fixture"}\\n');f.close()
+  count,errors=tasks.validate([Path(f.name)])
+  self.assertEqual(count,1)
+  self.assertTrue(any("duplicate JSON object key" in e and ":1:" in e for e in errors))
  def test_valid_record(self):self.assertEqual(tasks.validate([file_rows([row("1","hello")])])[1],[])
  def test_duplicate_id(self):self.assertTrue(any("duplicate task_id" in e for e in tasks.validate([file_rows([row("1","a"),row("1","b")])])[1]))
  def test_cross_split_prompt_leakage(self):self.assertTrue(any("leakage" in e for e in tasks.validate([file_rows([row("1","same prompt","train"),row("2"," SAME  prompt ","holdout")])])[1]))
