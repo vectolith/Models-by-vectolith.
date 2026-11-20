@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import unittest
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from threading import Thread
 
 from evaluation.run_eval import RunConfig, endpoint_url, load_cases, run_case, safe_endpoint
 
@@ -89,6 +91,55 @@ class RunnerTests(unittest.TestCase):
         result = run_case(self.case, config, opener=opener)
         self.assertEqual(captured["authorization"], "Bearer do-not-log-this")
         self.assertNotIn("do-not-log-this", json.dumps(result))
+
+    def test_default_opener_does_not_follow_redirects(self):
+        redirected_requests = []
+
+        class TargetHandler(BaseHTTPRequestHandler):
+            def _record(self):
+                redirected_requests.append((self.command, self.headers.get("Authorization")))
+                self.send_response(200)
+                self.end_headers()
+
+            do_GET = _record
+            do_POST = _record
+
+            def log_message(self, *_args):
+                pass
+
+        class RedirectHandler(BaseHTTPRequestHandler):
+            def do_POST(self):
+                self.send_response(302)
+                self.send_header("Location", self.server.target_url)
+                self.end_headers()
+
+            def log_message(self, *_args):
+                pass
+
+        target = ThreadingHTTPServer(("127.0.0.1", 0), TargetHandler)
+        target_url = f"http://127.0.0.1:{target.server_port}/capture"
+        origin = ThreadingHTTPServer(("127.0.0.1", 0), RedirectHandler)
+        origin.target_url = target_url
+        threads = [Thread(target=server.serve_forever, daemon=True) for server in (target, origin)]
+        for thread in threads:
+            thread.start()
+        try:
+            config = RunConfig(**{
+                **self.config.__dict__,
+                "base_url": f"http://127.0.0.1:{origin.server_port}/v1",
+                "api_key": "redirect-secret",
+                "timeout_seconds": 3.0,
+            })
+            result = run_case(self.case, config)
+            self.assertEqual(result["http_status"], 302)
+            self.assertIsNotNone(result["error"])
+            self.assertEqual(redirected_requests, [])
+        finally:
+            for server in (origin, target):
+                server.shutdown()
+                server.server_close()
+            for thread in threads:
+                thread.join(timeout=2)
 
     def test_malformed_response_becomes_error_record(self):
         result = run_case(self.case, self.config, opener=lambda *_args, **_kwargs: FakeResponse({"choices": []}))
