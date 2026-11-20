@@ -46,3 +46,6 @@ Training is blocked until every required item above is evidenced, independently 
 
 
 A pending training authorization structure is provided in `training-authorization.template.json`; it is not a completed approval. The template must be populated only with real evidence and the actual free compute session details.
+
+
+Use `capture_environment.py` to capture the checkout/package inventory and `capture_snapshot_inventory.py` to capture the staged snapshot's actual file inventory. Both are evidence-capture utilities only and cannot approve licensing, free compute or model qualification.

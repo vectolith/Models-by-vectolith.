@@ -53,3 +53,6 @@ Baseline inference is blocked until the candidate record is verified, written ou
 
 
 `training-authorization.template.json` is a pending structure; the training runner refuses to execute until the candidate, provenance, package inventory, exact checkout, free compute and budgets are independently verified.
+
+
+Before any run, `capture_environment.py` and `capture_snapshot_inventory.py` can capture real local package/Git and staged snapshot file hashes. These utilities do not approve rights, verify free compute, load models or run inference/training; captured output must be reviewed and bound to the authorization.
