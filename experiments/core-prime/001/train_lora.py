@@ -222,20 +222,10 @@ def training_config(x):
 def training_config_sha256(x):
  return evaluation_gate.sha256_serialized(training_config(x))
 def verify_evidence_file(base,relative_path,digest,label):
- if not isinstance(relative_path,str) or not relative_path.strip():raise ValueError(f"{label} evidence path missing")
- rel=Path(relative_path)
- if rel.is_absolute() or ".." in rel.parts:raise ValueError(f"{label} evidence path must be relative and confined")
- if not isinstance(digest,str) or len(digest)!=64 or any(ch not in "0123456789abcdef" for ch in digest):raise ValueError(f"{label} evidence SHA-256 invalid")
- root=Path(base).resolve();cursor=root
- for part in rel.parts:
-  cursor=cursor/part
-  if cursor.is_symlink():raise ValueError(f"{label} evidence path contains symlink components")
- target=cursor.resolve()
- try:target.relative_to(root)
- except ValueError:raise ValueError(f"{label} evidence path escapes evidence root")
- if not target.is_file():raise ValueError(f"{label} evidence file missing")
- if sha256_file(target)!=digest:raise ValueError(f"{label} evidence hash mismatch")
- return target
+ # Use the shared descriptor-based verifier so training evidence hashes the exact
+ # bytes read through no-follow directory/file descriptors. The former
+ # path-check/resolve/hash sequence was vulnerable to path replacement races.
+ return evaluation_gate.verify_evidence_file(base,relative_path,digest,label)
 def gates(c,a,rows,x,package_hash=None,training_config_hash=None,dataset_sha256=None,candidate_record_sha256=None):
  candidate,candidate_sha,snapshot=evaluation_gate.verify_candidate_record(x.candidate,c.get("repository_id"),c.get("revision"))
  if candidate!=c:raise ValueError("candidate record content mismatch")
