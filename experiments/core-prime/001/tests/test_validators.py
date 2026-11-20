@@ -19,13 +19,13 @@ class TaskTests(unittest.TestCase):
  def test_invalid_json(self):
   f=tempfile.NamedTemporaryFile(mode="w",delete=False);f.write("{bad\n");f.close();self.assertTrue(any("JSON parse" in e for e in tasks.validate([Path(f.name)])[1]))
  def test_unknown_fields_rejected(self):
-  r=row("1","prompt");r["extra"]="value";self.assertTrue(any("unexpected fields" in e for e in tasks.validate([file_rows([r])])[1])
+  r=row("1","prompt");r["extra"]="value";self.assertTrue(any("unexpected fields" in e for e in tasks.validate([file_rows([r])])[1]))
  def test_reference_answer_type_rejected(self):
-  r=row("1","prompt");r["reference_answer"]=4;self.assertTrue(any("reference_answer" in e for e in tasks.validate([file_rows([r])])[1])
+  r=row("1","prompt");r["reference_answer"]=4;self.assertTrue(any("reference_answer" in e for e in tasks.validate([file_rows([r])])[1]))
  def test_expected_constraints_type_rejected(self):
-  r=row("1","prompt");r["expected_constraints"]=[1];self.assertTrue(any("expected_constraints" in e for e in tasks.validate([file_rows([r])])[1])
+  r=row("1","prompt");r["expected_constraints"]=[1];self.assertTrue(any("expected_constraints" in e for e in tasks.validate([file_rows([r])])[1]))
  def test_content_hash_format_rejected(self):
-  r=row("1","prompt");r["content_sha256"]="not-a-hash";self.assertTrue(any("lowercase SHA-256" in e for e in tasks.validate([file_rows([r])])[1])
+  r=row("1","prompt");r["content_sha256"]="not-a-hash";self.assertTrue(any("lowercase SHA-256" in e for e in tasks.validate([file_rows([r])])[1]))
  def test_content_hash_exact_prompt_bytes_accepted(self):
   r=row("1","prompt");r["content_sha256"]=tasks.sha256(r["prompt"]);self.assertEqual(tasks.validate([file_rows([r])])[1],[])
  def test_normalization(self):self.assertEqual(tasks.normalized_prompt("A  B\nC"),"a b c")
