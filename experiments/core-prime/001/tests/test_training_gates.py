@@ -190,6 +190,25 @@ class Tests(unittest.TestCase):
   self.assertIn("run_started_monotonic",source)
   self.assertIn("def on_save",source)
   self.assertIn("seal_checkpoint(checkpoint,cumulative_elapsed_seconds=",source)
+ def test_tokenizer_validation_requires_eos_and_padding_id(self):
+  class MissingEOS:
+   eos_token=None
+   pad_token=None
+   pad_token_id=None
+  with self.assertRaisesRegex(ValueError,"EOS token"):trainer.validate_tokenizer_tokens(MissingEOS())
+  class MissingPaddingID:
+   eos_token="<eos>"
+   pad_token="<pad>"
+   pad_token_id=None
+  with self.assertRaisesRegex(ValueError,"padding token ID"):trainer.validate_tokenizer_tokens(MissingPaddingID())
+  class ValidTokenizer:
+   eos_token="<eos>"
+   pad_token=None
+   @property
+   def pad_token_id(self):return 1 if self.pad_token is not None else None
+  tok=ValidTokenizer()
+  self.assertIs(trainer.validate_tokenizer_tokens(tok),tok)
+  self.assertEqual(tok.pad_token,tok.eos_token)
  def test_build_sequence_masks_prefix_boundary(self):
   class Tok:
    eos_token="<eos>"
