@@ -14,6 +14,11 @@ class ComparisonTests(unittest.TestCase):
   with self.assertRaisesRegex(ValueError,"criterion set differs across tasks"):m.compare(base,adapter)
  def test_mismatch_criteria_rejected(self):
   with self.assertRaises(ValueError):m.compare({"1":{"candidate_id":"b","scores":{"x":1}}},{"1":{"candidate_id":"a","scores":{"y":1}}})
+
+ def test_duplicate_grade_record_keys_rejected(self):
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d)/"grades.jsonl";p.write_text('{"task_id":"1","task_id":"2","candidate_id":"base","scores":{"x":1}}\\n',encoding="utf-8")
+   with self.assertRaisesRegex(ValueError,"duplicate JSON object key"):m.load(p)
  def test_load_duplicate_rejected(self):
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/"x";p.write_text('{"task_id":"1","candidate_id":"b","scores":{"x":1}}\n{"task_id":"1","candidate_id":"b","scores":{"x":2}}\n')
