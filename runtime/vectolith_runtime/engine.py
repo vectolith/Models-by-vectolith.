@@ -57,6 +57,8 @@ class TaskStore:
             record = self._records[task_id]
             if record.status in TERMINAL_STATUSES:
                 raise ValueError("terminal task cannot transition")
+            if status in TERMINAL_STATUSES:
+                raise ValueError("terminal task statuses must be set through set_result")
             record.status = status
             self._event(record, status, detail)
             return record
@@ -66,6 +68,10 @@ class TaskStore:
             record = self._records[task_id]
             if result.task_id != task_id:
                 raise ValueError("result task_id does not match request")
+            if result.status not in TERMINAL_STATUSES:
+                raise ValueError("task result must have a terminal status")
+            if record.status in TERMINAL_STATUSES:
+                raise ValueError("task already has a terminal status")
             record.result = result
             record.status = result.status
             self._event(record, result.status, result.summary)
@@ -186,7 +192,7 @@ class VectolithRuntime:
             review_issue = f"reviewer raised {type(exc).__name__}: {exc}"
         else:
             review_issue = "Core Prime review did not approve completion"
-        if not reviewed:
+        if reviewed is not True:
             rejected = TaskResult(
                 request.task_id, TaskStatus.PARTIALLY_COMPLETED,
                 "independent review did not approve completion",
