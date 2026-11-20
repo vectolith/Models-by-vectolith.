@@ -1,4 +1,4 @@
-import importlib.util,json,tempfile,unittest
+import importlib.util,json,tempfile,unittest,os,subprocess
 from pathlib import Path
 import sys
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
@@ -23,6 +23,17 @@ class Tests(unittest.TestCase):
   provenance=self.d/"provenance.json";provenance.write_text(json.dumps({"dataset_sha256":trainer.sha256_file(self.dataset),"review_status":"reviewed","reviewer":"independent-reviewer","review_scope":"training dataset provenance and rights review","reviewed_at_utc":"2026-11-20T08:00:00+00:00"}))
   self.a={"approval":"approved","candidate_revision":"a"*40,"candidate_record_sha256":trainer.sha256_file(self.candidate_path),"environment_package_inventory_sha256":trainer.package_inventory_sha256(),"dataset_sha256":trainer.sha256_file(self.dataset),"code_commit":"c"*40,"hardware":{"verified_free_budget":True,"provider":"p","session_id":"s","evidence_path":"compute.json","evidence_sha256":trainer.sha256_file(compute)},"dataset_provenance":{"status":"reviewed","evidence_path":"provenance.json","evidence_sha256":trainer.sha256_file(provenance)},"budget":{"max_steps":10,"max_wall_seconds":60},"training_config_sha256":trainer.training_config_sha256(self.x),"holdout_access":"sealed"}
  def tearDown(self):self.tmp.cleanup()
+
+ def test_confined_reader_and_hash_reject_fifo_without_blocking(self):
+  with tempfile.TemporaryDirectory() as d:
+   fifo=Path(d)/"fifo";os.mkfifo(fifo)
+   script=\
+    "import sys;sys.path.insert(0,sys.argv[1]);import evaluation_gate;"\
+    "functions=(evaluation_gate.read_confined_bytes,evaluation_gate.hash_confined_file);"\
+    "[(lambda fn: (fn(sys.argv[2],\\\"fifo\\\",\\\"test\\\") if False else None))(fn) for fn in functions];"\
+    "exec(\\\"for fn in functions:\\\\n try:\\\\n  fn(sys.argv[2],\\\\\\\"fifo\\\\\\\",\\\\\\\"test\\\\\\\")\\\\n except ValueError as exc:\\\\n  if \\\\\\\"not regular\\\\\\\" not in str(exc): raise\\\\n else: raise AssertionError(\\\\\\\"FIFO accepted\\\\\\\")\\\\n\\\")"
+   result=subprocess.run([sys.executable,"-c",script,str(ROOT),d],capture_output=True,text=True,timeout=3)
+   self.assertEqual(result.returncode,0,result.stderr)
  def test_all_gates_pass(self):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_pending_permission_blocked(self):
   self.c["output_training_permission"]="pending";self.candidate_path.write_text(json.dumps(self.c,sort_keys=True));self.a["candidate_record_sha256"]=trainer.sha256_file(self.candidate_path)
