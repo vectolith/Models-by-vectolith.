@@ -9,8 +9,11 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
+import re
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -21,6 +24,8 @@ from typing import Any, Callable
 from urllib.parse import urlsplit, urlunsplit
 
 SCHEMA_VERSION = "vectolith-evaluation-result/1.0"
+MAX_RESPONSE_BYTES = 8 * 1024 * 1024
+IMMUTABLE_REVISION = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -51,17 +56,41 @@ def endpoint_url(base_url: str) -> str:
     return base + "/v1/chat/completions"
 
 
+def validated_endpoint_url(base_url: str) -> str:
+    """Reject unsafe or ambiguous endpoint URL forms before sending credentials."""
+    if not isinstance(base_url, str) or not base_url or any(ch.isspace() or ord(ch) < 32 for ch in base_url):
+        raise ValueError("base URL must be a non-empty URL without whitespace or control characters")
+    parsed = urlsplit(base_url)
+    if parsed.scheme.lower() not in {"http", "https"}:
+        raise ValueError("base URL scheme must be HTTP or HTTPS")
+    if not parsed.hostname:
+        raise ValueError("base URL must include a host")
+    if parsed.username is not None or parsed.password is not None:
+        raise ValueError("base URL must not contain embedded credentials")
+    if parsed.query or parsed.fragment:
+        raise ValueError("base URL must not contain a query or fragment")
+    try:
+        parsed.port
+    except ValueError as exc:
+        raise ValueError("base URL contains an invalid port") from exc
+    return endpoint_url(base_url)
+
+
 def safe_endpoint(base_url: str) -> str:
     """Return the normalized endpoint without credentials, query, or fragment."""
-    supplied = urlsplit(base_url)
-    host = supplied.hostname or ""
-    if ":" in host and not host.startswith("["):
-        host = f"[{host}]"
-    if supplied.port is not None:
-        host = f"{host}:{supplied.port}"
-    sanitized_base = urlunsplit((supplied.scheme, host, supplied.path, "", ""))
-    parsed = urlsplit(endpoint_url(sanitized_base))
-    return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, "", ""))
+    try:
+        supplied = urlsplit(base_url)
+        host = supplied.hostname or ""
+        if ":" in host and not host.startswith("["):
+            host = f"[{host}]"
+        port = supplied.port
+        if port is not None:
+            host = f"{host}:{port}"
+        sanitized_base = urlunsplit((supplied.scheme, host, supplied.path, "", ""))
+        parsed = urlsplit(endpoint_url(sanitized_base))
+        return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, "", ""))
+    except (TypeError, ValueError):
+        return "[invalid endpoint]"
 
 
 def load_cases(path: Path) -> list[dict[str, Any]]:
@@ -102,6 +131,15 @@ def _open_without_redirects(request: urllib.request.Request, timeout: float):
     return opener.open(request, timeout=timeout)
 
 
+def _sanitize_error(error: Any, api_key: str | None) -> str:
+    text = str(error)
+    if api_key:
+        text = text.replace(api_key, "[redacted]")
+    text = re.sub(r"(?i)\bBearer\s+[^\s,;]+", "Bearer [redacted]", text)
+    text = re.sub(r"(?i)([?&](?:token|api[_-]?key|key|secret|password)=)[^&#\s]+", r"\1[redacted]", text)
+    return text[:2000]
+
+
 def run_case(
     case: dict[str, Any],
     config: RunConfig,
@@ -120,23 +158,32 @@ def run_case(
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
     if config.api_key:
         headers["Authorization"] = f"Bearer {config.api_key}"
-    request = urllib.request.Request(
-        endpoint_url(config.base_url),
-        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-        headers=headers,
-        method="POST",
-    )
     started = time.perf_counter()
     try:
+        request = urllib.request.Request(
+            validated_endpoint_url(config.base_url),
+            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+            headers=headers,
+            method="POST",
+        )
         with (opener or _open_without_redirects)(request, timeout=config.timeout_seconds) as response:
             status_code = getattr(response, "status", 200)
-            body = response.read()
+            body = response.read(MAX_RESPONSE_BYTES + 1)
+        if len(body) > MAX_RESPONSE_BYTES:
+            raise ValueError(f"response exceeds {MAX_RESPONSE_BYTES} byte limit")
         decoded = json.loads(body.decode("utf-8"))
-        choices = decoded.get("choices") or []
-        if not choices:
-            raise ValueError("server response contains no choices")
+        if not isinstance(decoded, dict):
+            raise ValueError("server response must be a JSON object")
+        choices = decoded.get("choices")
+        if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
+            raise ValueError("server response contains no valid choices")
         choice = choices[0]
-        message = choice.get("message") or {}
+        message = choice.get("message")
+        if not isinstance(message, dict):
+            raise ValueError("first choice contains no valid message")
+        content = message.get("content")
+        if content is not None and not isinstance(content, str):
+            raise ValueError("message content must be text or null")
         elapsed_ms = round((time.perf_counter() - started) * 1000, 2)
         return {
             "schema_version": SCHEMA_VERSION,
@@ -150,10 +197,11 @@ def run_case(
             "model_revision": config.revision,
             "endpoint": safe_endpoint(config.base_url),
             "prompt_sha256": prompt_hash,
+            "response_sha256": hashlib.sha256(body).hexdigest(),
             "http_status": status_code,
             "latency_ms": elapsed_ms,
             "finish_reason": choice.get("finish_reason"),
-            "response_text": message.get("content"),
+            "response_text": content,
             "tool_calls": message.get("tool_calls"),
             "refusal": message.get("refusal"),
             "usage": decoded.get("usage"),
@@ -162,11 +210,12 @@ def run_case(
         }
     except urllib.error.HTTPError as exc:
         elapsed_ms = round((time.perf_counter() - started) * 1000, 2)
-        detail = exc.read(2000).decode("utf-8", errors="replace")
-        return _error_record(case, config, started_at, elapsed_ms, f"HTTP {exc.code}: {detail}", exc.code, prompt_hash)
+        status_code = exc.code
+        exc.close()
+        return _error_record(case, config, started_at, elapsed_ms, f"HTTP {status_code}: response body omitted", status_code, prompt_hash)
     except Exception as exc:
         elapsed_ms = round((time.perf_counter() - started) * 1000, 2)
-        return _error_record(case, config, started_at, elapsed_ms, f"{type(exc).__name__}: {exc}", None, prompt_hash)
+        return _error_record(case, config, started_at, elapsed_ms, exc, None, prompt_hash)
 
 
 def _error_record(
@@ -174,7 +223,7 @@ def _error_record(
     config: RunConfig,
     started_at: str,
     elapsed_ms: float,
-    error: str,
+    error: Any,
     status_code: int | None,
     prompt_hash: str,
 ) -> dict[str, Any]:
@@ -190,6 +239,7 @@ def _error_record(
         "model_revision": config.revision,
         "endpoint": safe_endpoint(config.base_url),
         "prompt_sha256": prompt_hash,
+        "response_sha256": None,
         "http_status": status_code,
         "latency_ms": elapsed_ms,
         "finish_reason": None,
@@ -198,19 +248,63 @@ def _error_record(
         "refusal": None,
         "usage": None,
         "rubric": case.get("rubric"),
-        "error": error,
+        "error": _sanitize_error(error, config.api_key),
     }
+
+
+def write_records(
+    cases: list[dict[str, Any]],
+    config: RunConfig,
+    output_path: Path,
+    opener: Callable[..., Any] | None = None,
+) -> int:
+    """Capture JSONL to a private temporary file, then atomically publish without overwrite."""
+    output_path = Path(output_path)
+    if os.path.lexists(output_path):
+        raise FileExistsError(f"output already exists: {output_path}")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fd, temporary_name = tempfile.mkstemp(
+        prefix=f".{output_path.name}.", suffix=".tmp", dir=output_path.parent
+    )
+    temporary_path = Path(temporary_name)
+    failures = 0
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as output:
+            for case in cases:
+                record = run_case(case, config, opener=opener)
+                output.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+                if record["error"]:
+                    failures += 1
+                print(
+                    f"{case['id']}: {'ERROR' if record['error'] else str(record['latency_ms']) + ' ms'}",
+                    file=sys.stderr,
+                )
+            output.flush()
+            os.fsync(output.fileno())
+        # A hard link creates the final name atomically and refuses to overwrite
+        # an existing file or symlink. The temp file is in the same directory.
+        os.link(temporary_path, output_path)
+        temporary_path.unlink()
+        if os.name == "posix":
+            directory_fd = os.open(output_path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+            try:
+                os.fsync(directory_fd)
+            finally:
+                os.close(directory_fd)
+        return failures
+    finally:
+        temporary_path.unlink(missing_ok=True)
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--suite", required=True, type=Path, help="JSONL evaluation suite")
-    parser.add_argument("--output", required=True, type=Path, help="JSONL evidence output")
+    parser.add_argument("--output", required=True, type=Path, help="JSONL evidence output (must not already exist)")
     parser.add_argument("--base-url", default="http://localhost:8000/v1")
     parser.add_argument("--model", required=True)
     parser.add_argument("--role", choices=("core_prime", "core_prima"), required=True)
     parser.add_argument("--candidate-id", required=True)
-    parser.add_argument("--revision", required=True, help="Immutable model revision SHA")
+    parser.add_argument("--revision", required=True, help="Immutable 40- or 64-character model revision SHA")
     parser.add_argument("--api-key-env", default="VECTOLITH_INFERENCE_API_KEY")
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--top-p", type=float, default=1.0)
@@ -218,14 +312,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--timeout", type=float, default=180.0)
     args = parser.parse_args(argv)
 
-    if len(args.revision) < 7 or args.revision.lower() in {"main", "latest"}:
-        parser.error("--revision must identify an immutable checkpoint revision, not main/latest")
-    if args.max_tokens < 1 or args.timeout <= 0:
-        parser.error("--max-tokens and --timeout must be positive")
-    if not 0 <= args.temperature <= 2 or not 0 < args.top_p <= 1:
-        parser.error("--temperature must be 0..2 and --top-p must be in (0, 1]")
+    if not IMMUTABLE_REVISION.fullmatch(args.revision):
+        parser.error("--revision must be a 40- or 64-character hexadecimal immutable SHA")
+    if args.max_tokens < 1 or not math.isfinite(args.timeout) or args.timeout <= 0:
+        parser.error("--max-tokens must be positive and --timeout finite and positive")
+    if not math.isfinite(args.temperature) or not 0 <= args.temperature <= 2 or not math.isfinite(args.top_p) or not 0 < args.top_p <= 1:
+        parser.error("--temperature must be finite and 0..2 and --top-p finite and in (0, 1]")
 
     try:
+        validated_endpoint_url(args.base_url)
         cases = load_cases(args.suite)
     except (OSError, ValueError) as exc:
         parser.error(str(exc))
@@ -242,16 +337,10 @@ def main(argv: list[str] | None = None) -> int:
         timeout_seconds=args.timeout,
         api_key=os.environ.get(args.api_key_env),
     )
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    failures = 0
-    with args.output.open("w", encoding="utf-8") as output:
-        for case in cases:
-            record = run_case(case, config)
-            output.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
-            output.flush()
-            if record["error"]:
-                failures += 1
-            print(f"{case['id']}: {'ERROR' if record['error'] else str(record['latency_ms']) + ' ms'}", file=sys.stderr)
+    try:
+        failures = write_records(cases, config, args.output)
+    except OSError as exc:
+        parser.error(f"evidence output failed: {exc}")
     print(f"Recorded {len(cases)} cases; {failures} request failures; output={args.output}", file=sys.stderr)
     return 1 if failures else 0
 
