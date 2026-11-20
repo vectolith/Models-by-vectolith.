@@ -23,8 +23,7 @@ def teacher_manifest(name, deployment_sha=SHA, result_sha=SHA):
             "loader_compatibility":{"status":"passed","tested_revision":REV,"model_class":"AutoModel","runtime_versions":{"torch":"2.8"},"remote_code":{"status":"disabled"}},
             "real_inference":{"status":"completed","tested_revision":REV,"workflow_run_id":"run-1","internal_run_id":"internal-1","expected_response_count":10,"response_count":10,"error_count":0,"artifact_sha256":SHA},
             "resource_measurement":{"status":"recorded","runner_type":"runner","device":"cpu","peak_rss_bytes":1024,"mean_latency_seconds":1.0,"compute_record_sha256":SHA},
-            "human_review":{"status":"passed","independent_reviewer_ids":["r1","r2"],"independence_attested":True,"adjudication_complete":True,"expected_response_count":10,"graded_response_count":10,"grade_report_sha256":SHA,"adjudication_sha256":SHA,
-                "agreement":{"status":"accepted","metric":"quadratic_weighted_cohen_kappa","value":0.8,"minimum_required":0.6,"report_sha256":SHA,"policy_sha256":SHA,"reviewer_independence_sha256":SHA}},
+            "grading":{"status":"passed","expected_response_count":10,"graded_response_count":10,"grade_report_sha256":SHA,"rubric_version":"prime-rubric-v1"},
             "safety_review":{"status":"passed","reviewer_id":"safety-1","report_sha256":SHA},
             "holdout":{"status":"passed","case_count":100,"leakage_audit_passed":True,"audit_sha256":SHA,"deployment_manifest_sha256":deployment_sha,"evaluation_report_sha256":result_sha},
             "corpus_integrity":{"status":"passed","corpus_sha256":SHA,"duplicate_count":0,"provenance_verified":True},
@@ -93,14 +92,14 @@ def write_execution_approval(root, dataset_path):
         "approval_reference": "approval://core-prime/test-run-001",
         "approval_document_sha256": SHA,
         "approved_configuration": TRAIN_CONFIG,
-        "budget": {"currency": "USD", "maximum_cost_usd": 0.0,
-            "maximum_runtime_seconds": 3600, "pricing_evidence_sha256": SHA,
-            "budget_reference": "budget://core-prime/test-run-001"},
         "compute": {"provider": "test-provider", "account_or_project": "test-project",
             "region": "local", "runner_type": "isolated-test-runner",
             "accelerator_type": "test-gpu", "accelerator_count": 1,
             "runtime_image": "vectolith/core-prime-trainer:test",
             "runtime_image_sha256": SHA,
+            "execution_environment_reference": "environment://core-prime/test-run-001",
+            "maximum_runtime_seconds": 3600,
+            "environment_approval_sha256": SHA,
             "software_versions": {"python": "3.11", "torch": "2.8",
                 "transformers": "4.55", "datasets": "3.0", "peft": "0.13", "accelerate": "1.0"}},
         "capacity": {"available_vram_bytes": 1000, "available_ram_bytes": 10000,
@@ -216,5 +215,32 @@ class TrainingPreflightTests(unittest.TestCase):
             manifest["approved_configuration"]["learning_rate"]=1e-4
             errors=validate_training_execution_manifest(manifest,**kwargs)
             self.assertIn("training configuration differs from approved configuration",errors)
+
+
+    def test_training_execution_requires_revision_bound_environment_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            dataset=root/"dataset.jsonl"
+            dataset.write_text('{"accepted":true}\\n')
+            approval_path=write_execution_approval(root,dataset)
+            manifest=json.loads(approval_path.read_text())
+            manifest["compute"]["environment_approval_sha256"]="not-a-sha256"
+            manifest["compute"]["execution_environment_reference"]=""
+            manifest["compute"]["maximum_runtime_seconds"]=0
+            kwargs={"foundation_model":"publisher/model","foundation_revision":REV,
+                "dataset_sha256":hashlib.sha256(dataset.read_bytes()).hexdigest(),
+                "training_code_revision":CODE_REV,"training_config":TRAIN_CONFIG}
+            errors=validate_training_execution_manifest(manifest,**kwargs)
+            self.assertIn("training execution environment approval digest missing",errors)
+            self.assertIn("training compute field missing:execution_environment_reference",errors)
+            self.assertIn("training maximum_runtime_seconds is missing or invalid",errors)
+
+    def test_approval_timestamps_must_include_timezone(self):
+        manifest=teacher_manifest("teacher-a")
+        manifest["gates"]["license_review"]["reviewed_at"]="2026-11-17T00:00:00"
+        self.assertTrue(any("license review gate failed" in item for item in validate_teacher_manifest(manifest,"teacher-a",REV)))
+        foundation=foundation_manifest()
+        foundation["approved_at"]="2026-11-17T00:00:00"
+        self.assertTrue(any("approval provenance" in item for item in validate_foundation_selection(foundation,"publisher/model",REV)))
 
 if __name__=="__main__": unittest.main()

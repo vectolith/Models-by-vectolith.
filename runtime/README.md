@@ -105,3 +105,25 @@ The SFT entry point also requires a run-specific protected-holdout deployment an
 ## Policy-based dispatch
 
 The runtime has a policy layer in `vectolith_runtime.dispatch_policy` that separates candidate discovery from production selection. Selection requires released lifecycle state, caller-supplied qualification and availability predicates, and requested capabilities/modalities. It fails closed if no eligible model is found. The initial deterministic selection ordering is model ID; future ranking must be based on measured and explicit criteria rather than implicit assumptions.
+
+## Core Prime training preflight (evidence validation only)
+
+Run the fail-closed preflight from the repository root after installing the runtime and its training extras:
+
+```bash
+python -m pip install -e "runtime[training]"
+python runtime/scripts/core_prime_training_preflight.py \
+  --dataset /secure/path/accepted-teaching-data.jsonl \
+  --foundation-model "publisher/model-id" \
+  --foundation-revision "<40-character-immutable-revision>" \
+  --foundation-selection /secure/path/foundation-selection.json \
+  --teacher-manifests /secure/path/qualified-teachers \
+  --holdout-deployment /secure/path/holdout-deployment.json \
+  --holdout-results /secure/path/holdout-results \
+  --execution-manifest /secure/path/training-execution-approval.json \
+  --training-code-revision "<40-character-git-commit>" \
+  --training-config configs/train_approved.yaml \
+  --report evidence/core-prime-preflight-report.json
+```
+
+The command delegates to the same validators used by `train_student()`. It records hashes for the supplied input files and writes a JSON report on both success and failure. A non-zero exit code and `status: blocked` mean the evidence is incomplete or invalid. A passing report means only that the preflight validators passed; it is not a training authorization, does not approve legal rights, and does not start training. Keep private holdout artifacts and result files outside the repository.

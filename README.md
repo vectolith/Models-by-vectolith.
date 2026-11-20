@@ -18,7 +18,7 @@ Every model has its own identity within the family, version, specialization, tra
 
 Core Prime is the unified user-facing model and is intended to handle the full task lifecycle itself: understand requests, research, reason, plan, write, calculate, design software, code, debug, test, use approved tools, verify outcomes, and communicate evidence-backed results. Engineering work is no longer excluded from Prime's scope or dependent on a separate Prima handoff. Core Prima remains paused; it may later exist as an optional specialist only if a distinct need is demonstrated. Runtime tool permissions and approval gates remain external and cannot be expanded by model capability.
 
-See the [delegated execution contract](docs/delegated-execution-contract.md) and [runtime architecture](docs/runtime-architecture.md).
+See the [user task lifecycle and completion reporting contract](docs/user-task-lifecycle-and-completion-contract.md), [delegated execution contract](docs/delegated-execution-contract.md), and [runtime architecture](docs/runtime-architecture.md).
 
 ## Runtime and integration boundaries
 
@@ -28,6 +28,8 @@ No product-to-product integration is part of the default architecture. A future 
 
 - [Extensible family specification](docs/model-family-specification.md)
 - [Shared identity contract](docs/shared-identity-contract.md)
+- [User task lifecycle and completion reporting contract](docs/user-task-lifecycle-and-completion-contract.md)
+- [User task lifecycle conformance evaluation](evaluation/user-task-lifecycle-conformance.md)
 - [Model registry and capability discovery](docs/model-registry-and-capabilities.md)
 - [Architecture](docs/architecture.md)
 - [Delegated execution contract](docs/delegated-execution-contract.md)

@@ -1,0 +1,32 @@
+{
+  "schema_version": "vectolith-protected-holdout-deployment/1.0",
+  "status": "pending",
+  "dataset_version": "",
+  "dataset_sha256": "",
+  "case_count": 0,
+  "custody": {
+    "storage_uri": "",
+    "access_boundary": "",
+    "encryption_at_rest": false,
+    "key_custody_separate": false,
+    "custodian_id": "",
+    "evaluator_operator_id": ""
+  },
+  "execution": {
+    "evaluator_service_id": "",
+    "deployment_image_sha256": "",
+    "pull_request_code_denied": false,
+    "candidate_network_egress_denied": false,
+    "dataset_mount_read_only": false,
+    "result_channel_separated": false
+  },
+  "audit": {
+    "access_log_sha256": "",
+    "leakage_audit_sha256": "",
+    "provenance_report_sha256": "",
+    "public_fixture_overlap_checked": false,
+    "unauthorized_access_count": null,
+    "reviewed_by": ""
+  },
+  "note": "Template only. Keep the completed manifest and all protected references in the restricted vault, not in this repository or public CI."
+}

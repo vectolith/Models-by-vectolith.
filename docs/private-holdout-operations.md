@@ -61,3 +61,39 @@ The runner now requires a custodian-issued, HMAC-SHA256-signed, short-lived, sin
 Supply the token path with `VECTOLITH_HOLDOUT_AUTH_TOKEN`, the signing secret through the protected secret store as `VECTOLITH_HOLDOUT_AUTH_SECRET`, the authenticated runner principal as `VECTOLITH_HOLDOUT_PRINCIPAL_ID`, and an owner-only audit directory as `VECTOLITH_HOLDOUT_AUDIT_DIR`. The signing secret must be held by the custodian/authorization service and must not be committed or passed on a command line. The runner records a one-time claim marker with the principal, candidate, revision, release digest, token digest, and timestamp. Existing output files are never overwritten.
 
 This provides a signed approval and replay-resistant local execution record. It does not by itself protect against a malicious administrator or arbitrary code running with the evaluation identity's privileges. For that threat model, run the evaluator in a separately administered service/container with OS-level dataset isolation, restricted egress, and a custodian-controlled authorization service. Never expose these secrets to pull-request CI or untrusted code.
+
+
+## Restricted evidence manifest
+
+Maintain a separate manifest in the same restricted evidence vault as the
+holdout suite and scoring materials. This manifest is not a public-repository
+file. It records verifiable metadata and digests without embedding the
+protected contents or credentials.
+
+Use the public metadata-only schema [`evidence/restricted-evidence-manifest.schema.json`](../evidence/restricted-evidence-manifest.schema.json) for schema `vectolith-restricted-evidence-manifest/1.0`. The schema file is not a populated manifest. Keep every populated manifest in the restricted vault, never in this repository. Each artifact entry
+should include:
+
+- opaque artifact ID and category;
+- restricted storage reference and custodian;
+- access policy and authorized roles;
+- immutable version, byte size, media type and timestamps;
+- SHA-256 digest recomputed from the exact stored bytes;
+- provenance reference and chain-of-custody record;
+- related evaluation/run ID, candidate ID and immutable model revision;
+- grading status, rubric version and grade-report reference/digest, where applicable;
+- access-log and audit-report references and digests;
+- integrity-verification timestamp and verifier;
+- authorization-record reference, scope, approver and validity period.
+
+Never include passwords, API keys, signing secrets, private keys, scoring-key
+contents, holdout prompts, expected answers, or reviewer identity mappings.
+Keep secret material in the vault's dedicated secret store and protected
+datasets in their own access-controlled storage. The manifest is itself
+sensitive metadata and must remain access-controlled.
+
+A SHA-256 digest supports integrity comparison; it does not independently
+prove source authenticity, permission, completeness, evaluator independence,
+or correctness of grading. Record those as separate evidence-backed
+attestations. Public CI must receive neither the manifest nor the restricted
+artifact references if those references disclose vault structure or access
+details.

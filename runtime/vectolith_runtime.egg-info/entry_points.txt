@@ -1,0 +1,2 @@
+[console_scripts]
+vectolith-runtime = vectolith_runtime.cli:main

@@ -51,24 +51,12 @@ def valid_manifest(candidate_id="candidate-a"):
                 "mean_latency_seconds": 1.5,
                 "compute_record_sha256": sha,
             },
-            "human_review": {
+            "grading": {
                 "status": "passed",
-                "independent_reviewer_ids": ["reviewer-1", "reviewer-2"],
-                "independence_attested": True,
-                "adjudication_complete": True,
                 "expected_response_count": 180,
                 "graded_response_count": 180,
                 "grade_report_sha256": sha,
-                "adjudication_sha256": sha,
-                "agreement": {
-                    "status": "accepted",
-                    "metric": "quadratic_weighted_cohen_kappa",
-                    "value": 0.8,
-                    "minimum_required": 0.6,
-                    "report_sha256": sha,
-                    "policy_sha256": sha,
-                    "reviewer_independence_sha256": sha,
-                },
+                "rubric_version": "prime-rubric-v1",
             },
             "safety_review": {
                 "status": "passed",
@@ -115,7 +103,7 @@ class TeacherQualificationGateTests(unittest.TestCase):
         result = evaluate_candidate(manifest)
         self.assertEqual(result["qualification_status"], "not_qualified")
         self.assertTrue(any(x.startswith("license_review:") for x in result["failed_gates"]))
-        self.assertTrue(any(x.startswith("human_review:") for x in result["failed_gates"]))
+        self.assertTrue(any(x.startswith("grading:") for x in result["failed_gates"]))
         self.assertTrue(any(x.startswith("training_output_permission:") for x in result["failed_gates"]))
 
     def test_license_and_training_output_permission_are_separate_gates(self):
@@ -126,26 +114,22 @@ class TeacherQualificationGateTests(unittest.TestCase):
         self.assertTrue(any(x.startswith("license_review:") for x in result["failed_gates"]))
         self.assertTrue(any(x.startswith("training_output_permission:") for x in result["failed_gates"]))
 
-    def test_low_or_unsubstantiated_inter_rater_agreement_blocks_qualification(self):
+    def test_grading_does_not_require_reviewer_agreement_or_adjudication(self):
         manifest = valid_manifest()
-        manifest["gates"]["human_review"]["agreement"]["value"] = 0.2
-        result = evaluate_candidate(manifest)
-        self.assertTrue(any("agreement_below_policy_threshold" in x for x in result["failed_gates"]))
-        manifest = valid_manifest()
-        manifest["gates"]["human_review"]["agreement"]["report_sha256"] = "invalid"
-        result = evaluate_candidate(manifest)
-        self.assertTrue(any("agreement_report_digest_missing" in x for x in result["failed_gates"]))
+        grading = manifest["gates"]["grading"]
+        self.assertNotIn("independent_reviewer_ids", grading)
+        self.assertNotIn("agreement", grading)
+        self.assertNotIn("adjudication_complete", grading)
+        self.assertEqual(evaluate_candidate(manifest)["qualification_status"], "qualified")
 
-    def test_revision_mismatch_and_incomplete_human_review_block_qualification(self):
+    def test_revision_mismatch_and_incomplete_grading_block_qualification(self):
         manifest = valid_manifest()
         manifest["gates"]["loader_compatibility"]["tested_revision"] = "c" * 40
-        manifest["gates"]["human_review"]["independent_reviewer_ids"] = ["reviewer-1"]
-        manifest["gates"]["human_review"]["graded_response_count"] = 179
+        manifest["gates"]["grading"]["graded_response_count"] = 179
         result = evaluate_candidate(manifest)
         self.assertEqual(result["qualification_status"], "not_qualified")
         self.assertTrue(any("revision_mismatch" in x for x in result["failed_gates"]))
-        self.assertTrue(any("two_independent_reviewers_required" in x for x in result["failed_gates"]))
-        self.assertTrue(any("review_coverage_incomplete" in x for x in result["failed_gates"]))
+        self.assertTrue(any("grading:coverage_incomplete" in x for x in result["failed_gates"]))
 
     def test_four_teacher_cohort_gate_counts_without_ranking_or_selecting(self):
         three = [valid_manifest(f"candidate-{n}") for n in range(3)]
