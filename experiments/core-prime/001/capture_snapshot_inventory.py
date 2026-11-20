@@ -5,11 +5,13 @@ import argparse,json,os,tempfile,hashlib
 from pathlib import Path
 import evaluation_gate
 def capture(candidate_record_path):
+ # Reject a symlinked candidate record and bind the inventory to the exact bytes
+ # read through a confined no-follow descriptor, not Path.read_bytes().
+ root=candidate_record_path.parent.resolve()
  try:
-  candidate_record_bytes=candidate_record_path.read_bytes()
+  _,candidate_record_bytes=evaluation_gate.read_confined_bytes(root,candidate_record_path.name,"candidate record")
   record=evaluation_gate.strict_json_loads(candidate_record_bytes.decode("utf-8"))
  except Exception as exc:raise ValueError(f"candidate record parse failed: {exc}") from exc
- # Bind the inventory to the exact candidate bytes that were parsed, not a later file read.
  candidate_record_sha256=hashlib.sha256(candidate_record_bytes).hexdigest()
  if not isinstance(record,dict):raise ValueError("candidate record must be an object")
  rel=record.get("model_snapshot_path")
