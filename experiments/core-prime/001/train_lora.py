@@ -15,11 +15,15 @@ def package_inventory_sha256():
 def package_inventory_snapshot():
  items=package_inventory()
  return items,evaluation_gate.sha256_serialized(items)
-def load_rows(p):
+def load_rows_snapshot(p):
+ raw=p.read_bytes()
+ try:text=raw.decode("utf-8")
+ except UnicodeDecodeError as exc:raise ValueError(f"dataset invalid UTF-8: {exc}") from exc
  rows=[];ids=set()
- for n,line in enumerate(p.read_text(encoding="utf-8").splitlines(),1):
+ for n,line in enumerate(text.splitlines(),1):
   if not line.strip():continue
-  r=json.loads(line)
+  try:r=json.loads(line)
+  except json.JSONDecodeError as exc:raise ValueError(f"line {n}: invalid JSON: {exc}") from exc
   if not isinstance(r,dict):raise ValueError(f"line {n}: record must be object")
   for k in ("task_id","prompt","response","provenance"):
    if not isinstance(r.get(k),str) or not r[k].strip():raise ValueError(f"line {n}: {k} required")
@@ -27,7 +31,8 @@ def load_rows(p):
   if r["task_id"] in ids:raise ValueError(f"line {n}: duplicate task_id")
   ids.add(r["task_id"]);rows.append(r)
  if not rows:raise ValueError("empty dataset")
- return rows
+ return rows,hashlib.sha256(raw).hexdigest()
+def load_rows(p):return load_rows_snapshot(p)[0]
 def telemetry_elapsed(records):
  by_run={}
  legacy={}
@@ -216,7 +221,7 @@ def verify_evidence_file(base,relative_path,digest,label):
  if not target.is_file():raise ValueError(f"{label} evidence file missing")
  if sha256_file(target)!=digest:raise ValueError(f"{label} evidence hash mismatch")
  return target
-def gates(c,a,rows,x,package_hash=None,training_config_hash=None):
+def gates(c,a,rows,x,package_hash=None,training_config_hash=None,dataset_sha256=None):
  candidate,candidate_sha,snapshot=evaluation_gate.verify_candidate_record(x.candidate,c.get("repository_id"),c.get("revision"))
  if candidate!=c:raise ValueError("candidate record content mismatch")
  if not isinstance(x.code_commit,str) or not evaluation_gate.SHA40.fullmatch(x.code_commit):raise ValueError("code commit must be a 40-character lowercase SHA")
@@ -227,7 +232,7 @@ def gates(c,a,rows,x,package_hash=None,training_config_hash=None):
  if a.get("training_config_sha256")!=training_config_hash:raise ValueError("training config hash mismatch")
  if a.get("approval")!="approved":raise ValueError("training approval not approved")
  if a.get("candidate_revision")!=c.get("revision"):raise ValueError("candidate revision mismatch")
- if a.get("dataset_sha256")!=sha256_file(x.dataset):raise ValueError("dataset hash mismatch")
+ if dataset_sha256 is None:dataset_sha256=sha256_file(x.dataset)\n if a.get("dataset_sha256")!=dataset_sha256:raise ValueError("dataset hash mismatch")
  if a.get("code_commit")!=x.code_commit:raise ValueError("code commit mismatch")
  provenance=a.get("dataset_provenance",{})
  if provenance.get("status")!="reviewed":raise ValueError("dataset provenance review missing")
@@ -247,7 +252,7 @@ def main():
  try:
   actual_code_commit=evaluation_gate.git_head()
   if actual_code_commit!=x.code_commit:p.error("--code-commit does not match training runner checkout HEAD")
-  c=json.loads(x.candidate.read_text());a=json.loads(x.authorization.read_text());rows=load_rows(x.dataset);packages,packages_hash=package_inventory_snapshot();training_config_hash=training_config_sha256(x);snapshot=gates(c,a,rows,x,packages_hash,training_config_hash)
+  c=json.loads(x.candidate.read_text());a=json.loads(x.authorization.read_text());rows,dataset_sha256=load_rows_snapshot(x.dataset);packages,packages_hash=package_inventory_snapshot();training_config_hash=training_config_sha256(x);snapshot=gates(c,a,rows,x,packages_hash,training_config_hash,dataset_sha256)
  except Exception as e:p.error(f"preflight blocked: {e}")
  try:import torch
  except Exception as e:p.error(f"torch unavailable: {e}")
@@ -320,6 +325,6 @@ def main():
  if prior_elapsed+time.monotonic()-run_started_monotonic>=x.max_wall_seconds:p.error("wall-time budget exhausted before training started")
  trainer.train(resume_from_checkpoint=str(resume) if resume else None)
  model.save_pretrained(x.output/"adapter");tok.save_pretrained(x.output/"adapter")
- manifest={"candidate_id":c["candidate_id"],"candidate_repository":c["repository_id"],"candidate_revision":c["revision"],"dataset_path":str(x.dataset.resolve()),"dataset_sha256":sha256_file(x.dataset),"code_commit":x.code_commit,"run_id":run_id,"provider_session_id":session_id,"steps_limit":x.max_steps,"start_global_step":start_step,"actual_steps_run":trainer.state.global_step-start_step,"prior_steps_consumed":prior_steps,"cumulative_steps_consumed":prior_steps+trainer.state.global_step-start_step,"planned_cumulative_steps":planned_cumulative_steps,"wall_limit_seconds":x.max_wall_seconds,"training_config":cfg,"training_config_sha256":training_config_hash,"rank":cfg["rank"],"alpha":cfg["alpha"],"target_modules":cfg["target_modules"],"learning_rate":cfg["learning_rate"],"batch_size":cfg["per_device_train_batch_size"],"gradient_accumulation_steps":cfg["gradient_accumulation_steps"],"seed":cfg["seed"],"data_seed":cfg["data_seed"],"max_sequence_length":cfg["max_sequence_length"],"duration_seconds":time.time()-started,"prior_session_elapsed_seconds":prior_elapsed,"cumulative_wall_seconds":prior_elapsed+time.time()-started,"gpu":torch.cuda.get_device_name(0),"gpu_memory_total_bytes":torch.cuda.get_device_properties(0).total_memory,"cuda_version":torch.version.cuda,"python":sys.version,"platform":platform.platform(),"torch":torch.__version__,"transformers_version":__import__("transformers").__version__,"peft_version":__import__("peft").__version__,"package_inventory":packages,"package_inventory_sha256":packages_hash,"environment_package_inventory_sha256":packages_hash,"candidate_record_sha256":sha256_file(x.candidate),"model_snapshot_path":str(snapshot.resolve()),"model_snapshot_inventory_sha256":evaluation_gate.sha256_serialized(c["weight_inventory"]),"adapter_sha256_inventory":[{"path":str(f.relative_to(x.output)),"sha256":sha256_file(f)} for f in sorted((x.output/"adapter").rglob("*")) if f.is_file()],"status":"trained_pending_evaluation","holdout_evaluated":False}
+ manifest={"candidate_id":c["candidate_id"],"candidate_repository":c["repository_id"],"candidate_revision":c["revision"],"dataset_path":str(x.dataset.resolve()),"dataset_sha256":dataset_sha256,"code_commit":x.code_commit,"run_id":run_id,"provider_session_id":session_id,"steps_limit":x.max_steps,"start_global_step":start_step,"actual_steps_run":trainer.state.global_step-start_step,"prior_steps_consumed":prior_steps,"cumulative_steps_consumed":prior_steps+trainer.state.global_step-start_step,"planned_cumulative_steps":planned_cumulative_steps,"wall_limit_seconds":x.max_wall_seconds,"training_config":cfg,"training_config_sha256":training_config_hash,"rank":cfg["rank"],"alpha":cfg["alpha"],"target_modules":cfg["target_modules"],"learning_rate":cfg["learning_rate"],"batch_size":cfg["per_device_train_batch_size"],"gradient_accumulation_steps":cfg["gradient_accumulation_steps"],"seed":cfg["seed"],"data_seed":cfg["data_seed"],"max_sequence_length":cfg["max_sequence_length"],"duration_seconds":time.time()-started,"prior_session_elapsed_seconds":prior_elapsed,"cumulative_wall_seconds":prior_elapsed+time.time()-started,"gpu":torch.cuda.get_device_name(0),"gpu_memory_total_bytes":torch.cuda.get_device_properties(0).total_memory,"cuda_version":torch.version.cuda,"python":sys.version,"platform":platform.platform(),"torch":torch.__version__,"transformers_version":__import__("transformers").__version__,"peft_version":__import__("peft").__version__,"package_inventory":packages,"package_inventory_sha256":packages_hash,"environment_package_inventory_sha256":packages_hash,"candidate_record_sha256":sha256_file(x.candidate),"model_snapshot_path":str(snapshot.resolve()),"model_snapshot_inventory_sha256":evaluation_gate.sha256_serialized(c["weight_inventory"]),"adapter_sha256_inventory":[{"path":str(f.relative_to(x.output)),"sha256":sha256_file(f)} for f in sorted((x.output/"adapter").rglob("*")) if f.is_file()],"status":"trained_pending_evaluation","holdout_evaluated":False}
  (x.output/"training-manifest.json").write_text(json.dumps(manifest,indent=2));print(json.dumps(manifest,indent=2))
 if __name__=="__main__":main()
