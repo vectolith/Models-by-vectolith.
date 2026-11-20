@@ -54,7 +54,12 @@ class ReleaseVerifierTests(unittest.TestCase):
     p=root/(name+".txt");p.write_text(name);gates[name]={"status":"approved","evidence_path":p.name,"sha256":hashlib.sha256(p.read_bytes()).hexdigest()}
    m={"model_name":"Core Prime","release_version":"x","release_status":"qualified","holdout_included":False,"artifacts":[{"path":"artifact.bin","sha256":digest},{"path":"sub/../artifact.bin","sha256":digest}],"gates":gates}
    self.assertTrue(any("duplicate artifact file" in e for e in v.verify(root,m)))
- def test_hash_mismatch(self):
+
+ def test_symlink_evidence_path_rejected(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);outside=root/"outside.txt";outside.write_text("evidence");link=root/"link.txt";link.symlink_to(outside)
+   with self.assertRaisesRegex(ValueError,"symlink components"):v.verify_file(root,"link.txt",hashlib.sha256(b"evidence").hexdigest())
+\n def test_hash_mismatch(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);(root/"x").write_text("actual")
    with self.assertRaisesRegex(ValueError,"SHA-256 mismatch"):v.verify_file(root,"x","0"*64)
