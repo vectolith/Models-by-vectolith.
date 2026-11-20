@@ -46,7 +46,8 @@ class HoldoutTests(unittest.TestCase):
    link=root/"snapshot-link";link.symlink_to(outside,target_is_directory=True)
    record_path=root/"candidate.json";record_path.write_text(json.dumps(candidate),encoding="utf-8")
    with self.assertRaisesRegex(ValueError,"symlink components"):evaluator.evaluation_gate.verify_model_snapshot(candidate,record_path)
-\n def test_candidate_snapshot_integrity_and_permission(self):
+
+ def test_candidate_snapshot_integrity_and_permission(self):
   with tempfile.TemporaryDirectory() as tmp:
    path,candidate=self.fixture_candidate(Path(tmp))
    record,digest,snapshot=evaluator.evaluation_gate.verify_candidate_record(path,"m","a"*40)

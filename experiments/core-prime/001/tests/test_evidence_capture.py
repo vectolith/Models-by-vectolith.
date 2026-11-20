@@ -31,7 +31,8 @@ class CaptureTests(unittest.TestCase):
    link=root/"snapshot-link";link.symlink_to(outside,target_is_directory=True)
    record=root/"candidate.json";record.write_text(json.dumps({"model_snapshot_path":"snapshot-link"}))
    with self.assertRaisesRegex(ValueError,"symlink components"):snapshot.capture(record)
-\n def test_snapshot_capture_rejects_empty(self):
+
+ def test_snapshot_capture_rejects_empty(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);(root/"snapshot").mkdir();record=root/"candidate.json";record.write_text(json.dumps({"model_snapshot_path":"snapshot"}))
    with self.assertRaisesRegex(ValueError,"empty"):snapshot.capture(record)

@@ -1,6 +1,7 @@
 import importlib.util,json,tempfile,unittest
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT))
 def load(name,path):
  spec=importlib.util.spec_from_file_location(name,path);mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod);return mod
 tasks=load("task_validator",ROOT/"validate_tasks.py");candidate=load("candidate_validator",ROOT/"validate_candidate.py");evaluator=load("evaluator",ROOT/"evaluate.py")
