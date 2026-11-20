@@ -103,14 +103,18 @@ def checkpoint_step(path):
  return step
 def checkpoint_inventory(path):
  if path.is_symlink():raise ValueError("checkpoint directory symlink is unsafe")
- base=path.resolve();items=[]
+ # Anchor reads to the checkpoint parent and open every path component with
+ # no-follow descriptors. The path walk and hash must not be separate reads.
+ anchor=path.parent.resolve()
+ root_component=path.name
+ items=[]
  for f in sorted(path.rglob("*")):
   if f.is_symlink():raise ValueError("checkpoint contains symlinks")
   if not f.is_file() or f.name in ("checkpoint-integrity.json","checkpoint-integrity.json.tmp","checkpoint-budget.json.tmp"):continue
-  resolved=f.resolve()
-  try:resolved.relative_to(base)
-  except ValueError:raise ValueError("checkpoint file escapes checkpoint directory")
-  items.append({"path":str(f.relative_to(path)),"sha256":sha256_file(f)})
+  relative_inside=str(f.relative_to(path))
+  confined_relative=str(Path(root_component)/relative_inside)
+  _,raw=evaluation_gate.read_confined_bytes(anchor,confined_relative,"checkpoint")
+  items.append({"path":relative_inside,"sha256":hashlib.sha256(raw).hexdigest()})
  return items
 def write_checkpoint_budget_state(path,step,cumulative_elapsed_seconds):
  if isinstance(cumulative_elapsed_seconds,bool) or not isinstance(cumulative_elapsed_seconds,(int,float)) or not math.isfinite(cumulative_elapsed_seconds) or cumulative_elapsed_seconds<0:raise ValueError("checkpoint cumulative elapsed time must be finite and non-negative")
