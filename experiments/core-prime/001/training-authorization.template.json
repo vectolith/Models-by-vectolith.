@@ -17,6 +17,7 @@
     "evidence_path": null,
     "evidence_sha256": null
   },
+  "training_config_sha256": null,
   "budget": {
     "max_steps": 0,
     "max_wall_seconds": 0

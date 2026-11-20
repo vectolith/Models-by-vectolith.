@@ -21,7 +21,7 @@ class Tests(unittest.TestCase):
   self.candidate_path.write_text(json.dumps(self.c,sort_keys=True),encoding="utf-8")
   compute=self.d/"compute.json";compute.write_text("compute fixture")
   provenance=self.d/"provenance.json";provenance.write_text("provenance fixture")
-  self.a={"approval":"approved","candidate_revision":"a"*40,"candidate_record_sha256":trainer.sha256_file(self.candidate_path),"environment_package_inventory_sha256":trainer.package_inventory_sha256(),"dataset_sha256":trainer.sha256_file(self.dataset),"code_commit":"c"*40,"hardware":{"verified_free_budget":True,"provider":"p","session_id":"s","evidence_path":"compute.json","evidence_sha256":trainer.sha256_file(compute)},"dataset_provenance":{"status":"reviewed","evidence_path":"provenance.json","evidence_sha256":trainer.sha256_file(provenance)},"budget":{"max_steps":10,"max_wall_seconds":60},"holdout_access":"sealed"}
+  self.a={"approval":"approved","candidate_revision":"a"*40,"candidate_record_sha256":trainer.sha256_file(self.candidate_path),"environment_package_inventory_sha256":trainer.package_inventory_sha256(),"dataset_sha256":trainer.sha256_file(self.dataset),"code_commit":"c"*40,"hardware":{"verified_free_budget":True,"provider":"p","session_id":"s","evidence_path":"compute.json","evidence_sha256":trainer.sha256_file(compute)},"dataset_provenance":{"status":"reviewed","evidence_path":"provenance.json","evidence_sha256":trainer.sha256_file(provenance)},"budget":{"max_steps":10,"max_wall_seconds":60},"training_config_sha256":trainer.training_config_sha256(self.x),"holdout_access":"sealed"}
  def tearDown(self):self.tmp.cleanup()
  def test_all_gates_pass(self):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_pending_permission_blocked(self):
@@ -62,6 +62,15 @@ class Tests(unittest.TestCase):
   (self.d/"provenance.json").unlink()
   with self.assertRaisesRegex(ValueError,"dataset provenance evidence file missing"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_duplicate_ids_rejected(self):r={"task_id":"x","prompt":"p","response":"r","provenance":"a","split":"train"};self.dataset.write_text(json.dumps(r)+"\n"+json.dumps(r));self.assertRaisesRegex(ValueError,"duplicate",trainer.load_rows,self.dataset)
+
+ def test_training_config_hash_binds_cli_parameters(self):
+  original=trainer.training_config_sha256(self.x)
+  self.x.rank=16
+  self.assertNotEqual(original,trainer.training_config_sha256(self.x))
+  self.assertRaisesRegex(ValueError,"training config hash mismatch",trainer.gates,self.c,self.a,trainer.load_rows(self.dataset),self.x)
+ def test_duplicate_training_target_modules_rejected(self):
+  self.x.target_modules="q_proj,q_proj"
+  self.assertRaisesRegex(ValueError,"target_modules must be unique",trainer.training_config,self.x)
  def test_training_package_inventory_snapshot_is_single_capture(self):
   from unittest.mock import patch
   items=[{"name":"fixture-package","version":"1.0"}]
@@ -70,7 +79,8 @@ class Tests(unittest.TestCase):
   self.assertEqual(inventory,items);self.assertEqual(digest,trainer.evaluation_gate.sha256_serialized(items));self.assertEqual(capture.call_count,1)
  def test_training_manifest_uses_preflight_package_snapshot(self):
   source=(ROOT/"train_lora.py").read_text(encoding="utf-8")
-  self.assertIn("packages,packages_hash=package_inventory_snapshot();snapshot=gates(c,a,rows,x,packages_hash)",source)
+  self.assertIn("packages,packages_hash=package_inventory_snapshot();training_config_hash=training_config_sha256(x);snapshot=gates(c,a,rows,x,packages_hash,training_config_hash)",source)
+  self.assertIn('"training_config":cfg,"training_config_sha256":training_config_hash',source)
   self.assertIn('"package_inventory":packages,"package_inventory_sha256":packages_hash,"environment_package_inventory_sha256":packages_hash',source)
  def test_telemetry_run_cumulative_accounting(self):
   rows=[{"run_id":"r1","session_elapsed_seconds":12},{"run_id":"r1","session_elapsed_seconds":8},{"run_id":"r2","session_elapsed_seconds":5}]

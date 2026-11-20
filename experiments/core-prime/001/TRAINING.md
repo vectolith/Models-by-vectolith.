@@ -1,6 +1,6 @@
 # Guarded LoRA trainer
 
-Training is intentionally blocked unless the candidate manifest and independent authorization evidence pass. Candidate status must be verified; output-training permission verified; human legal review approved; compatibility compatible. Authorization must match exact candidate revision, dataset SHA-256 and code commit, include hashed evidence files for license, written output permission, independent legal review, model config, chat template, dataset provenance and free-compute session, document budgets, and keep holdout sealed/denied. Preflight checks evidence file hashes and confines relative paths to the evidence directories. Operator must also pass --authorize-training. No CPU or paid compute.
+Training is intentionally blocked unless the candidate manifest and independent authorization evidence pass. Candidate status must be verified; output-training permission verified; human legal review approved; compatibility compatible. Authorization must match exact candidate revision, dataset SHA-256 and code commit, include hashed evidence files for license, written output permission, independent legal review, model config, chat template, dataset provenance and free-compute session, document budgets, bind the SHA-256 of the effective training configuration (including CLI rank/alpha/target modules and fixed optimizer/precision/data settings), and keep holdout sealed/denied. Preflight checks evidence file hashes and confines relative paths to the evidence directories. Operator must also pass --authorize-training. No CPU or paid compute.
 
 Dataset is a separate JSONL file of records with task_id, prompt, response, provenance and split=train only. Development/holdout records are rejected. Do not reuse the development evaluation set as training material.
 
@@ -8,7 +8,7 @@ Install PEFT alongside the harness dependencies in the verified environment. Exa
 ```bash
 python experiments/core-prime/001/train_lora.py --candidate candidate.json --authorization training-authorization.json --dataset train.jsonl --output /kaggle/working/cp001-adapter --max-steps 100 --max-wall-seconds 1800 --code-commit FULL_SHA --authorize-training
 ```
-The authorization file is controlled evidence, not a generated approval. Example pending fields are intentionally insufficient. The runner emits an adapter and SHA-256 inventory. Evaluation, holdout use, grading, and promotion are separate.
+The authorization file is controlled evidence, not a generated approval. It must include `training_config_sha256` matching the effective configuration; changing any bound training setting blocks preflight. Example pending fields are intentionally insufficient. The runner emits an adapter and SHA-256 inventory. Evaluation, holdout use, grading, and promotion are separate.
 
 
 The training loop starts its wall-clock budget before model/tokenizer initialization, refuses to start training if that budget has already expired, and stops at the approved ceiling (or earlier if the step budget is reached). Every Trainer checkpoint is sealed with an SHA-256 inventory after saving; recovery requires the manifest, exact file inventory and hashes and falls back only to a valid sealed checkpoint. Training manifests capture a sorted full package/version inventory and its hash.
