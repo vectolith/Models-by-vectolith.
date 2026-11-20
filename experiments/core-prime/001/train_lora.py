@@ -120,7 +120,8 @@ def checkpoint_inventory(path):
   # Only the checkpoint root's control files are excluded. Nested files with
   # these names are payload and must remain covered by the integrity manifest.
   if relative_inside in ("checkpoint-integrity.json","checkpoint-integrity.json.tmp","checkpoint-budget.json.tmp"):continue
-  if not f.is_file():continue
+  if f.is_dir():continue
+  if not f.is_file():raise ValueError(f"checkpoint contains unsupported special file: {relative_inside}")
   confined_relative=str(Path(root_component)/relative_inside)
   _,digest,_=evaluation_gate.hash_confined_file(anchor,confined_relative,"checkpoint")
   items.append({"path":relative_inside,"sha256":digest})
