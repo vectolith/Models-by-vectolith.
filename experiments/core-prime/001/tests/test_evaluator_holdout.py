@@ -1,4 +1,5 @@
 import json,subprocess,sys,tempfile,unittest,hashlib
+from unittest.mock import patch
 import importlib.util
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
