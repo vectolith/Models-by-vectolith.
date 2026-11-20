@@ -45,6 +45,7 @@ def verify_model_snapshot(record,record_path):
   if not isinstance(item,dict) or set(item)!={"path","sha256"}:raise ValueError("candidate snapshot inventory malformed")
   relfile=Path(item["path"])
   if relfile.is_absolute() or ".." in relfile.parts:raise ValueError("snapshot inventory path must be relative and confined")
+  if item["path"] in expected:raise ValueError("snapshot inventory contains duplicate path")
   target=verify_evidence_file(root,item["path"],item["sha256"],"candidate snapshot")
   try:target.relative_to(snapshot)
   except ValueError:raise ValueError("snapshot inventory path is outside model snapshot")
