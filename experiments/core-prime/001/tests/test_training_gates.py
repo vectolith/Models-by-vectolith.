@@ -27,11 +27,18 @@ class Tests(unittest.TestCase):
  def test_confined_reader_and_hash_reject_fifo_without_blocking(self):
   with tempfile.TemporaryDirectory() as d:
    fifo=Path(d)/"fifo";os.mkfifo(fifo)
-   script=\
-    "import sys;sys.path.insert(0,sys.argv[1]);import evaluation_gate;"\
-    "functions=(evaluation_gate.read_confined_bytes,evaluation_gate.hash_confined_file);"\
-    "[(lambda fn: (fn(sys.argv[2],\\\"fifo\\\",\\\"test\\\") if False else None))(fn) for fn in functions];"\
-    "exec(\\\"for fn in functions:\\\\n try:\\\\n  fn(sys.argv[2],\\\\\\\"fifo\\\\\\\",\\\\\\\"test\\\\\\\")\\\\n except ValueError as exc:\\\\n  if \\\\\\\"not regular\\\\\\\" not in str(exc): raise\\\\n else: raise AssertionError(\\\\\\\"FIFO accepted\\\\\\\")\\\\n\\\")"
+   script="\n".join([
+    "import sys",
+    "sys.path.insert(0,sys.argv[1])",
+    "import evaluation_gate",
+    "for fn in (evaluation_gate.read_confined_bytes,evaluation_gate.hash_confined_file):",
+    " try:",
+    "  fn(sys.argv[2],'fifo','test')",
+    " except ValueError as exc:",
+    "  if 'not regular' not in str(exc): raise",
+    " else:",
+    "  raise AssertionError('FIFO accepted')",
+   ])
    result=subprocess.run([sys.executable,"-c",script,str(ROOT),d],capture_output=True,text=True,timeout=3)
    self.assertEqual(result.returncode,0,result.stderr)
  def test_all_gates_pass(self):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
