@@ -20,7 +20,7 @@ class Tests(unittest.TestCase):
   self.c["weight_inventory"]=[{"path":i["path"],"sha256":i["sha256"]} for i in inventory]
   self.candidate_path.write_text(json.dumps(self.c,sort_keys=True),encoding="utf-8")
   compute=self.d/"compute.json";compute.write_text("compute fixture")
-  provenance=self.d/"provenance.json";provenance.write_text("provenance fixture")
+  provenance=self.d/"provenance.json";provenance.write_text(json.dumps({"dataset_sha256":trainer.sha256_file(self.dataset),"review_status":"reviewed","reviewer":"independent-reviewer","review_scope":"training dataset provenance and rights review","reviewed_at_utc":"2026-11-20T08:00:00+00:00"}))
   self.a={"approval":"approved","candidate_revision":"a"*40,"candidate_record_sha256":trainer.sha256_file(self.candidate_path),"environment_package_inventory_sha256":trainer.package_inventory_sha256(),"dataset_sha256":trainer.sha256_file(self.dataset),"code_commit":"c"*40,"hardware":{"verified_free_budget":True,"provider":"p","session_id":"s","evidence_path":"compute.json","evidence_sha256":trainer.sha256_file(compute)},"dataset_provenance":{"status":"reviewed","evidence_path":"provenance.json","evidence_sha256":trainer.sha256_file(provenance)},"budget":{"max_steps":10,"max_wall_seconds":60},"training_config_sha256":trainer.training_config_sha256(self.x),"holdout_access":"sealed"}
  def tearDown(self):self.tmp.cleanup()
  def test_all_gates_pass(self):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
@@ -66,6 +66,11 @@ class Tests(unittest.TestCase):
  def test_compute_evidence_missing(self):
   (self.d/"compute.json").unlink()
   with self.assertRaisesRegex(ValueError,"free compute evidence file missing"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
+
+ def test_dataset_provenance_evidence_dataset_hash_mismatch(self):
+  provenance=self.d/"provenance.json";provenance.write_text(json.dumps({"dataset_sha256":"0"*64,"review_status":"reviewed","reviewer":"independent-reviewer","review_scope":"review","reviewed_at_utc":"2026-11-20T08:00:00+00:00"}))
+  self.a["dataset_provenance"]["evidence_sha256"]=trainer.sha256_file(provenance)
+  with self.assertRaisesRegex(ValueError,"dataset provenance evidence dataset SHA-256 mismatch"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_dataset_provenance_missing(self):
   (self.d/"provenance.json").unlink()
   with self.assertRaisesRegex(ValueError,"dataset provenance evidence file missing"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
