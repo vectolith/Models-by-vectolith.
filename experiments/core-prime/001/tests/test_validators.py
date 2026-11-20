@@ -71,6 +71,12 @@ class EvaluatorTests(unittest.TestCase):
    self.assertEqual([json.loads(line) for line in lines],records)
    self.assertTrue(path.read_bytes().endswith(b"\n"))
    self.assertEqual(evaluator.sha256_file(path),evaluator.sha256_text(path.read_text(encoding="utf-8")))
+ def test_incremental_jsonl_persistence(self):
+  with tempfile.TemporaryDirectory() as directory:
+   path=Path(directory)/"partial.jsonl"
+   evaluator.append_jsonl(path,{"task_id":"1","status":"completed"})
+   evaluator.append_jsonl(path,{"task_id":"2","status":"failed"})
+   self.assertEqual([json.loads(line)["task_id"] for line in path.read_text(encoding="utf-8").splitlines()],["1","2"])
  def test_dependency_block_records_status(self):
   records=evaluator.initialization_failure_records("run",[row("1","p")],RuntimeError("missing"),status="dependency_blocked")
   self.assertEqual(records[0]["status"],"dependency_blocked")
