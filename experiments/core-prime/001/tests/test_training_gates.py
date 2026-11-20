@@ -150,12 +150,17 @@ class Tests(unittest.TestCase):
     elif parts and parts[-1]=="answer<eos>":parts[-1]="answer";parts.append("<eos>")
     return {"input_ids":parts}
   ids,prefix=trainer.build_sequence(Tok(),"very long prefix words","answer",max_length=4)
-  self.assertEqual(ids,["words","Assistant:","answer<eos>"])
+  self.assertEqual(ids,["words","Assistant:","answer","<eos>"])
   self.assertEqual(prefix,2)
  def test_build_sequence_rejects_response_over_limit(self):
   class Tok:
    eos_token="<eos>"
-   def __call__(self,text,add_special_tokens=True):return {"input_ids":text.split()}
+   def __call__(self,text,add_special_tokens=True):
+    parts=text.split()
+    if parts and parts[-1].endswith("<eos>"):
+     parts[-1]=parts[-1][:-5]
+     parts.append("<eos>")
+    return {"input_ids":parts}
   with self.assertRaisesRegex(ValueError,"response exceeds sequence limit"):trainer.build_sequence(Tok(),"prompt","answer response",max_length=3)
  def test_build_sequence_uses_chat_template_prefix(self):
   class Tok:
