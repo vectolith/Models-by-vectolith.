@@ -90,6 +90,15 @@ class EvaluatorTests(unittest.TestCase):
    self.assertEqual([json.loads(line) for line in lines],records)
    self.assertTrue(path.read_bytes().endswith(b"\n"))
    self.assertEqual(evaluator.sha256_file(path),evaluator.sha256_text(path.read_text(encoding="utf-8")))
+ def test_atomic_evaluator_output_does_not_follow_predictable_tmp_symlink(self):
+  with tempfile.TemporaryDirectory() as directory:
+   root=Path(directory);path=root/"out.jsonl";outside=root/"outside.txt";outside.write_text("preserve",encoding="utf-8")
+   path.with_suffix(path.suffix+".tmp").symlink_to(outside)
+   records=[{"task_id":"safe","response":"ok"}]
+   evaluator.write_jsonl(path,records)
+   self.assertEqual(outside.read_text(encoding="utf-8"),"preserve")
+   self.assertEqual([json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()],records)
+   self.assertFalse(any(p.name.startswith(path.name+".") and p.name.endswith(".tmp") and p!=path.with_suffix(path.suffix+".tmp") for p in root.iterdir()))
  def test_incremental_jsonl_persistence(self):
   with tempfile.TemporaryDirectory() as directory:
    path=Path(directory)/"partial.jsonl"
