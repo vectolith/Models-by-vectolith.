@@ -65,8 +65,8 @@ def load_jsonl_snapshot(path: Path) -> tuple[list[dict[str,Any]],str]:
 def load_jsonl(path: Path) -> list[dict[str,Any]]:
     return load_jsonl_snapshot(path)[0]
 
-def verify_frozen_config(manifest_path: Path, model: str, revision: str, tasks_sha256: str, seed: int, max_new_tokens: int, temperature: float, trust_remote_code: bool, qwen3_thinking: bool, limit: int, selected_task_ids: list[str], candidate_sha: str, code_commit: str, package_hash: str, max_wall_seconds: int) -> str:
-    return evaluation_gate.verify_frozen_config(manifest_path,model,revision,tasks_sha256,seed,max_new_tokens,temperature,trust_remote_code,qwen3_thinking,limit,selected_task_ids,candidate_sha,code_commit,package_hash,max_wall_seconds)
+def verify_frozen_config(manifest_path: Path, model: str, revision: str, tasks_sha256: str, seed: int, max_new_tokens: int, temperature: float, trust_remote_code: bool, qwen3_thinking: bool, limit: int, selected_task_ids: list[str], candidate_sha: str, code_commit: str, package_hash: str, max_wall_seconds: int, manifest_snapshot=None, manifest_sha256=None) -> str:
+    return evaluation_gate.verify_frozen_config(manifest_path,model,revision,tasks_sha256,seed,max_new_tokens,temperature,trust_remote_code,qwen3_thinking,limit,selected_task_ids,candidate_sha,code_commit,package_hash,max_wall_seconds,manifest_snapshot,manifest_sha256)
 
 
 def validate_qwen3_thinking_mode(snapshot: Path, enabled: bool) -> None:
@@ -142,13 +142,14 @@ def main()->int:
     selected_task_ids=[t["task_id"] for t in tasks]
     selected_task_ids_sha256=sha256_serialized(selected_task_ids)
     try:
+        freeze_manifest_snapshot,freeze_manifest_sha256=evaluation_gate.load_json_snapshot(a.freeze_manifest,"freeze manifest")
         candidate,candidate_sha,snapshot=evaluation_gate.verify_candidate_record(a.candidate_record,a.model,a.revision)
         validate_qwen3_thinking_mode(snapshot,bool(a.qwen3_thinking))
         inventory,inventory_sha256=package_inventory_snapshot()
-        authorization,authorization_sha256=evaluation_gate.verify_evaluation_authorization(a.authorization,candidate_sha,task_hash,a.freeze_manifest,a.code_commit,inventory_sha256,len(tasks),a.max_new_tokens)
+        authorization,authorization_sha256=evaluation_gate.verify_evaluation_authorization(a.authorization,candidate_sha,task_hash,a.freeze_manifest,a.code_commit,inventory_sha256,len(tasks),a.max_new_tokens,freeze_manifest_sha256)
         max_wall_seconds=authorization["budget"]["max_wall_seconds"]
         if authorization.get("candidate_revision")!=a.revision:raise ValueError("authorization candidate revision mismatch")
-        freeze_sha=verify_frozen_config(a.freeze_manifest,a.model,a.revision,task_hash,a.seed,a.max_new_tokens,a.temperature,a.trust_remote_code,bool(a.qwen3_thinking),a.limit,selected_task_ids,candidate_sha,a.code_commit,inventory_sha256,max_wall_seconds)
+        freeze_sha=verify_frozen_config(a.freeze_manifest,a.model,a.revision,task_hash,a.seed,a.max_new_tokens,a.temperature,a.trust_remote_code,bool(a.qwen3_thinking),a.limit,selected_task_ids,candidate_sha,a.code_commit,inventory_sha256,max_wall_seconds,freeze_manifest_snapshot,freeze_manifest_sha256)
     except Exception as e:p.error(f"evaluation permission/reproducibility gate blocked: {e}")
     a.output.mkdir(parents=True,exist_ok=True)
     run_id=new_run_id()
