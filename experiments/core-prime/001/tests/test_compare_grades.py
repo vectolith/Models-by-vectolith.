@@ -57,6 +57,14 @@ class ComparisonTests(unittest.TestCase):
    self.assertEqual(json.loads(out.read_text(encoding="utf-8")),{"safe":True})
    self.assertEqual(digest,m.sha256_file(out))
    self.assertFalse(any(p.name.startswith(out.name+".") and p.name.endswith(".tmp") and p!=out.with_suffix(out.suffix+".tmp") for p in root.iterdir()))
+ def test_atomic_output_cleans_temp_on_replace_failure(self):
+  from unittest.mock import patch
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);out=root/"result.json";out.write_text("previous",encoding="utf-8")
+   with patch.object(m.os,"replace",side_effect=OSError("forced replace failure")):
+    with self.assertRaisesRegex(OSError,"forced replace failure"):m.atomic_write_json(out,{"new":True})
+   self.assertEqual(out.read_text(encoding="utf-8"),"previous")
+   self.assertEqual(list(root.glob(out.name+".*.tmp")),[])
  def test_main_records_input_hashes_and_atomic_output(self):
   import sys
   from unittest.mock import patch
