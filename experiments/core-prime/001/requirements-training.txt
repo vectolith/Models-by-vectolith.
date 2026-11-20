@@ -1,5 +1,2 @@
-torch
-transformers
-accelerate
-safetensors
-peft
+-r requirements.txt
+peft==0.13.0

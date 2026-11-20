@@ -1,4 +1,4 @@
-import importlib.util,json,tempfile,unittest
+import importlib.util,json,tempfile,unittest,os,subprocess
 from pathlib import Path
 import sys
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
@@ -23,6 +23,24 @@ class Tests(unittest.TestCase):
   provenance=self.d/"provenance.json";provenance.write_text(json.dumps({"dataset_sha256":trainer.sha256_file(self.dataset),"review_status":"reviewed","reviewer":"independent-reviewer","review_scope":"training dataset provenance and rights review","reviewed_at_utc":"2026-11-20T08:00:00+00:00"}))
   self.a={"approval":"approved","candidate_revision":"a"*40,"candidate_record_sha256":trainer.sha256_file(self.candidate_path),"environment_package_inventory_sha256":trainer.package_inventory_sha256(),"dataset_sha256":trainer.sha256_file(self.dataset),"code_commit":"c"*40,"hardware":{"verified_free_budget":True,"provider":"p","session_id":"s","evidence_path":"compute.json","evidence_sha256":trainer.sha256_file(compute)},"dataset_provenance":{"status":"reviewed","evidence_path":"provenance.json","evidence_sha256":trainer.sha256_file(provenance)},"budget":{"max_steps":10,"max_wall_seconds":60},"training_config_sha256":trainer.training_config_sha256(self.x),"holdout_access":"sealed"}
  def tearDown(self):self.tmp.cleanup()
+
+ def test_confined_reader_and_hash_reject_fifo_without_blocking(self):
+  with tempfile.TemporaryDirectory() as d:
+   fifo=Path(d)/"fifo";os.mkfifo(fifo)
+   script="\n".join([
+    "import sys",
+    "sys.path.insert(0,sys.argv[1])",
+    "import evaluation_gate",
+    "for fn in (evaluation_gate.read_confined_bytes,evaluation_gate.hash_confined_file):",
+    " try:",
+    "  fn(sys.argv[2],'fifo','test')",
+    " except ValueError as exc:",
+    "  if 'not regular' not in str(exc): raise",
+    " else:",
+    "  raise AssertionError('FIFO accepted')",
+   ])
+   result=subprocess.run([sys.executable,"-c",script,str(ROOT),d],capture_output=True,text=True,timeout=3)
+   self.assertEqual(result.returncode,0,result.stderr)
  def test_all_gates_pass(self):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_pending_permission_blocked(self):
   self.c["output_training_permission"]="pending";self.candidate_path.write_text(json.dumps(self.c,sort_keys=True));self.a["candidate_record_sha256"]=trainer.sha256_file(self.candidate_path)
@@ -205,6 +223,111 @@ class Tests(unittest.TestCase):
     trainer.append_telemetry_record(path,{"run_id":"r","step":1})
     sync.assert_called_once()
    self.assertEqual(json.loads(path.read_text())["step"],1)
+ def test_hash_confined_file_reads_in_bounded_chunks(self):
+  from unittest.mock import patch
+  import hashlib,os
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);data=b"x"*(2*1024*1024+17);path=root/"large.bin";path.write_bytes(data)
+   original_read=os.read;observed=[]
+   def recording_read(fd,size):
+    observed.append(size)
+    return original_read(fd,size)
+   with patch.object(trainer.evaluation_gate.os,"read",side_effect=recording_read):
+    target,digest,size=trainer.evaluation_gate.hash_confined_file(root,"large.bin","checkpoint",chunk_size=65536)
+   self.assertEqual(target,path);self.assertEqual(digest,hashlib.sha256(data).hexdigest());self.assertEqual(size,len(data))
+   self.assertTrue(observed);self.assertTrue(all(size==65536 for size in observed))
+
+ def test_checkpoint_inventory_uses_confined_descriptor_reads(self):
+  ck=self.make_checkpoint(self.d,"checkpoint-13",13)
+  from unittest.mock import patch
+  secure_read=trainer.evaluation_gate.read_confined_bytes
+  secure_hash=trainer.evaluation_gate.hash_confined_file
+  observed=[]
+  def wrapped_read(base,relative,label):
+   observed.append((Path(base),relative,label,"read"))
+   return secure_read(base,relative,label)
+  def wrapped_hash(base,relative,label,chunk_size=1024*1024):
+   observed.append((Path(base),relative,label,"hash"))
+   return secure_hash(base,relative,label,chunk_size)
+  with patch.object(trainer.evaluation_gate,"read_confined_bytes",side_effect=wrapped_read),patch.object(trainer.evaluation_gate,"hash_confined_file",side_effect=wrapped_hash):
+   inventory=trainer.checkpoint_inventory(ck)
+  self.assertTrue(observed)
+  self.assertTrue(all(label=="checkpoint" for _,_,label,_ in observed))
+  self.assertTrue(any(relative.startswith(ck.name+"/") for _,relative,_,_ in observed))
+  expected_count=len([p for p in ck.iterdir() if p.is_file() and p.name not in ("checkpoint-integrity.json","checkpoint-integrity.json.tmp","checkpoint-budget.json.tmp")])
+  self.assertEqual(len(inventory),expected_count)
+
+ def test_checkpoint_inventory_hashes_nested_control_named_payload(self):
+  ck=self.make_checkpoint(self.d,"checkpoint-18",18)
+  nested=ck/"nested";nested.mkdir()
+  names=("checkpoint-integrity.json","checkpoint-integrity.json.tmp","checkpoint-budget.json.tmp")
+  for name in names:(nested/name).write_bytes(("payload:"+name).encode("utf-8"))
+  # Root control files/temp files are excluded; same-named nested payloads are not.
+  for name in names:(ck/name).write_bytes(("root-control:"+name).encode("utf-8"))
+  trainer.seal_checkpoint(ck)
+  inventory=trainer.checkpoint_inventory(ck)
+  inventory_paths={item["path"] for item in inventory}
+  self.assertEqual({item["path"] for item in inventory if item["path"].startswith("nested/")},{ "nested/"+name for name in names })
+  self.assertTrue(all(name not in inventory_paths for name in names))
+  self.assertEqual(trainer.validate_checkpoint(ck),18)
+  (nested/"checkpoint-integrity.json").write_bytes(b"tampered")
+  with self.assertRaisesRegex(ValueError,"integrity hash mismatch: nested/checkpoint-integrity.json"):
+   trainer.validate_checkpoint(ck)
+
+ def test_checkpoint_inventory_rejects_special_files(self):
+  ck=self.make_checkpoint(self.d,"checkpoint-19",19)
+  os.mkfifo(ck/"unexpected-fifo")
+  with self.assertRaisesRegex(ValueError,"unsupported special file: unexpected-fifo"):
+   trainer.checkpoint_inventory(ck)
+ def test_checkpoint_inventory_rejects_symlink_swap_before_hash(self):
+  ck=self.make_checkpoint(self.d,"checkpoint-14",14)
+  target=ck/"trainer_state.json"
+  outside=self.d/"outside.json";outside.write_text("outside",encoding="utf-8")
+  secure_read=trainer.evaluation_gate.read_confined_bytes
+  secure_hash=trainer.evaluation_gate.hash_confined_file
+  swapped=False
+  def swap():
+   nonlocal swapped
+   if not swapped:
+    target.unlink()
+    target.symlink_to(outside)
+    swapped=True
+  def swap_then_read(base,relative,label):
+   if relative.endswith("/trainer_state.json"):swap()
+   return secure_read(base,relative,label)
+  def swap_then_hash(base,relative,label,chunk_size=1024*1024):
+   if relative.endswith("/trainer_state.json"):swap()
+   return secure_hash(base,relative,label,chunk_size)
+  from unittest.mock import patch
+  with patch.object(trainer.evaluation_gate,"read_confined_bytes",side_effect=swap_then_read),patch.object(trainer.evaluation_gate,"hash_confined_file",side_effect=swap_then_hash):
+   with self.assertRaisesRegex(ValueError,"symlink components or is unreadable"):
+    trainer.checkpoint_inventory(ck)
+  self.assertTrue(swapped)
+
+ def test_checkpoint_step_rejects_symlink_state(self):
+  ck=self.make_checkpoint(self.d,"checkpoint-15",15)
+  target=ck/"trainer_state.json";target.unlink()
+  outside=self.d/"outside-state.json";outside.write_text(json.dumps({"global_step":15}),encoding="utf-8")
+  target.symlink_to(outside)
+  with self.assertRaisesRegex(ValueError,"symlink components or is unreadable"):
+   trainer.checkpoint_step(ck)
+
+ def test_checkpoint_budget_state_rejects_symlink(self):
+  ck=self.make_checkpoint(self.d,"checkpoint-16",16)
+  target=ck/"checkpoint-budget.json";target.unlink()
+  outside=self.d/"outside-budget.json";outside.write_text(json.dumps({"schema_version":1,"global_step":16,"cumulative_elapsed_seconds":10}),encoding="utf-8")
+  target.symlink_to(outside)
+  with self.assertRaisesRegex(ValueError,"symlink components or is unreadable"):
+   trainer.checkpoint_budget_state(ck)
+
+ def test_checkpoint_integrity_manifest_rejects_symlink(self):
+  ck=self.make_checkpoint(self.d,"checkpoint-17",17)
+  target=ck/"checkpoint-integrity.json";target.unlink()
+  outside=self.d/"outside-manifest.json";outside.write_text(json.dumps({"schema_version":1,"step":17,"files":[]}),encoding="utf-8")
+  target.symlink_to(outside)
+  with self.assertRaisesRegex(ValueError,"symlink components or is unreadable"):
+   trainer.validate_checkpoint(ck)
+
  def test_checkpoint_validation(self):
   ck=self.make_checkpoint(self.d,"checkpoint-3",3)
   self.assertEqual(trainer.validate_checkpoint(ck),3)
