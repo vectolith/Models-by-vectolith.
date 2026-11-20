@@ -36,7 +36,7 @@ def load_rows_snapshot(p):
  rows=[];ids=set()
  for n,line in enumerate(text.splitlines(),1):
   if not line.strip():continue
-  try:r=json.loads(line)
+  try:r=evaluation_gate.strict_json_loads(line)
   except json.JSONDecodeError as exc:raise ValueError(f"line {n}: invalid JSON: {exc}") from exc
   if not isinstance(r,dict):raise ValueError(f"line {n}: record must be object")
   for k in ("task_id","prompt","response","provenance"):
@@ -93,7 +93,7 @@ def checkpoint_step(path):
  if path.is_symlink():raise ValueError("checkpoint directory symlink is unsafe")
  if state.is_symlink():raise ValueError("checkpoint trainer state symlink is unsafe")
  if not path.is_dir() or not state.is_file():raise ValueError("checkpoint missing trainer_state.json")
- try:record=json.loads(state.read_text(encoding="utf-8"))
+ try:record=evaluation_gate.strict_json_loads(state.read_text(encoding="utf-8"))
  except Exception as e:raise ValueError(f"checkpoint trainer state invalid: {e}")
  try:step=int(path.name.removeprefix("checkpoint-"))
  except Exception:raise ValueError("checkpoint directory name invalid")
@@ -119,7 +119,7 @@ def checkpoint_budget_state(path):
  target=path/"checkpoint-budget.json"
  if target.is_symlink():raise ValueError("checkpoint budget state symlink is unsafe")
  if not target.is_file():raise ValueError("checkpoint cumulative budget state missing")
- try:record=json.loads(target.read_text(encoding="utf-8"))
+ try:record=evaluation_gate.strict_json_loads(target.read_text(encoding="utf-8"))
  except Exception as e:raise ValueError(f"checkpoint budget state invalid: {e}")
  if not isinstance(record,dict) or record.get("schema_version")!=1 or record.get("global_step")!=checkpoint_step(path):raise ValueError("checkpoint budget state step/schema mismatch")
  elapsed=record.get("cumulative_elapsed_seconds")
@@ -154,7 +154,7 @@ def validate_checkpoint(path):
  if not any(f.is_file() and f.stat().st_size>0 for f in path.glob("rng_state*.pth")):raise ValueError("checkpoint RNG state missing or empty")
  manifest_path=path/"checkpoint-integrity.json"
  if not manifest_path.is_file():raise ValueError("checkpoint integrity manifest missing")
- try:manifest=json.loads(manifest_path.read_text(encoding="utf-8"))
+ try:manifest=evaluation_gate.strict_json_loads(manifest_path.read_text(encoding="utf-8"))
  except Exception as e:raise ValueError(f"checkpoint integrity manifest invalid: {e}")
  if manifest.get("schema_version")!=1 or manifest.get("step")!=step:raise ValueError("checkpoint integrity manifest step/schema mismatch")
  checkpoint_budget_state(path)
@@ -280,7 +280,7 @@ def main():
  records=[]
  if telemetry_path.exists():
   try:
-   records=[json.loads(line) for line in telemetry_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+   records=[evaluation_gate.strict_json_loads(line) for line in telemetry_path.read_text(encoding="utf-8").splitlines() if line.strip()]
    prior_elapsed=telemetry_elapsed(records);prior_steps=telemetry_steps(records)
   except Exception as e:p.error(f"telemetry history invalid; recovery blocked: {e}")
  resume=None
