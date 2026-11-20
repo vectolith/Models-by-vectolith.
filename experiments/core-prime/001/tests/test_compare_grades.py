@@ -1,4 +1,4 @@
-import importlib.util, tempfile, unittest
+import importlib.util, tempfile, unittest, json
 from pathlib import Path
 spec=importlib.util.spec_from_file_location("compare",Path(__file__).parents[1]/"compare_grades.py");m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 class ComparisonTests(unittest.TestCase):
