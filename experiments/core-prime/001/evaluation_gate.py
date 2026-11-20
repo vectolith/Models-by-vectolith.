@@ -68,6 +68,8 @@ def read_verified_evidence_bytes(base,relative,digest,label):
    if not chunk:break
    chunks.append(chunk)
   raw=b"".join(chunks)
+ except FileNotFoundError as exc:
+  raise ValueError(f"{label} evidence file missing: {exc}") from exc
  except OSError as exc:
   raise ValueError(f"{label} evidence path contains symlink components or is unreadable: {exc}") from exc
  finally:
