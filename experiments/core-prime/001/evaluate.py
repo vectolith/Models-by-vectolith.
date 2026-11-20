@@ -29,6 +29,7 @@ def atomic_write_text(path: Path, text: str) -> None:
         with os.fdopen(fd,"w",encoding="utf-8") as f:
             f.write(text);f.flush();os.fsync(f.fileno())
         os.replace(temp,path)
+        evaluation_gate.fsync_directory(path.parent)
     except BaseException:
         try:os.unlink(temp)
         except FileNotFoundError:pass
