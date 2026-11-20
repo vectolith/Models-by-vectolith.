@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 """Capture a real local snapshot inventory; does not load or run model weights."""
 from __future__ import annotations
-import argparse,json,os,tempfile
+import argparse,json,os,tempfile,hashlib
 from pathlib import Path
 import evaluation_gate
 def capture(candidate_record_path):
- try:record=json.loads(candidate_record_path.read_text(encoding="utf-8"))
+ try:
+  candidate_record_bytes=candidate_record_path.read_bytes()
+  record=json.loads(candidate_record_bytes.decode("utf-8"))
  except Exception as exc:raise ValueError(f"candidate record parse failed: {exc}") from exc
+ candidate_record_sha256=evaluation_gate.sha256_serialized(candidate_record_bytes.hex())
+ # Bind the inventory to the exact candidate bytes that were parsed, not a later file read.
+ candidate_record_sha256=__import__("hashlib").sha256(candidate_record_bytes).hexdigest()
  if not isinstance(record,dict):raise ValueError("candidate record must be an object")
  rel=record.get("model_snapshot_path")
  if not isinstance(rel,str) or not rel.strip():raise ValueError("candidate model_snapshot_path is unset")
@@ -26,7 +31,7 @@ def capture(candidate_record_path):
   if path.is_symlink():raise ValueError("snapshot contains symlinks")
   if path.is_file():inventory.append({"path":str(path.relative_to(root)),"sha256":evaluation_gate.sha256_file(path)})
  if not inventory:raise ValueError("snapshot is empty")
- return {"candidate_record_sha256":evaluation_gate.sha256_file(candidate_record_path),"model_snapshot_path":rel,"inventory":inventory,"inventory_sha256":evaluation_gate.sha256_serialized(inventory),"scope":"file inventory and SHA-256 only; no license or permission approval, model loading, inference or training"}
+ return {"candidate_record_sha256":candidate_record_sha256,"model_snapshot_path":rel,"inventory":inventory,"inventory_sha256":evaluation_gate.sha256_serialized(inventory),"scope":"file inventory and SHA-256 only; no license or permission approval, model loading, inference or training"}
 def atomic_write_json(path,record):
  path=Path(path);path.parent.mkdir(parents=True,exist_ok=True)
  fd,temp=tempfile.mkstemp(prefix=path.name+".",suffix=".tmp",dir=path.parent)
