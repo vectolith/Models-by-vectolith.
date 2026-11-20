@@ -69,6 +69,20 @@ class Tests(unittest.TestCase):
  def test_dataset_provenance_missing(self):
   (self.d/"provenance.json").unlink()
   with self.assertRaisesRegex(ValueError,"dataset provenance evidence file missing"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
+
+ def test_compute_evidence_symlink_rejected(self):
+  (self.d/"compute.json").unlink()
+  outside=self.d/"outside.json";outside.write_text("compute fixture")
+  (self.d/"compute.json").symlink_to(outside)
+  self.a["hardware"]["evidence_sha256"]=trainer.sha256_file(outside)
+  with self.assertRaisesRegex(ValueError,"free compute evidence path contains symlink components"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
+ def test_provenance_evidence_symlink_directory_rejected(self):
+  (self.d/"provenance.json").unlink()
+  outside=self.d/"outside";outside.mkdir();(outside/"provenance.json").write_text("provenance fixture")
+  (self.d/"provenance-dir").symlink_to(outside,target_is_directory=True)
+  self.a["dataset_provenance"]["evidence_path"]="provenance-dir/provenance.json"
+  self.a["dataset_provenance"]["evidence_sha256"]=trainer.sha256_file(outside/"provenance.json")
+  with self.assertRaisesRegex(ValueError,"dataset provenance evidence path contains symlink components"):trainer.gates(self.c,self.a,trainer.load_rows(self.dataset),self.x)
  def test_duplicate_ids_rejected(self):r={"task_id":"x","prompt":"p","response":"r","provenance":"a","split":"train"};self.dataset.write_text(json.dumps(r)+"\n"+json.dumps(r));self.assertRaisesRegex(ValueError,"duplicate",trainer.load_rows,self.dataset)
 
  def test_training_config_hash_binds_cli_parameters(self):
