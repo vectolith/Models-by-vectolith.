@@ -97,7 +97,8 @@ class HoldoutTests(unittest.TestCase):
    root=Path(tmp);tasks=root/"tasks.jsonl";tasks.write_text('{"task_id":"a","prompt":"p","category":"c","split":"development"}'+chr(10),encoding="utf-8")
    freeze=root/"freeze.json";freeze.write_text("freeze",encoding="utf-8")
    compute=root/"compute.json";compute.write_text("free",encoding="utf-8")
-   auth={"approval":"approved","candidate_record_sha256":"c"*64,"candidate_revision":"a"*40,"tasks_sha256":evaluator.sha256_file(tasks),"freeze_manifest_sha256":evaluator.sha256_file(freeze),"code_commit":"d"*40,"package_inventory_sha256":"e"*64,"hardware":{"verified_free_budget":True,"provider":"free","session_id":"s","evidence_path":"compute.json","evidence_sha256":evaluator.sha256_file(compute)},"budget":{"max_task_count":1,"max_new_tokens":20,"max_wall_seconds":30},"holdout_access":"sealed"}
+   provenance=root/"provenance.json";provenance.write_text("reviewed dev dataset provenance",encoding="utf-8")
+   auth={"approval":"approved","candidate_record_sha256":"c"*64,"candidate_revision":"a"*40,"tasks_sha256":evaluator.sha256_file(tasks),"freeze_manifest_sha256":evaluator.sha256_file(freeze),"code_commit":"d"*40,"package_inventory_sha256":"e"*64,"dataset_provenance":{"status":"reviewed","evidence_path":"provenance.json","evidence_sha256":evaluator.sha256_file(provenance)},"hardware":{"verified_free_budget":True,"provider":"free","session_id":"s","evidence_path":"compute.json","evidence_sha256":evaluator.sha256_file(compute)},"budget":{"max_task_count":1,"max_new_tokens":20,"max_wall_seconds":30},"holdout_access":"sealed"}
    authpath=root/"auth.json";authpath.write_text(json.dumps(auth),encoding="utf-8")
    result,digest=evaluator.evaluation_gate.verify_evaluation_authorization(authpath,"c"*64,evaluator.sha256_file(tasks),freeze,"d"*40,"e"*64,1,20)
    self.assertEqual(result,auth);self.assertEqual(digest,evaluator.evaluation_gate.sha256_file(authpath))
@@ -107,9 +108,26 @@ class HoldoutTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as tmp:
    root=Path(tmp);tasks=root/"tasks";tasks.write_text("task",encoding="utf-8");freeze=root/"freeze";freeze.write_text("freeze")
    compute=root/"compute";compute.write_text("free")
-   auth={"approval":"approved","candidate_record_sha256":"c"*64,"candidate_revision":"a"*40,"tasks_sha256":evaluator.evaluation_gate.sha256_file(tasks),"freeze_manifest_sha256":evaluator.evaluation_gate.sha256_file(freeze),"code_commit":"d"*40,"package_inventory_sha256":"e"*64,"hardware":{"verified_free_budget":True,"provider":"free","session_id":"s","evidence_path":"compute","evidence_sha256":evaluator.evaluation_gate.sha256_file(compute)},"budget":{"max_task_count":1,"max_new_tokens":20,"max_wall_seconds":30},"holdout_access":"sealed"}
+   provenance=root/"provenance";provenance.write_text("reviewed")
+   auth={"approval":"approved","candidate_record_sha256":"c"*64,"candidate_revision":"a"*40,"tasks_sha256":evaluator.evaluation_gate.sha256_file(tasks),"freeze_manifest_sha256":evaluator.evaluation_gate.sha256_file(freeze),"code_commit":"d"*40,"package_inventory_sha256":"e"*64,"dataset_provenance":{"status":"reviewed","evidence_path":"provenance","evidence_sha256":evaluator.sha256_file(provenance)},"hardware":{"verified_free_budget":True,"provider":"free","session_id":"s","evidence_path":"compute","evidence_sha256":evaluator.evaluation_gate.sha256_file(compute)},"budget":{"max_task_count":1,"max_new_tokens":20,"max_wall_seconds":30},"holdout_access":"sealed"}
    path=root/"auth";path.write_text(json.dumps(auth))
    with self.assertRaisesRegex(ValueError,"selected tasks exceed"):evaluator.evaluation_gate.verify_evaluation_authorization(path,"c"*64,evaluator.sha256_file(tasks),freeze,"d"*40,"e"*64,2,20)
+
+ def test_dataset_provenance_gate_requires_review_and_hash(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp);tasks=root/"tasks";tasks.write_text("tasks",encoding="utf-8");freeze=root/"freeze";freeze.write_text("freeze",encoding="utf-8")
+   compute=root/"compute";compute.write_text("free",encoding="utf-8");provenance=root/"provenance";provenance.write_text("reviewed",encoding="utf-8")
+   auth={"approval":"approved","candidate_record_sha256":"c"*64,"candidate_revision":"a"*40,"tasks_sha256":evaluator.sha256_file(tasks),"freeze_manifest_sha256":evaluator.sha256_file(freeze),"code_commit":"d"*40,"package_inventory_sha256":"e"*64,"dataset_provenance":{"status":"pending","evidence_path":"provenance","evidence_sha256":evaluator.sha256_file(provenance)},"hardware":{"verified_free_budget":True,"provider":"free","session_id":"s","evidence_path":"compute","evidence_sha256":evaluator.sha256_file(compute)},"budget":{"max_task_count":1,"max_new_tokens":20,"max_wall_seconds":30},"holdout_access":"sealed"}
+   path=root/"auth.json";path.write_text(json.dumps(auth),encoding="utf-8")
+   with self.assertRaisesRegex(ValueError,"dataset provenance must be independently reviewed"):evaluator.evaluation_gate.verify_evaluation_authorization(path,"c"*64,evaluator.sha256_file(tasks),freeze,"d"*40,"e"*64,1,20)
+   auth["dataset_provenance"]["status"]="reviewed";auth["dataset_provenance"]["evidence_sha256"]="0"*64;path.write_text(json.dumps(auth),encoding="utf-8")
+   with self.assertRaisesRegex(ValueError,"dataset provenance evidence hash mismatch"):evaluator.evaluation_gate.verify_evaluation_authorization(path,"c"*64,evaluator.sha256_file(tasks),freeze,"d"*40,"e"*64,1,20)
+ def test_dataset_provenance_symlink_rejected(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp);tasks=root/"tasks";tasks.write_text("tasks");freeze=root/"freeze";freeze.write_text("freeze");compute=root/"compute";compute.write_text("free");outside=root/"outside";outside.write_text("provenance");link=root/"linked-provenance";link.symlink_to(outside)
+   auth={"approval":"approved","candidate_record_sha256":"c"*64,"candidate_revision":"a"*40,"tasks_sha256":evaluator.sha256_file(tasks),"freeze_manifest_sha256":evaluator.sha256_file(freeze),"code_commit":"d"*40,"package_inventory_sha256":"e"*64,"dataset_provenance":{"status":"reviewed","evidence_path":"linked-provenance","evidence_sha256":evaluator.sha256_file(outside)},"hardware":{"verified_free_budget":True,"provider":"free","session_id":"s","evidence_path":"compute","evidence_sha256":evaluator.sha256_file(compute)},"budget":{"max_task_count":1,"max_new_tokens":20,"max_wall_seconds":30},"holdout_access":"sealed"}
+   path=root/"auth.json";path.write_text(json.dumps(auth),encoding="utf-8")
+   with self.assertRaisesRegex(ValueError,"dataset provenance evidence path contains symlink components"):evaluator.evaluation_gate.verify_evaluation_authorization(path,"c"*64,evaluator.sha256_file(tasks),freeze,"d"*40,"e"*64,1,20)
  def test_holdout_rejected_even_with_deprecated_flag(self):
   with tempfile.TemporaryDirectory() as tmp:
    tasks=Path(tmp)/"holdout.jsonl";tasks.write_text(json.dumps(task_record("h1","private","test","holdout"))+chr(10),encoding="utf-8")
