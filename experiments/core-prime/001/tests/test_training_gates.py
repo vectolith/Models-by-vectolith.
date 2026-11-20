@@ -244,9 +244,13 @@ class Tests(unittest.TestCase):
   nested=ck/"nested";nested.mkdir()
   names=("checkpoint-integrity.json","checkpoint-integrity.json.tmp","checkpoint-budget.json.tmp")
   for name in names:(nested/name).write_bytes(("payload:"+name).encode("utf-8"))
+  # Root control files/temp files are excluded; same-named nested payloads are not.
+  for name in names:(ck/name).write_bytes(("root-control:"+name).encode("utf-8"))
   trainer.seal_checkpoint(ck)
   inventory=trainer.checkpoint_inventory(ck)
+  inventory_paths={item["path"] for item in inventory}
   self.assertEqual({item["path"] for item in inventory if item["path"].startswith("nested/")},{ "nested/"+name for name in names })
+  self.assertTrue(all(name not in inventory_paths for name in names))
   self.assertEqual(trainer.validate_checkpoint(ck),18)
   (nested/"checkpoint-integrity.json").write_bytes(b"tampered")
   with self.assertRaisesRegex(ValueError,"integrity hash mismatch: nested/checkpoint-integrity.json"):
