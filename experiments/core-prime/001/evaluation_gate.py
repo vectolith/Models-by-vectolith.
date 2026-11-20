@@ -70,6 +70,34 @@ def read_confined_bytes(base,relative,label):
    try:os.close(fd)
    except OSError:pass
  return (root/rel),b"".join(chunks)
+def hash_confined_file(base,relative,label,chunk_size=1024*1024):
+ """Hash a confined regular file incrementally without buffering its contents."""
+ if isinstance(chunk_size,bool) or not isinstance(chunk_size,int) or chunk_size<=0:
+  raise ValueError("hash chunk size must be a positive integer")
+ if not isinstance(relative,str) or not relative.strip():raise ValueError(f"{label} evidence path missing")
+ rel=Path(relative)
+ if rel.is_absolute() or ".." in rel.parts or not rel.parts:raise ValueError(f"{label} evidence path must be relative and confined")
+ root=Path(base).resolve();nofollow=getattr(os,"O_NOFOLLOW",0);directory=getattr(os,"O_DIRECTORY",0);flags=os.O_RDONLY
+ descriptors=[];digest=hashlib.sha256();size=0
+ try:
+  current=os.open(root,flags|directory);descriptors.append(current)
+  for part in rel.parts[:-1]:
+   current=os.open(part,flags|directory|nofollow,dir_fd=current);descriptors.append(current)
+  file_fd=os.open(rel.parts[-1],flags|nofollow,dir_fd=current);descriptors.append(file_fd)
+  if not stat.S_ISREG(os.fstat(file_fd).st_mode):raise ValueError(f"{label} evidence file is not regular")
+  while True:
+   chunk=os.read(file_fd,chunk_size)
+   if not chunk:break
+   digest.update(chunk);size+=len(chunk)
+ except FileNotFoundError as exc:
+  raise ValueError(f"{label} evidence file missing: {exc}") from exc
+ except OSError as exc:
+  raise ValueError(f"{label} evidence path contains symlink components or is unreadable: {exc}") from exc
+ finally:
+  for fd in reversed(descriptors):
+   try:os.close(fd)
+   except OSError:pass
+ return (root/rel),digest.hexdigest(),size
 def read_verified_evidence_bytes(base,relative,digest,label):
  """Read and hash the same confined bytes, avoiding path-check/open races."""
  if not isinstance(digest,str) or not SHA64.fullmatch(digest):raise ValueError(f"{label} evidence SHA-256 invalid")
