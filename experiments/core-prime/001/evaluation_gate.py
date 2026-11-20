@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Integrity gates for baseline inference; this module does not decide legal rights."""
 from __future__ import annotations
-import hashlib,json,re,subprocess,os
+import hashlib,json,re,subprocess,os,stat
 from datetime import datetime
 from pathlib import Path
 SHA40=re.compile(r"^[a-f0-9]{40}$")
@@ -61,7 +61,7 @@ def read_verified_evidence_bytes(base,relative,digest,label):
   for part in rel.parts[:-1]:
    current=os.open(part,flags|directory|nofollow,dir_fd=current);descriptors.append(current)
   file_fd=os.open(rel.parts[-1],flags|nofollow,dir_fd=current);descriptors.append(file_fd)
-  if not __import__("stat").S_ISREG(os.fstat(file_fd).st_mode):raise ValueError(f"{label} evidence file is not regular")
+  if not stat.S_ISREG(os.fstat(file_fd).st_mode):raise ValueError(f"{label} evidence file is not regular")
   chunks=[]
   while True:
    chunk=os.read(file_fd,1024*1024)
