@@ -1,0 +1,28 @@
+name: Core Prime Experiment 001 harness tests
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "experiments/core-prime/001/**"
+      - ".github/workflows/core-prime-experiment-tests.yml"
+  push:
+    branches: [main, "experiments/core-prime-experiment-001"]
+    paths:
+      - "experiments/core-prime/001/**"
+      - ".github/workflows/core-prime-experiment-tests.yml"
+jobs:
+  unit-tests:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.11"
+      - name: Run deterministic validator tests
+        run: python -m unittest discover -s experiments/core-prime/001/tests -v
+      - name: Validate example tasks
+        run: python experiments/core-prime/001/validate_tasks.py experiments/core-prime/001/tasks.example.jsonl
+      - name: Validate development dataset
+        run: python experiments/core-prime/001/validate_tasks.py experiments/core-prime/001/tasks.dev.jsonl
+      - name: Validate pending candidate record
+        run: python experiments/core-prime/001/validate_candidate.py experiments/core-prime/001/candidate-qwen3-0.6b.json
