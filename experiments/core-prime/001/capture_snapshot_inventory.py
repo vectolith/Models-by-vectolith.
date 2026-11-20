@@ -9,9 +9,8 @@ def capture(candidate_record_path):
   candidate_record_bytes=candidate_record_path.read_bytes()
   record=json.loads(candidate_record_bytes.decode("utf-8"))
  except Exception as exc:raise ValueError(f"candidate record parse failed: {exc}") from exc
- candidate_record_sha256=evaluation_gate.sha256_serialized(candidate_record_bytes.hex())
  # Bind the inventory to the exact candidate bytes that were parsed, not a later file read.
- candidate_record_sha256=__import__("hashlib").sha256(candidate_record_bytes).hexdigest()
+ candidate_record_sha256=hashlib.sha256(candidate_record_bytes).hexdigest()
  if not isinstance(record,dict):raise ValueError("candidate record must be an object")
  rel=record.get("model_snapshot_path")
  if not isinstance(rel,str) or not rel.strip():raise ValueError("candidate model_snapshot_path is unset")
