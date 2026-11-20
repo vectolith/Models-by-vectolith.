@@ -59,18 +59,21 @@ def initialization_failure_records(run_id: str, tasks: list[dict[str,Any]], erro
 def new_run_id() -> str:
     return "cp001-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:12]
 
-def tally_records(records: list[dict[str,Any]], task_count: int) -> tuple[int,int,str]:
+def tally_records(records: list[dict[str,Any]], task_count: int, expected_task_ids: list[str] | None = None) -> tuple[int,int,str]:
     by_id={}
     for record in records:
         by_id.setdefault(record.get("task_id"),[]).append(record)
+    expected=set(expected_task_ids) if expected_task_ids is not None else None
     ambiguous=sum(len(group)!=1 or not group[0].get("task_id") for group in by_id.values())
-    completed_ids=sum(len(group)==1 and group[0].get("status")=="completed" for group in by_id.values())
+    completed_ids=sum(len(group)==1 and group[0].get("status")=="completed" and (expected is None or task_id in expected for task_id,group in by_id.items())
     completed=min(completed_ids,task_count)
     accounted=len(by_id)
     missing=max(0,task_count-accounted)
     excess=max(0,accounted-task_count)
-    failed=max(task_count-completed,ambiguous,missing,excess)
-    clean=completed==task_count and failed==0 and len(records)==task_count and accounted==task_count
+    missing_expected=len(expected-set(by_id)) if expected is not None else 0
+    extra_unexpected=len(set(by_id)-expected) if expected is not None else 0
+    failed=max(task_count-completed,ambiguous,missing,excess,missing_expected,extra_unexpected)
+    clean=completed==task_count and failed==0 and len(records)==task_count and accounted==task_count and (expected is None or set(by_id)==expected)
     status="completed" if clean else ("failed" if completed==0 else "partial")
     return completed,failed,status
 
@@ -188,7 +191,7 @@ def main()->int:
                 records.append({"run_id":run_id,"task_id":task["task_id"],"category":task["category"],"split":task["split"],
                     "prompt_sha256":sha256_text(prompt),"status":"failed","error":repr(e),"generation_seconds":time.perf_counter()-t0})
     write_jsonl(raw,records)
-    completed,failed,status=tally_records(records,len(tasks))
+    completed,failed,status=tally_records(records,len(tasks),selected_task_ids)
     capture_warnings=[];peak_memory=None;config_hash=None;template_hash=None
     if device=="cuda":
         try:peak_memory=torch.cuda.max_memory_allocated()
