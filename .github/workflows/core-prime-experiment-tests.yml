@@ -26,9 +26,19 @@ jobs:
         run: python -m pip check
       - name: Capture resolved CI package inventory and hash
         run: |
-          python -m pip freeze --all > dependency-inventory.txt
-          sha256sum dependency-inventory.txt
-          cat dependency-inventory.txt
+          mkdir -p evidence
+          python -m pip freeze --all > evidence/dependency-inventory.txt
+          sha256sum evidence/dependency-inventory.txt | tee evidence/dependency-inventory.sha256
+          cat evidence/dependency-inventory.txt
+      - name: Upload resolved dependency evidence
+        uses: actions/upload-artifact@615b319bd27bb32c3d64dca6b6ed6974d5fbe653
+        with:
+          name: dependency-inventory-${{ github.sha }}
+          path: |
+            evidence/dependency-inventory.txt
+            evidence/dependency-inventory.sha256
+          if-no-files-found: error
+          retention-days: 14
       - name: Verify runtime imports and exact direct versions
         run: |
           python - <<'PY'
