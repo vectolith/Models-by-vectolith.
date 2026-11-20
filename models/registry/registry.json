@@ -1,0 +1,320 @@
+{
+  "registry_version": "1.0.0",
+  "identity": "vectolith",
+  "models": [
+    {
+      "id": "core-prime",
+      "display_name": "Core Prime",
+      "role": "generalist_orchestrator",
+      "status": "planned",
+      "capabilities": [
+        "adaptive_routing",
+        "communication",
+        "constraint_tracking",
+        "context_management",
+        "conversation",
+        "decision_support",
+        "delegation",
+        "delegation_protocol",
+        "evidence_assessment",
+        "knowledge_synthesis",
+        "memory_retrieval",
+        "multi_step_planning",
+        "multimodal_task_routing",
+        "planning",
+        "quality_assurance",
+        "reasoning",
+        "requirements_elicitation",
+        "result_integration",
+        "task_intake",
+        "task_state_management",
+        "tool_selection",
+        "uncertainty_calibration",
+        "verification"
+      ],
+      "delegates_to": [
+        "core-research",
+        "core-code",
+        "core-reason",
+        "core-safety",
+        "core-creative",
+        "core-data",
+        "core-vision",
+        "core-audio",
+        "core-agent"
+      ],
+      "limits": [
+        "delegation must be policy-authorized",
+        "must verify delegate output",
+        "maintains task intent and constraints across delegation",
+        "does not claim capabilities unavailable in verified runtime",
+        "critical claims and external actions require evidence or authorization"
+      ],
+      "profile": {
+        "strengths": [
+          "general-purpose understanding",
+          "requirements analysis",
+          "adaptive planning",
+          "multi-model orchestration",
+          "cross-domain synthesis",
+          "evidence-aware verification",
+          "conversation and task continuity"
+        ],
+        "workflow": [
+          "interpret request and constraints",
+          "resolve ambiguity or state assumptions",
+          "break task into bounded subtasks",
+          "route only to verified available delegates",
+          "integrate and check returned evidence",
+          "deliver outcome with limitations"
+        ],
+        "outputs": [
+          "task plan",
+          "delegation envelopes",
+          "integrated result",
+          "verification summary"
+        ]
+      }
+    },
+    {
+      "id": "core-prima",
+      "display_name": "Core Prima",
+      "role": "engineering_orchestrator",
+      "status": "planned",
+      "capabilities": [
+        "build_and_release_planning",
+        "change_review",
+        "ci_diagnosis",
+        "code_generation",
+        "code_modification",
+        "debugging",
+        "delegation",
+        "dependency_analysis",
+        "documentation_generation",
+        "engineering_evidence_capture",
+        "git_workflow",
+        "implementation_decomposition",
+        "implementation_planning",
+        "integration_validation",
+        "performance_analysis",
+        "repository_inspection",
+        "reproducibility",
+        "requirements_to_spec",
+        "rollback_planning",
+        "security_analysis",
+        "software_engineering",
+        "system_architecture",
+        "test_design",
+        "test_execution",
+        "verification"
+      ],
+      "delegates_to": [
+        "core-code",
+        "core-research",
+        "core-reason",
+        "core-safety",
+        "core-data",
+        "core-agent"
+      ],
+      "limits": [
+        "delegation must be policy-authorized",
+        "must verify delegate output",
+        "must not report unexecuted tests as passed",
+        "must not fabricate repository or runtime evidence",
+        "writes and external actions require authorization"
+      ],
+      "profile": {
+        "strengths": [
+          "software engineering",
+          "implementation",
+          "architecture",
+          "repository and CI analysis",
+          "debugging",
+          "test-driven correction",
+          "security and dependency review",
+          "reproducible engineering",
+          "release readiness"
+        ],
+        "workflow": [
+          "inspect actual code and environment",
+          "establish acceptance criteria",
+          "design change",
+          "implement in scoped branch",
+          "run real tests and CI",
+          "inspect failures and correct them",
+          "review security and regressions",
+          "capture evidence and deliver"
+        ],
+        "outputs": [
+          "implementation plan",
+          "patches",
+          "test evidence",
+          "CI evidence",
+          "risk and rollback notes"
+        ]
+      }
+    },
+    {
+      "id": "core-research",
+      "display_name": "Core Research",
+      "role": "research_specialist",
+      "status": "planned",
+      "capabilities": [
+        "research",
+        "source_synthesis",
+        "citation_audit"
+      ],
+      "delegates_to": [
+        "core-reason"
+      ],
+      "limits": [
+        "must distinguish evidence from inference",
+        "no fabricated sources"
+      ]
+    },
+    {
+      "id": "core-code",
+      "display_name": "Core Code",
+      "role": "software_specialist",
+      "status": "planned",
+      "capabilities": [
+        "software_engineering",
+        "debugging",
+        "code_review",
+        "testing",
+        "security_review"
+      ],
+      "delegates_to": [
+        "core-reason"
+      ],
+      "limits": [
+        "must not claim tests were run unless evidence exists"
+      ]
+    },
+    {
+      "id": "core-reason",
+      "display_name": "Core Reason",
+      "role": "analysis_specialist",
+      "status": "planned",
+      "capabilities": [
+        "reasoning",
+        "decomposition",
+        "consistency_check",
+        "verification"
+      ],
+      "delegates_to": [],
+      "limits": [
+        "does not override safety or authorization"
+      ]
+    },
+    {
+      "id": "core-safety",
+      "display_name": "Core Safety",
+      "role": "safety_and_policy_specialist",
+      "status": "planned",
+      "capabilities": [
+        "safety_review",
+        "privacy_review",
+        "risk_assessment",
+        "policy_check"
+      ],
+      "delegates_to": [
+        "core-reason"
+      ],
+      "limits": [
+        "advisory review does not substitute for accountable approval"
+      ]
+    },
+    {
+      "id": "core-creative",
+      "display_name": "Core Creative",
+      "role": "creative_specialist",
+      "status": "planned",
+      "capabilities": [
+        "creative_writing",
+        "ideation",
+        "storytelling",
+        "design_brief"
+      ],
+      "delegates_to": [
+        "core-reason"
+      ],
+      "limits": [
+        "must respect task constraints"
+      ]
+    },
+    {
+      "id": "core-data",
+      "display_name": "Core Data",
+      "role": "data_specialist",
+      "status": "planned",
+      "capabilities": [
+        "data_analysis",
+        "statistics",
+        "data_validation",
+        "visualization_planning"
+      ],
+      "delegates_to": [
+        "core-code",
+        "core-reason"
+      ],
+      "limits": [
+        "must disclose data quality limitations"
+      ]
+    },
+    {
+      "id": "core-vision",
+      "display_name": "Core Vision",
+      "role": "multimodal_visual_specialist",
+      "status": "planned",
+      "capabilities": [
+        "image_understanding",
+        "visual_reasoning"
+      ],
+      "delegates_to": [
+        "core-reason",
+        "core-safety"
+      ],
+      "limits": [
+        "available only when a verified vision-capable backend is configured"
+      ]
+    },
+    {
+      "id": "core-audio",
+      "display_name": "Core Audio",
+      "role": "multimodal_audio_specialist",
+      "status": "planned",
+      "capabilities": [
+        "audio_understanding",
+        "speech_transcription",
+        "audio_generation"
+      ],
+      "delegates_to": [
+        "core-reason",
+        "core-safety"
+      ],
+      "limits": [
+        "available only when verified audio backend capability is configured"
+      ]
+    },
+    {
+      "id": "core-agent",
+      "display_name": "Core Agent",
+      "role": "tool_execution_specialist",
+      "status": "planned",
+      "capabilities": [
+        "tool_orchestration",
+        "workflow_execution",
+        "state_tracking"
+      ],
+      "delegates_to": [
+        "core-code",
+        "core-research",
+        "core-safety"
+      ],
+      "limits": [
+        "execution requires scoped permissions and tool audit records"
+      ]
+    }
+  ]
+}
