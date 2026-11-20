@@ -40,8 +40,8 @@ class ComparisonTests(unittest.TestCase):
   from unittest.mock import patch
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);base=root/"base.jsonl";adapter=root/"adapter.jsonl";out=root/"comparison.json"
-   base.write_text(json.dumps({"task_id":"1","candidate_id":"base","scores":{"quality":1}})+"\\n",encoding="utf-8")
-   adapter.write_text(json.dumps({"task_id":"1","candidate_id":"adapter","scores":{"quality":2}})+"\\n",encoding="utf-8")
+   base.write_text(json.dumps({"task_id":"1","candidate_id":"base","scores":{"quality":1}})+"\n",encoding="utf-8")
+   adapter.write_text(json.dumps({"task_id":"1","candidate_id":"adapter","scores":{"quality":2}})+"\n",encoding="utf-8")
    with patch.object(sys,"argv",["compare_grades.py","--baseline-grades",str(base),"--adapter-grades",str(adapter),"--output",str(out)]):m.main()
    result=json.loads(out.read_text(encoding="utf-8"))
    self.assertEqual(result["comparison_schema_version"],1)

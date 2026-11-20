@@ -16,7 +16,7 @@ def sha256_file(path):
 def atomic_write_json(path,record):
     path=Path(path);path.parent.mkdir(parents=True,exist_ok=True);temp=path.with_suffix(path.suffix+".tmp")
     with temp.open("w",encoding="utf-8") as f:
-        f.write(json.dumps(record,indent=2,ensure_ascii=False)+"\\n");f.flush();os.fsync(f.fileno())
+        f.write(json.dumps(record,indent=2,ensure_ascii=False)+"\n");f.flush();os.fsync(f.fileno())
     os.replace(temp,path)
     return sha256_file(path)
 
@@ -79,5 +79,5 @@ def main():
     result["input_grade_file_sha256"]={"baseline":sha256_file(a.baseline_grades),"adapter":sha256_file(a.adapter_grades)}
     result["comparison_schema_version"]=1
     output_sha256=atomic_write_json(a.output,result)
-    print(json.dumps({"task_count":result["task_count"],"criteria":result["criteria"],"input_grade_file_sha256":result["input_grade_sha256"],"output_sha256":output_sha256,"output":str(a.output)},indent=2))
+    print(json.dumps({"task_count":result["task_count"],"criteria":result["criteria"],"input_grade_file_sha256":result["input_grade_file_sha256"],"output_sha256":output_sha256,"output":str(a.output)},indent=2))
 if __name__=="__main__":main()
