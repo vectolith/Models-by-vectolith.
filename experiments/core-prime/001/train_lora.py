@@ -71,6 +71,8 @@ def check_step_budget(prior_steps,target_step,start_step,approved_steps):
  return cumulative
 def checkpoint_step(path):
  state=path/"trainer_state.json"
+ if path.is_symlink():raise ValueError("checkpoint directory symlink is unsafe")
+ if state.is_symlink():raise ValueError("checkpoint trainer state symlink is unsafe")
  if not path.is_dir() or not state.is_file():raise ValueError("checkpoint missing trainer_state.json")
  try:record=json.loads(state.read_text(encoding="utf-8"))
  except Exception as e:raise ValueError(f"checkpoint trainer state invalid: {e}")
@@ -79,7 +81,16 @@ def checkpoint_step(path):
  if isinstance(record.get("global_step"),bool) or record.get("global_step")!=step:raise ValueError("checkpoint step mismatch")
  return step
 def checkpoint_inventory(path):
- return [{"path":str(f.relative_to(path)),"sha256":sha256_file(f)} for f in sorted(path.rglob("*")) if f.is_file() and f.name not in ("checkpoint-integrity.json","checkpoint-integrity.json.tmp")]
+ if path.is_symlink():raise ValueError("checkpoint directory symlink is unsafe")
+ base=path.resolve();items=[]
+ for f in sorted(path.rglob("*")):
+  if f.is_symlink():raise ValueError("checkpoint contains symlinks")
+  if not f.is_file() or f.name in ("checkpoint-integrity.json","checkpoint-integrity.json.tmp"):continue
+  resolved=f.resolve()
+  try:resolved.relative_to(base)
+  except ValueError:raise ValueError("checkpoint file escapes checkpoint directory")
+  items.append({"path":str(f.relative_to(path)),"sha256":sha256_file(f)})
+ return items
 def seal_checkpoint(path):
  step=checkpoint_step(path)
  weights=("adapter_model.safetensors","adapter_model.bin","model.safetensors","pytorch_model.bin")
