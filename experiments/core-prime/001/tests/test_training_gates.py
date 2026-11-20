@@ -146,8 +146,8 @@ class Tests(unittest.TestCase):
    eos_token="<eos>"
    def __call__(self,text,add_special_tokens=True):return {"input_ids":text.split()}
   ids,prefix=trainer.build_sequence(Tok(),"very long prefix words","answer",max_length=4)
-  self.assertEqual(ids,["words","answer<eos>"])
-  self.assertEqual(prefix,1)
+  self.assertEqual(ids,["words","Assistant:","answer<eos>"])
+  self.assertEqual(prefix,2)
  def test_build_sequence_rejects_response_over_limit(self):
   class Tok:
    eos_token="<eos>"
