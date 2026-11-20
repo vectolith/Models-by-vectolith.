@@ -4,7 +4,7 @@
 This verifier only checks evidence integrity/completeness; it does not attest truth,
 legal permission, reviewer independence, or model quality.
 """
-import argparse, hashlib, json, re
+import argparse, hashlib, json, re, os, stat
 from pathlib import Path
 SHA=re.compile(r"^[a-f0-9]{64}$")
 REQUIRED_GATES=("legal_review","data_provenance","baseline_evaluation","post_training_evaluation","independent_human_grading","safety_review","reproducibility_review","release_approval")
@@ -55,17 +55,35 @@ def verify(root,manifest):
  return errors
 def verify_file(root,relative,digest):
  base=Path(root).resolve();rel=Path(relative)
- if rel.is_absolute() or ".." in rel.parts:raise ValueError("path must be relative and confined")
- cursor=base
- for part in rel.parts:
-  cursor=cursor/part
-  if cursor.is_symlink():raise ValueError("evidence path contains symlink components")
- p=(base/rel).resolve()
- try:p.relative_to(base)
+ if rel.is_absolute() or ".." in rel.parts or not rel.parts:raise ValueError("path must be relative and confined")
+ # Verify and hash the same bytes through no-follow descriptors. A path check
+ # followed by a separate open/hash would leave a symlink replacement race.
+ nofollow=getattr(os,"O_NOFOLLOW",0);directory=getattr(os,"O_DIRECTORY",0);flags=os.O_RDONLY
+ descriptors=[];chunks=[]
+ try:
+  current=os.open(base,flags|directory);descriptors.append(current)
+  for part in rel.parts[:-1]:
+   current=os.open(part,flags|directory|nofollow,dir_fd=current);descriptors.append(current)
+  file_fd=os.open(rel.parts[-1],flags|nofollow,dir_fd=current);descriptors.append(file_fd)
+  if not stat.S_ISREG(os.fstat(file_fd).st_mode):raise ValueError("evidence file is not regular")
+  while True:
+   chunk=os.read(file_fd,1024*1024)
+   if not chunk:break
+   chunks.append(chunk)
+ except FileNotFoundError as exc:
+  raise ValueError(f"evidence file missing: {exc}") from exc
+ except OSError as exc:
+  raise ValueError(f"evidence path contains symlink components or is unreadable: {exc}") from exc
+ finally:
+  for fd in reversed(descriptors):
+   try:os.close(fd)
+   except OSError:pass
+ raw=b"".join(chunks)
+ if hashlib.sha256(raw).hexdigest()!=digest:raise ValueError("SHA-256 mismatch")
+ p=base/rel
+ try:p.resolve().relative_to(base)
  except ValueError:raise ValueError("path escapes evidence root")
- if not p.is_file():raise ValueError("evidence file missing")
- if sha256(p)!=digest:raise ValueError("SHA-256 mismatch")
- return p
+ return p.resolve()
 def main():
  p=argparse.ArgumentParser();p.add_argument("manifest",type=Path);a=p.parse_args()
  try:m=json.loads(a.manifest.read_text(encoding="utf-8"))
