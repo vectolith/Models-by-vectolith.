@@ -88,6 +88,12 @@ class CaptureTests(unittest.TestCase):
    with patch.object(snapshot.evaluation_gate,"fsync_directory",wraps=snapshot.evaluation_gate.fsync_directory) as sync:
     snapshot.atomic_write_json(inventory,snapshot.capture(record))
    sync.assert_called_once_with(inventory.parent)
+
+ def test_snapshot_capture_rejects_file_symlink(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);snap=root/"snapshot";snap.mkdir();outside=root/"outside.bin";outside.write_bytes(b"weights");link=snap/"weights.bin";link.symlink_to(outside)
+   record=root/"candidate.json";record.write_text(json.dumps({"model_snapshot_path":"snapshot"}),encoding="utf-8")
+   with self.assertRaisesRegex(ValueError,"snapshot contains symlinks"):snapshot.capture(record)
  def test_snapshot_capture_rejects_empty(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);(root/"snapshot").mkdir();record=root/"candidate.json";record.write_text(json.dumps({"model_snapshot_path":"snapshot"}))
