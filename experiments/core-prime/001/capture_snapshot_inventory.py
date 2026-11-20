@@ -7,7 +7,7 @@ import evaluation_gate
 def capture(candidate_record_path):
  try:
   candidate_record_bytes=candidate_record_path.read_bytes()
-  record=json.loads(candidate_record_bytes.decode("utf-8"))
+  record=evaluation_gate.strict_json_loads(candidate_record_bytes.decode("utf-8"))
  except Exception as exc:raise ValueError(f"candidate record parse failed: {exc}") from exc
  # Bind the inventory to the exact candidate bytes that were parsed, not a later file read.
  candidate_record_sha256=hashlib.sha256(candidate_record_bytes).hexdigest()
