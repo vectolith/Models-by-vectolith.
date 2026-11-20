@@ -2,6 +2,7 @@
 """Integrity gates for baseline inference; this module does not decide legal rights."""
 from __future__ import annotations
 import hashlib,json,re,subprocess
+from datetime import datetime
 from pathlib import Path
 SHA40=re.compile(r"^[a-f0-9]{40}$")
 SHA64=re.compile(r"^[a-f0-9]{64}$")
