@@ -30,9 +30,11 @@ def verify(root,manifest):
     if "holdout" in item["evidence_path"].lower():
      errors.append(f"gate {name}: holdout evidence forbidden: {item['evidence_path']}")
      continue
-    if item["evidence_path"] in seen_gate_paths:errors.append(f"duplicate gate evidence path: {item['evidence_path']}")
-    seen_gate_paths.add(item["evidence_path"])
-    try:verify_file(root,item["evidence_path"],item["sha256"])
+    try:
+     target=verify_file(root,item["evidence_path"],item["sha256"])
+     canonical=str(target)
+     if canonical in seen_gate_paths:errors.append(f"duplicate gate evidence file: {item['evidence_path']}")
+     seen_gate_paths.add(canonical)
     except ValueError as e:errors.append(f"gate {name}: {e}")
  artifacts=manifest.get("artifacts")
  if not isinstance(artifacts,list) or not artifacts:errors.append("non-empty artifacts array required")
@@ -41,10 +43,12 @@ def verify(root,manifest):
   for i,item in enumerate(artifacts):
    if not isinstance(item,dict) or not isinstance(item.get("path"),str) or not isinstance(item.get("sha256"),str) or not SHA.fullmatch(item["sha256"]):
     errors.append(f"artifact {i} malformed");continue
-   if item["path"] in seen:errors.append(f"duplicate artifact path: {item['path']}")
-   seen.add(item["path"])
    if "holdout" in item["path"].lower():errors.append(f"holdout artifact forbidden in release bundle: {item['path']}")
-   try:verify_file(root,item["path"],item["sha256"])
+   try:
+    target=verify_file(root,item["path"],item["sha256"])
+    canonical=str(target)
+    if canonical in seen:errors.append(f"duplicate artifact file: {item['path']}")
+    seen.add(canonical)
    except ValueError as e:errors.append(f"artifact {item['path']}: {e}")
  if manifest.get("holdout_included") is not False:errors.append("holdout_included must be explicitly false")
  if manifest.get("release_status")!="qualified":errors.append("release_status must be qualified")
@@ -55,6 +59,7 @@ def verify_file(root,relative,digest):
  except ValueError:raise ValueError("path escapes evidence root")
  if not p.is_file():raise ValueError("evidence file missing")
  if sha256(p)!=digest:raise ValueError("SHA-256 mismatch")
+ return p
 def main():
  p=argparse.ArgumentParser();p.add_argument("manifest",type=Path);a=p.parse_args()
  try:m=json.loads(a.manifest.read_text(encoding="utf-8"))
