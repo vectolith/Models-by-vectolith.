@@ -64,6 +64,10 @@ class HoldoutTests(unittest.TestCase):
    code=evaluator.evaluation_gate.git_head()
    result=subprocess.run([sys.executable,str(EVALUATOR),"--model","unused","--revision","unused","--tasks",str(tasks),"--output",str(Path(tmp)/"out"),"--freeze-manifest",str(Path(tmp)/"freeze.json"),"--candidate-record",str(Path(tmp)/"candidate.json"),"--authorization",str(Path(tmp)/"auth.json"),"--code-commit",code,"--allow-holdout"],capture_output=True,text=True)
    self.assertNotEqual(result.returncode,0);self.assertIn("holdout inference blocked",result.stderr);self.assertFalse((Path(tmp)/"out").exists())
+ def test_wall_budget_uses_monotonic_clock(self):
+  source=EVALUATOR.read_text(encoding="utf-8")
+  self.assertIn("run_started_monotonic=time.monotonic()",source)
+  self.assertIn("time.monotonic()-run_started_monotonic>=max_wall_seconds",source)
  def test_trust_remote_code_rejected(self):
   with tempfile.TemporaryDirectory() as tmp:
    tasks=Path(tmp)/"dev.jsonl";tasks.write_text(json.dumps({"task_id":"d","prompt":"p","category":"c","split":"development"})+chr(10),encoding="utf-8")

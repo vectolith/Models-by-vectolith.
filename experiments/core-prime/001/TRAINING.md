@@ -19,3 +19,8 @@ Before baseline or post-training evaluation, prepare an evaluation freeze manife
 
 
 Candidate preflight now binds the SHA-256 of the exact candidate-record file and the pre-import installed package inventory, checks that the `--code-commit` matches the Git checkout, and requires a fully hash-verified staged model snapshot. Training uses that local snapshot only (`local_files_only=True`, remote code disabled); it does not fetch model files during the authorized run. The snapshot inventory must enumerate every file in the staged snapshot. Authorization is pending until those values and evidence are independently verified.
+
+
+## Training authorization template
+
+`training-authorization.template.json` is a pending structure only. Before a run, the approval must bind the candidate record SHA-256, dataset SHA-256, exact Git HEAD, pre-import package inventory SHA-256, reviewed provenance evidence, verified free compute/session evidence, bounded steps/wall time and sealed holdout. This file contains no approval or evidence by default.

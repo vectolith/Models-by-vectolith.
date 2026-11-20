@@ -43,3 +43,6 @@ Training is blocked until every required item above is evidenced, independently 
 - Authorization binds the candidate-record SHA-256, dataset SHA-256, exact Git HEAD, pre-import package inventory SHA-256 and genuinely free compute evidence. The actual checkout HEAD and package inventory are checked before ML imports.
 - Baseline evaluation is development-split only. Holdout remains blocked. Evaluation authorization binds the freeze-manifest hash, candidate revision, selected task budget, output-token ceiling, wall-clock ceiling, free compute evidence and package inventory.
 - These are integrity controls, not legal opinions or proof of evidence authenticity. Independent legal review and written output-training permission remain required.
+
+
+A pending training authorization structure is provided in `training-authorization.template.json`; it is not a completed approval. The template must be populated only with real evidence and the actual free compute session details.

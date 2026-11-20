@@ -116,7 +116,7 @@ def main()->int:
     a.output.mkdir(parents=True,exist_ok=True);task_hash=sha256_file(a.tasks)
     run_id=new_run_id()
     raw=a.output/f"{run_id}-raw.jsonl";summary_file=a.output/f"{run_id}-summary.json"
-    started=time.time()
+    started=time.time();run_started_monotonic=time.monotonic()
     try:
         import torch
         import transformers
@@ -151,9 +151,9 @@ def main()->int:
         records=initialization_failure_records(run_id,tasks,e)
     if model is not None and tokenizer is not None:
         class WallBudgetStoppingCriteria(StoppingCriteria):
-            def __call__(self,input_ids,scores,**kwargs):return time.time()-started>=max_wall_seconds
+            def __call__(self,input_ids,scores,**kwargs):return time.monotonic()-run_started_monotonic>=max_wall_seconds
         for task_index,task in enumerate(tasks):
-            if time.time()-started>=max_wall_seconds:
+            if time.monotonic()-run_started_monotonic>=max_wall_seconds:
                 records.extend({"run_id":run_id,"task_id":remaining["task_id"],"category":remaining["category"],"split":remaining["split"],"prompt_sha256":sha256_text(remaining["prompt"]),"status":"budget_exhausted"} for remaining in tasks[task_index:])
                 break
             prompt=task["prompt"];t0=time.perf_counter()
@@ -181,7 +181,7 @@ def main()->int:
                     "prompt_sha256":sha256_text(prompt),"prompt":prompt,"response":response,"response_sha256":sha256_text(response),
                     "input_tokens":input_tokens,"output_tokens":int(new.shape[-1]),"generation_seconds":elapsed,
                     "tokens_per_second":int(new.shape[-1])/elapsed if elapsed else None,"status":"completed"}
-                if time.time()-started>=max_wall_seconds:record["status"]="budget_exhausted"
+                if time.monotonic()-run_started_monotonic>=max_wall_seconds:record["status"]="budget_exhausted"
                 records.append(record)
             except Exception as e:
                 errors+=1
