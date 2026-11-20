@@ -102,6 +102,29 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
             await registry.invoke(restricted, "deploy")
         self.assertEqual(await registry.invoke(restricted, "deploy", approved=True), "deployed")
 
+    async def test_store_rejects_nonterminal_result_status(self):
+        from vectolith_runtime.engine import TaskStore
+        store = TaskStore()
+        await store.create(request())
+        with self.assertRaises(ValueError):
+            await store.set_result("task-1", TaskResult("task-1", TaskStatus.RUNNING, "not terminal"))
+
+    async def test_store_rejects_terminal_transition_without_result(self):
+        from vectolith_runtime.engine import TaskStore
+        store = TaskStore()
+        await store.create(request())
+        with self.assertRaises(ValueError):
+            await store.transition("task-1", TaskStatus.COMPLETED, "bypass")
+
+    async def test_reviewer_must_return_literal_true(self):
+        async def prima(task):
+            return TaskResult(task.task_id, TaskStatus.COMPLETED, "done", evidence=("build log",))
+        async def review(task, result):
+            return 1  # truthy, but not an explicit boolean approval
+        runtime = VectolithRuntime({ModelRole.CORE_PRIMA: prima}, review)
+        result = await runtime.delegate(request())
+        self.assertEqual(result.status, TaskStatus.PARTIALLY_COMPLETED)
+
     async def test_duplicate_task_ids_are_rejected(self):
         async def prima(task):
             return TaskResult(task.task_id, TaskStatus.FAILED, "not run")
