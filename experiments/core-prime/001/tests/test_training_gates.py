@@ -143,6 +143,15 @@ class Tests(unittest.TestCase):
   (root/"checkpoint-not-a-step").mkdir()
   (root/"checkpoint-").mkdir()
   self.assertEqual(trainer.select_recovery_checkpoint(root),good)
+ def test_checkpoint_budget_write_does_not_follow_predictable_tmp_symlink(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);ck=root/"checkpoint-1";ck.mkdir();outside=root/"outside.txt";outside.write_text("preserve",encoding="utf-8")
+   (ck/"checkpoint-budget.json.tmp").symlink_to(outside)
+   trainer.write_checkpoint_budget_state(ck,1,3.5)
+   self.assertEqual(outside.read_text(encoding="utf-8"),"preserve")
+   record=json.loads((ck/"checkpoint-budget.json").read_text(encoding="utf-8"))
+   self.assertEqual(record["global_step"],1);self.assertEqual(record["cumulative_elapsed_seconds"],3.5)
+   self.assertFalse(any(p.name.startswith("checkpoint-budget.json.") and p.name.endswith(".tmp") and p!=ck/"checkpoint-budget.json.tmp" for p in ck.iterdir()))
  def test_checkpoint_budget_state_and_recovery(self):
   ck=self.make_checkpoint(self.d,"checkpoint-3",3)
   trainer.seal_checkpoint(ck,cumulative_elapsed_seconds=42.5)
