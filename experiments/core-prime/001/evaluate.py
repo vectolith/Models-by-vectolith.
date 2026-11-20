@@ -13,6 +13,7 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda:f.read(1024*1024),b""): h.update(chunk)
     return h.hexdigest()
 def sha256_text(s: str) -> str: return hashlib.sha256(s.encode("utf-8")).hexdigest()
+def sha256_bytes(data: bytes) -> str: return hashlib.sha256(data).hexdigest()
 def sha256_serialized(value: Any) -> str:
     text=value if isinstance(value,str) else json.dumps(value,sort_keys=True,ensure_ascii=False,separators=(",",":"))
     return sha256_text(text)
@@ -44,24 +45,28 @@ def package_inventory() -> list[dict[str,str]]:
 def package_inventory_snapshot() -> tuple[list[dict[str,str]],str]:
     inventory=package_inventory()
     return inventory,sha256_serialized(inventory)
-def load_jsonl(path: Path) -> list[dict[str,Any]]:
+def load_jsonl_snapshot(path: Path) -> tuple[list[dict[str,Any]],str]:
+    raw=path.read_bytes()
+    try:text=raw.decode("utf-8")
+    except UnicodeDecodeError as e:raise ValueError(f"{path}: invalid UTF-8: {e}") from e
     rows=[]
-    with path.open(encoding="utf-8") as f:
-        for n,line in enumerate(f,1):
-            if not line.strip(): continue
-            try: row=json.loads(line)
-            except json.JSONDecodeError as e: raise ValueError(f"{path}:{n}: invalid JSON: {e}") from e
-            if not isinstance(row,dict): raise ValueError(f"{path}:{n}: expected object")
-            for k in ("task_id","prompt","category"):
-                if not isinstance(row.get(k),str) or not row[k].strip(): raise ValueError(f"{path}:{n}: invalid {k}")
-            if row.get("split") not in ("train","development","holdout"): raise ValueError(f"{path}:{n}: invalid split")
-            rows.append(row)
+    for n,line in enumerate(text.splitlines(),1):
+        if not line.strip(): continue
+        try: row=json.loads(line)
+        except json.JSONDecodeError as e: raise ValueError(f"{path}:{n}: invalid JSON: {e}") from e
+        if not isinstance(row,dict): raise ValueError(f"{path}:{n}: expected object")
+        for k in ("task_id","prompt","category"):
+            if not isinstance(row.get(k),str) or not row[k].strip(): raise ValueError(f"{path}:{n}: invalid {k}")
+        if row.get("split") not in ("train","development","holdout"): raise ValueError(f"{path}:{n}: invalid split")
+        rows.append(row)
     ids=[r["task_id"] for r in rows]
     if len(ids)!=len(set(ids)): raise ValueError("task_id values must be unique")
-    return rows
+    return rows,sha256_bytes(raw)
+def load_jsonl(path: Path) -> list[dict[str,Any]]:
+    return load_jsonl_snapshot(path)[0]
 
-def verify_frozen_config(manifest_path: Path, model: str, revision: str, tasks_path: Path, seed: int, max_new_tokens: int, temperature: float, trust_remote_code: bool, qwen3_thinking: bool, limit: int, selected_task_ids: list[str], candidate_sha: str, code_commit: str, package_hash: str, max_wall_seconds: int) -> str:
-    return evaluation_gate.verify_frozen_config(manifest_path,model,revision,tasks_path,seed,max_new_tokens,temperature,trust_remote_code,qwen3_thinking,limit,selected_task_ids,candidate_sha,code_commit,package_hash,max_wall_seconds)
+def verify_frozen_config(manifest_path: Path, model: str, revision: str, tasks_sha256: str, seed: int, max_new_tokens: int, temperature: float, trust_remote_code: bool, qwen3_thinking: bool, limit: int, selected_task_ids: list[str], candidate_sha: str, code_commit: str, package_hash: str, max_wall_seconds: int) -> str:
+    return evaluation_gate.verify_frozen_config(manifest_path,model,revision,tasks_sha256,seed,max_new_tokens,temperature,trust_remote_code,qwen3_thinking,limit,selected_task_ids,candidate_sha,code_commit,package_hash,max_wall_seconds)
 
 
 def validate_qwen3_thinking_mode(snapshot: Path, enabled: bool) -> None:
@@ -129,7 +134,7 @@ def main()->int:
     try:actual_code_commit=evaluation_gate.git_head()
     except Exception as e:p.error(f"Git commit capture failed: {e}")
     if actual_code_commit!=a.code_commit:p.error("--code-commit does not match evaluator checkout HEAD")
-    tasks=load_jsonl(a.tasks)
+    tasks,task_hash=load_jsonl_snapshot(a.tasks)
     if any(t["split"]=="holdout" for t in tasks):p.error("holdout inference blocked; this evaluator has no reviewed holdout authorization mechanism")
     if any(t["split"]!="development" for t in tasks):p.error("baseline inference requires development-only task records")
     if a.limit>0:tasks=tasks[:a.limit]
@@ -140,12 +145,12 @@ def main()->int:
         candidate,candidate_sha,snapshot=evaluation_gate.verify_candidate_record(a.candidate_record,a.model,a.revision)
         validate_qwen3_thinking_mode(snapshot,bool(a.qwen3_thinking))
         inventory,inventory_sha256=package_inventory_snapshot()
-        authorization,authorization_sha256=evaluation_gate.verify_evaluation_authorization(a.authorization,candidate_sha,a.tasks,a.freeze_manifest,a.code_commit,inventory_sha256,len(tasks),a.max_new_tokens)
+        authorization,authorization_sha256=evaluation_gate.verify_evaluation_authorization(a.authorization,candidate_sha,task_hash,a.freeze_manifest,a.code_commit,inventory_sha256,len(tasks),a.max_new_tokens)
         max_wall_seconds=authorization["budget"]["max_wall_seconds"]
         if authorization.get("candidate_revision")!=a.revision:raise ValueError("authorization candidate revision mismatch")
-        freeze_sha=verify_frozen_config(a.freeze_manifest,a.model,a.revision,a.tasks,a.seed,a.max_new_tokens,a.temperature,a.trust_remote_code,bool(a.qwen3_thinking),a.limit,selected_task_ids,candidate_sha,a.code_commit,inventory_sha256,max_wall_seconds)
+        freeze_sha=verify_frozen_config(a.freeze_manifest,a.model,a.revision,task_hash,a.seed,a.max_new_tokens,a.temperature,a.trust_remote_code,bool(a.qwen3_thinking),a.limit,selected_task_ids,candidate_sha,a.code_commit,inventory_sha256,max_wall_seconds)
     except Exception as e:p.error(f"evaluation permission/reproducibility gate blocked: {e}")
-    a.output.mkdir(parents=True,exist_ok=True);task_hash=sha256_file(a.tasks)
+    a.output.mkdir(parents=True,exist_ok=True)
     run_id=new_run_id()
     raw=a.output/f"{run_id}-raw.jsonl";summary_file=a.output/f"{run_id}-summary.json"
     started=time.time();run_started_monotonic=time.monotonic()
