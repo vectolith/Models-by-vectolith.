@@ -14,7 +14,9 @@ def strict_json_loads(text):
    if key in result:raise ValueError(f"duplicate JSON object key: {key}")
    result[key]=value
   return result
- return json.loads(text,object_pairs_hook=unique_pairs)
+ def reject_constant(value):
+  raise ValueError(f"non-standard JSON numeric constant: {value}")
+ return json.loads(text,object_pairs_hook=unique_pairs,parse_constant=reject_constant)
 def sha256_file(path):
  h=hashlib.sha256()
  with Path(path).open("rb") as f:
