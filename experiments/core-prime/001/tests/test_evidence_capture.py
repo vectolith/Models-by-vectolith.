@@ -66,6 +66,28 @@ class CaptureTests(unittest.TestCase):
    parsed=json.loads(out.read_text(encoding="utf-8"))
    self.assertEqual(parsed["inventory_sha256"],snapshot.evaluation_gate.sha256_serialized(parsed["inventory"]))
    self.assertEqual(list(out.parent.glob(out.name+".*.tmp")),[])
+
+ def test_directory_fsync_uses_directory_descriptor(self):
+  import os,stat
+  from unittest.mock import patch
+  with tempfile.TemporaryDirectory() as d:
+   def verify_fd(fd):self.assertTrue(stat.S_ISDIR(os.fstat(fd).st_mode))
+   with patch.object(env.evaluation_gate.os,"fsync",side_effect=verify_fd) as sync:
+    env.evaluation_gate.fsync_directory(Path(d))
+   sync.assert_called_once()
+ def test_capture_writers_sync_parent_directory_after_replace(self):
+  from unittest.mock import patch
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);out=root/"env.json"
+   with patch.object(env.evaluation_gate,"fsync_directory",wraps=env.evaluation_gate.fsync_directory) as sync:
+    env.atomic_write_json(out,{"captured":True})
+   sync.assert_called_once_with(out.parent)
+   snapshot_dir=root/"snapshot";snapshot_dir.mkdir();(snapshot_dir/"config.json").write_text("{}")
+   record=root/"candidate.json";record.write_text(json.dumps({"model_snapshot_path":"snapshot"}))
+   inventory=root/"inventory.json"
+   with patch.object(snapshot.evaluation_gate,"fsync_directory",wraps=snapshot.evaluation_gate.fsync_directory) as sync:
+    snapshot.atomic_write_json(inventory,snapshot.capture(record))
+   sync.assert_called_once_with(inventory.parent)
  def test_snapshot_capture_rejects_empty(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);(root/"snapshot").mkdir();record=root/"candidate.json";record.write_text(json.dumps({"model_snapshot_path":"snapshot"}))
