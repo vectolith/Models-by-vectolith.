@@ -3,7 +3,7 @@
   "title": "Experiment task record",
   "type": "object",
   "additionalProperties": false,
-  "required": ["task_id", "category", "prompt", "split", "rubric_id"],
+  "required": ["task_id", "category", "prompt", "split", "rubric_id", "provenance"],
   "properties": {
     "task_id": {"type": "string", "minLength": 1},
     "category": {"type": "string", "minLength": 1},
