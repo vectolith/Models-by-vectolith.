@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FILES = {
     "trajectories": ROOT / "data/personality/core-prime-multiturn-trajectories-v1.jsonl",
     "preferences": ROOT / "data/personality/core-prime-contrastive-preferences-v1.jsonl",
+    "micro": ROOT / "data/personality/core-prime-behavioral-micro-scenarios-v1.jsonl",
 }
 
 def load_lines(path):
@@ -23,7 +24,8 @@ def load_lines(path):
 def validate():
     traj = load_lines(FILES["trajectories"])
     pref = load_lines(FILES["preferences"])
-    for name, rows in (("trajectories", traj), ("preferences", pref)):
+    micro = load_lines(FILES["micro"])
+    for name, rows in (("trajectories", traj), ("preferences", pref), ("micro", micro)):
         ids = [r.get("id") for r in rows]
         if any(not x for x in ids) or len(ids) != len(set(ids)):
             raise ValueError(f"{name}: missing or duplicate IDs")
@@ -49,6 +51,9 @@ def validate():
     holdout_ids = {r["id"] for r in traj if r["split"] == "holdout"}
     if train_ids & holdout_ids:
         raise ValueError("trajectory train/holdout ID overlap")
-    print(f"OK: {len(traj)} trajectories ({len(train_ids)} train, {len(holdout_ids)} holdout); {len(pref)} preference pairs")
+    for r in micro:
+        if not r.get("trait") or not r.get("scenario") or not r.get("prompt") or not r.get("desired_observable_behavior"):
+            raise ValueError(f"{r.get('id')}: incomplete micro scenario")
+    print(f"OK: {len(traj)} trajectories ({len(train_ids)} train, {len(holdout_ids)} holdout); {len(pref)} preference pairs; {len(micro)} micro scenarios")
 if __name__ == "__main__":
     validate()
