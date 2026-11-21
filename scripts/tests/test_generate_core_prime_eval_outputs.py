@@ -5,7 +5,6 @@ import json
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
-from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import generate_core_prime_eval_outputs as gen
 
@@ -93,7 +92,7 @@ class GenerationHelperTests(unittest.TestCase):
             cases = root / "cases.jsonl"
             prompt = root / "character.txt"
             output = root / "outputs.json"
-            cases.write_text(json.dumps({"id":"x","prompt":"p"}) + "\\n", encoding="utf-8")
+            cases.write_text(json.dumps({"id": "x", "prompt": "p"}) + "\n", encoding="utf-8")
             prompt.write_text("character", encoding="utf-8")
             output.write_text("existing", encoding="utf-8")
             args = ["generator.py", "--model", "unused", "--cases", str(cases), "--character-prompt", str(prompt), "--output", str(output)]
@@ -104,9 +103,10 @@ class GenerationHelperTests(unittest.TestCase):
 
     def test_case_validation_rejects_duplicate_ids_and_bad_context(self):
         with self.assertRaises(ValueError):
-            gen.validate_cases([{"id":"x","prompt":"p"},{"id":"x","prompt":"p"}])
+            gen.validate_cases([{"id": "x", "prompt": "p"}, {"id": "x", "prompt": "p"}])
         with self.assertRaises(ValueError):
-            gen.validate_cases([{"id":"x","prompt":"p","context":None}])
+            gen.validate_cases([{"id": "x", "prompt": "p", "context": None}])
+
 
 if __name__ == "__main__":
     unittest.main()
