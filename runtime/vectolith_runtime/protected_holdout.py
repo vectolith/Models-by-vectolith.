@@ -109,10 +109,12 @@ def validate_evaluation_report(report: dict[str, Any], deployment: dict[str, Any
     counts_valid = all(isinstance(x, int) and not isinstance(x, bool) and x >= 0 for x in counts)
     if not counts_valid:
         errors.append("evaluation_case_counts_invalid")
-    elif report_case_count is not None and sum(counts) != report_case_count:
-        errors.append("evaluation_case_counts_do_not_sum")
-    elif counts[2] != 0:
-        errors.append("evaluation_contains_unscored_cases")
+    else:
+        if (isinstance(report_case_count, int) and not isinstance(report_case_count, bool)
+                and sum(counts) != report_case_count):
+            errors.append("evaluation_case_counts_do_not_sum")
+        if counts[2] != 0:
+            errors.append("evaluation_contains_unscored_cases")
     score = report.get("pass_rate")
     report_threshold = report.get("minimum_required_pass_rate")
     deployment_threshold = deployment.get("minimum_required_pass_rate") if isinstance(deployment, dict) else None
@@ -126,7 +128,7 @@ def validate_evaluation_report(report: dict[str, Any], deployment: dict[str, Any
         errors.append("evaluation_did_not_meet_or_bind_declared_threshold")
     elif score < report_threshold:
         errors.append("evaluation_did_not_meet_or_bind_declared_threshold")
-    elif counts_valid and isinstance(report_case_count, int) and report_case_count > 0:
+    elif counts_valid and isinstance(report_case_count, int) and not isinstance(report_case_count, bool) and report_case_count > 0:
         expected_rate = counts[0] / report_case_count
         if not math.isclose(score, expected_rate, rel_tol=0, abs_tol=1e-12):
             errors.append("evaluation_pass_rate_does_not_match_case_counts")
