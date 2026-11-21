@@ -1,20 +1,33 @@
-import json, tempfile, unittest
-from pathlib import Path
 import sys
-sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-import run_core_prime_blind_eval as ev
-class EvalHarnessTests(unittest.TestCase):
- def test_summary_and_validation(self):
-  rows=[{"dimension":"judgment","score":4,"gate_flags":[]},{"dimension":"judgment","score":2,"gate_flags":["capability_regression"]},{"dimension":"repair","score":None,"gate_flags":[]}]
-  result=ev.summarize(rows)
-  self.assertEqual(result["dimension_means"]["judgment"],3.0)
-  self.assertEqual(result["dimension_counts"]["repair"],0)
-  self.assertEqual(result["gate_flags"],["capability_regression"])
-  with self.assertRaises(ValueError): ev.summarize([{"dimension":"judgment","score":6}])
- def test_blinding_deterministic(self):
-  cases=[{"id":"x","prompt":"p","test":"t","dimension":"judgment"}]
-  outputs={"x":{"base":"response A","candidate":"response B"}}
-  a=ev.make_sheet(cases,outputs,7); b=ev.make_sheet(cases,outputs,7)
-  self.assertEqual(a,b)
-  self.assertEqual(len(a[0]["mapping"]),2)
-if __name__=="__main__": unittest.main()
+import unittest
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import run_core_prime_blind_eval as blind
+
+class BlindSheetTests(unittest.TestCase):
+    def test_mapping_is_not_embedded_in_evaluator_sheet(self):
+        cases=[{"id":"x","prompt":"p","context":"","test":"t","dimension":"judgment"}]
+        outputs={"x":{"base":"first","character_prompt":"second"}}
+        sheet,mapping=blind.make_sheet(cases,outputs,1)
+        self.assertNotIn("mapping",sheet[0])
+        self.assertEqual(set(mapping["x"].values()),{"base","character_prompt"})
+        labels={r["blind_label"] for r in sheet[0]["responses"]}
+        self.assertEqual(labels,{"candidate_1","candidate_2"})
+
+    def test_missing_condition_rejected(self):
+        cases=[{"id":"x","prompt":"p","test":"t","dimension":"judgment"}]
+        with self.assertRaises(ValueError):
+            blind.make_sheet(cases,{"x":{"base":"only one"}},1)
+
+    def test_empty_response_rejected(self):
+        cases=[{"id":"x","prompt":"p","test":"t","dimension":"judgment"}]
+        with self.assertRaises(ValueError):
+            blind.make_sheet(cases,{"x":{"base":"ok","character_prompt":""}},1)
+
+    def test_unknown_case_rejected(self):
+        cases=[{"id":"x","prompt":"p","test":"t","dimension":"judgment"}]
+        with self.assertRaises(ValueError):
+            blind.make_sheet(cases,{"x":{"base":"ok","character_prompt":"ok"},"y":{"base":"z"}},1)
+
+if __name__=="__main__":
+    unittest.main()
