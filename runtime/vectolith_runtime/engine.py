@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import copy
 from dataclasses import dataclass, field
 from typing import Awaitable, Callable, Protocol
 
@@ -43,14 +44,14 @@ class TaskStore:
         async with self._lock:
             if request.task_id in self._records:
                 raise ValueError(f"duplicate task_id: {request.task_id}")
-            record = TaskRecord(request=request)
+            record = TaskRecord(request=copy.deepcopy(request))
             self._records[request.task_id] = record
             self._event(record, TaskStatus.RECEIVED, "task accepted")
-            return record
+            return copy.deepcopy(record)
 
     async def get(self, task_id: str) -> TaskRecord:
         async with self._lock:
-            return self._records[task_id]
+            return copy.deepcopy(self._records[task_id])
 
     async def transition(self, task_id: str, status: TaskStatus, detail: str) -> TaskRecord:
         async with self._lock:
@@ -72,7 +73,7 @@ class TaskStore:
                 raise ValueError(f"invalid task transition: {record.status.value} -> {status.value}")
             record.status = status
             self._event(record, status, detail)
-            return record
+            return copy.deepcopy(record)
 
     async def set_result(self, task_id: str, result: TaskResult) -> TaskRecord:
         async with self._lock:
@@ -83,10 +84,10 @@ class TaskStore:
                 raise ValueError("task result must have a terminal status")
             if record.status in TERMINAL_STATUSES:
                 raise ValueError("task already has a terminal status")
-            record.result = result
+            record.result = copy.deepcopy(result)
             record.status = result.status
             self._event(record, result.status, result.summary)
-            return record
+            return copy.deepcopy(record)
 
     @staticmethod
     def _event(record: TaskRecord, status: TaskStatus, detail: str) -> None:
