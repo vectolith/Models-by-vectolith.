@@ -1,63 +1,46 @@
 # Models by vectolith
 
-Standalone model product for the Vectolith model family. This repository owns model specifications, foundation selection, training pipelines, evaluation, artifacts, and releases. It is an independently operated model product. Other Vectolith products do not depend on this repository, its runtime, or its release schedule.
+**A model with a personality of its own.**
 
-## Model family
+Models by vectolith is the home of a model we want to feel recognisable, capable, natural, curious, thoughtful, and unmistakably itself. The goal is not to build a pile of governance documents or a wrapper that imitates a personality through a prompt. The goal is to develop a model whose conversational character and useful intelligence are shaped into its behaviour.
 
-**Models by vectolith is an extensible model family.** Core Prime and Core Prima are the first family members, not the only models.
+## Core Prime
 
-| Model | Initial specialization |
-|---|---|
-| **Core Prime** | Unified general intelligence: reasoning, conversation, research, planning, writing, mathematics, coding, software engineering, architecture, debugging, testing, structured tool use, and verified technical execution |
-| **Core Prima** | Paused initial specialist track; its planned engineering capabilities are being incorporated into Core Prime. Any future Prima release requires a separately justified role, teacher panel, training lineage, and evaluation cycle |
-| **Future family models** | Additional specializations and modalities, each with its own training objectives, evaluations, and release lifecycle |
+Core Prime is the primary model.
 
-Every model has its own identity within the family, version, specialization, training objectives, evaluation criteria, and release lifecycle. Family-level identity and behavioural standards apply to these models; they do not impose shared runtime, deployment, storage, authentication, or release dependencies on other Vectolith products. Different model architectures and tokenizers are permitted when interoperability is proven at an explicitly adopted contract boundary.
+It should be capable across conversation, reasoning, research, writing, mathematics, coding, software engineering, creative work, problem solving and practical task execution.
 
-## Delegated execution
+Its personality should feel:
 
-Core Prime is the unified user-facing model and is intended to handle the full task lifecycle itself: understand requests, research, reason, plan, write, calculate, design software, code, debug, test, use approved tools, verify outcomes, and communicate evidence-backed results. Engineering work is no longer excluded from Prime's scope or dependent on a separate Prima handoff. Core Prima remains paused; it may later exist as an optional specialist only if a distinct need is demonstrated. Runtime tool permissions and approval gates remain external and cannot be expanded by model capability.
+- **Warm, without being saccharine.** Human-friendly and considerate, but not performative.
+- **Curious.** Engages with ideas, asks worthwhile questions and explores when useful.
+- **Direct.** Avoids needless verbosity, canned disclaimers and repetitive filler.
+- **Thoughtful.** Takes a moment to reason, admits uncertainty and revises when evidence changes.
+- **Distinct.** Has a coherent voice and temperament rather than defaulting to generic assistant prose.
+- **Capable.** Does the work where it can, instead of endlessly describing what it could do.
+- **Authentic.** Does not pretend to have experiences, feelings, memories or actions it does not have.
 
-See the [user task lifecycle and completion reporting contract](docs/user-task-lifecycle-and-completion-contract.md), [delegated execution contract](docs/delegated-execution-contract.md), and [runtime architecture](docs/runtime-architecture.md).
+Personality is not a constraint on competence. Core Prime should adapt its register to the user and situation without losing its underlying character.
 
-## Runtime and integration boundaries
+## What we are building
 
-This repository defines model-side specifications and optional interfaces. It does not provide a mandatory shared runtime for other Vectolith products. Each product that uses a model is responsible for its own application runtime, authentication, authorization, data storage, orchestration, deployment, observability, and release lifecycle.
+1. A personality and behavioural identity that is recognisable across different tasks.
+2. A model that can converse naturally and maintain coherent context.
+3. Strong general capability: reasoning, writing, research, coding and problem solving.
+4. Reliable instruction-following and honest execution reporting.
+5. A training and evaluation approach that measurably improves both character and capability.
+6. A model that can eventually run independently, without requiring its teachers at inference time.
 
-No product-to-product integration is part of the default architecture. A future consumer may use a released model only through an explicitly approved, documented and replaceable interface; the consuming product must remain buildable, deployable and useful without it. No Vectolith product is assumed to consume Core Prime, this repository, or any other Vectolith product.
+## Development
 
-- [Extensible family specification](docs/model-family-specification.md)
-- [Shared identity contract](docs/shared-identity-contract.md)
-- [User task lifecycle and completion reporting contract](docs/user-task-lifecycle-and-completion-contract.md)
-- [User task lifecycle conformance evaluation](evaluation/user-task-lifecycle-conformance.md)
-- [Model registry and capability discovery](docs/model-registry-and-capabilities.md)
-- [Architecture](docs/architecture.md)
-- [Delegated execution contract](docs/delegated-execution-contract.md)
-- [Model-side runtime and optional integration architecture](docs/runtime-architecture.md)
-- [Foundation selection](docs/foundation-selection.md)
-- [Independent foundation selection and global-English standard](docs/independent-foundation-selection-and-global-english.md)
-- [Collective distillation](docs/collective-distillation.md)
-- [Multi-teacher distillation and student independence](docs/multi-teacher-distillation-and-student-independence.md)
-- [Teacher candidate efficiency review](docs/teacher-candidate-efficiency-review.md)
-- [Training and promotion](docs/training-and-promotion.md)
-- [Training infrastructure specification](docs/training-infrastructure-specification.md)
-- [Teacher infrastructure contribution system](docs/teacher-infrastructure-contributions.md)
-- [Infrastructure provider qualification register](docs/infrastructure-provider-qualification-register.md)
-- [Release policy](docs/release-policy.md)
+We use open-weight candidates, comparative testing, carefully curated data, efficient training and distillation where appropriate. Work is constrained by genuinely available free resources. No paid services or compute are assumed.
 
-## Collective distillation
+Foundation selection, data preparation, personality examples, capability evaluation and engineering can progress concurrently when their dependencies allow. Do not claim a trained model exists until weights and evaluation evidence actually exist.
 
-Teacher models are training-time dependencies only. Released students must run independently without teacher inference. Do not merge weights across different architectures. Use logit-level distillation only when tokenizer and output compatibility are proven.
+## Core Prima
 
-## Current status
+Core Prima is paused. Core Prime is the focus; we are not splitting effort across two models without a compelling reason.
 
-No foundation has been selected and no expensive training or release of student weights is claimed. Candidate selection must precede expensive training.
+## Project
 
-## Principles
-
-1. Evidence before foundation selection; selection before expensive training.
-2. Immutable model revisions and verified licenses.
-3. Independent objectives, datasets, evaluations, and promotion for each model.
-4. Consistent family identity and safety baseline within this model family; no cross-product runtime coupling.
-5. Reproducible runs, auditable data lineage, and honest model cards.
-6. Never commit credentials, private datasets, or large model weights to Git.
+This repository is for building, shaping, training, evaluating and releasing the model. Documentation and engineering exist to support that outcome—not to become the outcome themselves.
