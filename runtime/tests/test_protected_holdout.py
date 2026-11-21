@@ -142,7 +142,7 @@ class EvaluationReportTests(unittest.TestCase):
             ({'deployment_manifest_sha256': 'f' * 64}, 'evaluation_not_bound_to_protected_deployment'),
             ({'candidate_id': 'other'}, 'evaluation_candidate_identity_or_revision_mismatch'),
             ({'candidate_revision': 'e' * 40}, 'evaluation_candidate_identity_or_revision_mismatch'),
-            ({'candidate_revision': 'rev-2'}, 'evaluation_candidate_revision_invalid'),
+            ({'candidate_revision': 'rev-2'}, 'evaluation_report_candidate_revision_invalid'),
             ({'evaluator_id': 'custodian-a'}, 'evaluation_evaluator_identity_mismatch'),
             ({'evaluator_image_sha256': 'c' * 64}, 'evaluation_evaluator_image_mismatch'),
             ({'case_count': 5}, 'evaluation_case_count_mismatch'),
@@ -197,13 +197,15 @@ class FileValidationTests(unittest.TestCase):
                 ph.validate_deployment_file(path)
             self.assertIn('case_count_invalid', str(ctx.exception))
 
-    def test_unsafe_candidate_id_and_missing_file(self):
+    def test_unsafe_candidate_id_invalid_revision_and_missing_file(self):
         dep = deployment()
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaises(ValueError):
                 ph.validate_candidate_result(Path(tmp, 'x.json'), dep, ph.canonical_digest(dep), '../etc/passwd', 'f' * 40)
             with self.assertRaises(ValueError):
                 ph.validate_candidate_result(Path(tmp, 'x.json'), dep, ph.canonical_digest(dep), 'bad id', 'f' * 40)
+            with self.assertRaises(ValueError):
+                ph.validate_candidate_result(Path(tmp, 'x.json'), dep, ph.canonical_digest(dep), 'cand-1', 'rev-1')
             with self.assertRaises(FileNotFoundError):
                 ph.validate_candidate_result(Path(tmp, 'missing.json'), dep, ph.canonical_digest(dep), 'cand-1', 'f' * 40)
 
