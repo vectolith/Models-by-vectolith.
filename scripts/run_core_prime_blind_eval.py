@@ -17,7 +17,8 @@ def read_jsonl(path):
 
 def write_jsonl(path, rows):
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows), encoding="utf-8")
+    with path.open("x", encoding="utf-8") as stream:
+        stream.write("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows))
 
 
 def validate_cases(cases):
@@ -80,11 +81,10 @@ def validate_output_directories(sheet_dir, map_dir):
 def write_restricted_mapping(map_dir, mapping):
     map_dir.mkdir(parents=True, exist_ok=True)
     map_file = map_dir / "blind-label-map.json"
-    if map_file.exists():
-        raise ValueError("Refusing to overwrite an existing condition mapping")
     if os.name == "posix":
         map_dir.chmod(0o700)
-    map_file.write_text(json.dumps(mapping, indent=2) + "\n", encoding="utf-8")
+    with map_file.open("x", encoding="utf-8") as stream:
+        stream.write(json.dumps(mapping, indent=2) + "\n")
     if os.name == "posix":
         map_file.chmod(0o600)
 
@@ -153,7 +153,8 @@ def main():
         score_rows = validate_scores(read_jsonl(args.scores), cases)
         summary_path = args.output / "summary.json"
         result = summarize(score_rows)
-        summary_path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+        with summary_path.open("x", encoding="utf-8") as stream:
+            stream.write(json.dumps(result, indent=2) + "\n")
         print(json.dumps(result, indent=2))
 
 
