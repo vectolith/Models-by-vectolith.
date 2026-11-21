@@ -72,8 +72,8 @@ class EvalHarnessTests(unittest.TestCase):
             cases_path = root / "cases.jsonl"
             scores_path = root / "scores.jsonl"
             output = root / "summary-output"
-            cases_path.write_text(json.dumps(case()) + "\\n", encoding="utf-8")
-            scores_path.write_text(json.dumps({"case_id":"x","dimension":"judgment","score":4,"gate_flags":[]}) + "\\n", encoding="utf-8")
+            cases_path.write_text(json.dumps(case()) + "\n", encoding="utf-8")
+            scores_path.write_text(json.dumps({"case_id":"x","dimension":"judgment","score":4,"gate_flags":[]}) + "\n", encoding="utf-8")
             args = ["run_core_prime_blind_eval.py", "--cases", str(cases_path), "--scores", str(scores_path), "--output", str(output)]
             with patch.object(sys, "argv", args):
                 ev.main()
