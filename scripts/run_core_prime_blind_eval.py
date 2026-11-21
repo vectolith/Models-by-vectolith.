@@ -84,7 +84,6 @@ def write_restricted_mapping(map_dir, mapping):
         raise ValueError("Refusing to overwrite an existing condition mapping")
     if os.name == "posix":
         map_dir.chmod(0o700)
-    map_file = map_dir / "blind-label-map.json"
     map_file.write_text(json.dumps(mapping, indent=2) + "\n", encoding="utf-8")
     if os.name == "posix":
         map_file.chmod(0o600)
@@ -149,8 +148,12 @@ def main():
         write_jsonl(sheet_dir / "blind-score-sheet.jsonl", sheet)
         write_restricted_mapping(map_dir, mapping)
     if args.scores:
-        result = summarize(read_jsonl(args.scores))
-        (args.output / "summary.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+        score_rows = validate_scores(read_jsonl(args.scores), cases)
+        summary_path = args.output / "summary.json"
+        if summary_path.exists():
+            p.error("summary.json already exists; use a fresh output directory to preserve prior results")
+        result = summarize(score_rows)
+        summary_path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
         print(json.dumps(result, indent=2))
 
 
