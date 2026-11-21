@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 def build_messages(row, system_prompt=None):
-    prompt = "\\n\\n".join(part for part in (row.get("context", "").strip(), row["prompt"].strip()) if part)
+    prompt = "\n\n".join(part for part in (row.get("context", "").strip(), row["prompt"].strip()) if part)
     messages = []
     if system_prompt and system_prompt.strip():
         messages.append({"role": "system", "content": system_prompt.strip()})
@@ -43,14 +43,14 @@ def main():
             if hasattr(tok, "apply_chat_template") and tok.chat_template:
                 encoded = tok.apply_chat_template(messages, tokenize=True, add_generation_prompt=True, return_tensors="pt")
             else:
-                text = "\\n\\n".join(m["content"] for m in messages)
+                text = "\n\n".join(m["content"] for m in messages)
                 encoded = tok(text, return_tensors="pt").input_ids
             encoded = encoded.to(model.device)
             with torch.no_grad():
                 generated = model.generate(encoded, max_new_tokens=args.max_new_tokens, do_sample=False)
             outputs[row["id"]][condition] = tok.decode(generated[0][encoded.shape[-1]:], skip_special_tokens=True).strip()
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(outputs, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    args.output.write_text(json.dumps(outputs, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"Generated paired outputs for {len(outputs)} cases using {args.model}")
 
 if __name__ == "__main__":
