@@ -138,6 +138,8 @@ def main():
     args = p.parse_args()
     cases = read_jsonl(args.cases)
     args.output.mkdir(parents=True, exist_ok=True)
+    if args.scores and (args.output / "summary.json").exists():
+        p.error("summary.json already exists; use a fresh output directory to preserve prior results")
     if args.outputs:
         sheet, mapping = make_sheet(cases, json.loads(args.outputs.read_text(encoding="utf-8")), args.seed)
         map_dir = args.map_output or args.output.parent / (args.output.name + "-restricted")
@@ -150,8 +152,6 @@ def main():
     if args.scores:
         score_rows = validate_scores(read_jsonl(args.scores), cases)
         summary_path = args.output / "summary.json"
-        if summary_path.exists():
-            p.error("summary.json already exists; use a fresh output directory to preserve prior results")
         result = summarize(score_rows)
         summary_path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
         print(json.dumps(result, indent=2))
