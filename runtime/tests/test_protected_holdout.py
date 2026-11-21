@@ -167,6 +167,8 @@ class EvaluationReportTests(unittest.TestCase):
         self.assertIn('evaluation_did_not_meet_or_bind_declared_threshold', errors)
         errors = ph.validate_evaluation_report(report_for(self.dep, minimum_required_pass_rate=0.7), self.dep, 'cand-1', 'f' * 40)
         self.assertIn('evaluation_did_not_meet_or_bind_declared_threshold', errors)
+        errors = ph.validate_evaluation_report(report_for(self.dep, minimum_required_pass_rate=0.0, pass_rate=0.0, verified_pass_count=0, verified_fail_count=4), self.dep, 'cand-1', 'f' * 40)
+        self.assertIn('evaluation_did_not_meet_or_bind_declared_threshold', errors)
         errors = ph.validate_evaluation_report(report_for(self.dep, pass_rate=0.95), self.dep, 'cand-1', 'f' * 40)
         self.assertIn('evaluation_pass_rate_does_not_match_case_counts', errors)
 
