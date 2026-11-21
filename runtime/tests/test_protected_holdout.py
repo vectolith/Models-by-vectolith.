@@ -135,7 +135,7 @@ class EvaluationReportTests(unittest.TestCase):
         self.dep = deployment()
 
     def test_valid_report_has_no_errors(self):
-        self.assertEqual(ph.validate_evaluation_report(report_for(self.dep), self.dep, 'cand-1', 'rev-1'), [])
+        self.assertEqual(ph.validate_evaluation_report(report_for(self.dep), self.dep, 'cand-1', 'f' * 40), [])
 
     def test_binding_and_identity_errors(self):
         checks = [
@@ -155,11 +155,12 @@ class EvaluationReportTests(unittest.TestCase):
             self.assertIn(code, errors)
 
     def test_case_count_accounting_errors(self):
-        errors = ph.validate_evaluation_report(report_for(self.dep, unscored_count=1, verified_pass_count=2), self.dep, 'cand-1', 'rev-1')
+        errors = ph.validate_evaluation_report(report_for(self.dep, unscored_count=1, verified_pass_count=2, pass_rate=0.5), self.dep, 'cand-1', 'f' * 40)
         self.assertIn('evaluation_contains_unscored_cases', errors)
-        errors = ph.validate_evaluation_report(report_for(self.dep, verified_pass_count=1, verified_fail_count=1), self.dep, 'cand-1', 'rev-1')
         self.assertIn('evaluation_case_counts_do_not_sum', errors)
-        errors = ph.validate_evaluation_report(report_for(self.dep, verified_pass_count=-1), self.dep, 'cand-1', 'rev-1')
+        errors = ph.validate_evaluation_report(report_for(self.dep, verified_pass_count=1, verified_fail_count=1), self.dep, 'cand-1', 'f' * 40)
+        self.assertIn('evaluation_case_counts_do_not_sum', errors)
+        errors = ph.validate_evaluation_report(report_for(self.dep, verified_pass_count=-1), self.dep, 'cand-1', 'f' * 40)
         self.assertIn('evaluation_case_counts_invalid', errors)
 
     def test_threshold_and_pass_rate_errors(self):
