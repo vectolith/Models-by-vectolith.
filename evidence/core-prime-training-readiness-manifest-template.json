@@ -1,0 +1,15 @@
+{
+  "schema_version": "core-prime-training-readiness/1.0",
+  "training_authorized": false,
+  "authorization_id": "",
+  "gates": {
+    "rights": {"status":"pending","reviewer":"","verified_at":"","artifacts":[]},
+    "grading": {"status":"pending","reviewer":"","verified_at":"","artifacts":[]},
+    "dataset": {"status":"pending","reviewer":"","verified_at":"","artifacts":[]},
+    "holdout": {"status":"pending","reviewer":"","verified_at":"","artifacts":[]},
+    "student": {"status":"pending","reviewer":"","verified_at":"","artifacts":[]},
+    "compute": {"status":"pending","reviewer":"","verified_at":"","artifacts":[]},
+    "experiment": {"status":"pending","reviewer":"","verified_at":"","artifacts":[]},
+    "authorization": {"status":"pending","reviewer":"","verified_at":"","artifacts":[]}
+  }
+}
