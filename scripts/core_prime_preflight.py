@@ -16,7 +16,7 @@ def validate(manifest_path):
     errors=[]
     try: data=json.loads(manifest_path.read_text(encoding="utf-8"))
     except Exception as e: return [f"manifest unreadable/invalid JSON: {e}"]
-    if data.get("schema_version")!="core-prime-training-readiness/1.0":
+    if not isinstance(data,dict): return ["manifest root must be an object"]\n    if data.get("schema_version")!="core-prime-training-readiness/1.0":
         errors.append("schema_version must be core-prime-training-readiness/1.0")
     gates=data.get("gates")
     if not isinstance(gates,dict): return errors+["gates must be an object"]
@@ -24,7 +24,7 @@ def validate(manifest_path):
         record=gates.get(gate)
         if not isinstance(record,dict): errors.append(f"{gate}: missing gate record"); continue
         if record.get("status")!="verified": errors.append(f"{gate}: status is not verified")
-        if not record.get("reviewer") or not record.get("verified_at"): errors.append(f"{gate}: reviewer and verified_at required")
+        if not isinstance(record.get("reviewer"),str) or not record.get("reviewer").strip() or not isinstance(record.get("verified_at"),str) or not record.get("verified_at").strip(): errors.append(f"{gate}: reviewer and verified_at required")
         artifacts=record.get("artifacts")
         if not isinstance(artifacts,list) or not artifacts: errors.append(f"{gate}: at least one artifact reference required"); continue
         for i,a in enumerate(artifacts):
