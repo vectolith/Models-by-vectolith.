@@ -1,0 +1,43 @@
+name: Core Prime personality data checks
+
+on:
+  pull_request:
+    paths:
+      - "data/personality/**"
+      - "scripts/prepare_core_prime_sft.py"
+      - "scripts/validate_core_prime_personality_data.py"
+      - "scripts/export_core_prime_personality_train_data.py"
+      - "scripts/tests/**"
+      - "scripts/run_core_prime_blind_eval.py"
+      - "evaluation/personality/**"
+      - ".github/workflows/core-prime-personality-data.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "data/personality/**"
+      - "scripts/prepare_core_prime_sft.py"
+      - "scripts/validate_core_prime_personality_data.py"
+      - "scripts/export_core_prime_personality_train_data.py"
+      - "scripts/tests/**"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate draft dataset
+        run: python scripts/validate_core_prime_personality_data.py
+      - name: Unit tests
+        run: python -m unittest discover -s scripts/tests -v
+      - name: Smoke-check exporter
+        run: |
+          tmpdir="$(mktemp -d)"
+          python scripts/export_core_prime_personality_train_data.py --output "$tmpdir/export"
+          python scripts/prepare_core_prime_sft.py --output "$tmpdir/prepared"
+          test -f "$tmpdir/prepared/sft-train.jsonl"
+          test -f "$tmpdir/prepared/dpo-train.jsonl"
+          test -f "$tmpdir/prepared/prepared-manifest.json"
+          python scripts/run_core_prime_blind_eval.py --output "$tmpdir/eval-smoke"
