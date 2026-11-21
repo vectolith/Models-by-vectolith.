@@ -79,14 +79,32 @@ def validate_output_directories(sheet_dir, map_dir):
 
 
 def write_restricted_mapping(map_dir, mapping):
-    map_dir.mkdir(parents=True, exist_ok=True)
+    map_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+    if map_dir.is_symlink():
+        raise ValueError("Condition-map directory must not be a symlink")
     map_file = map_dir / "blind-label-map.json"
+    serialized = json.dumps(mapping, indent=2) + "\n"
     if os.name == "posix":
-        map_dir.chmod(0o700)
-    with map_file.open("x", encoding="utf-8") as stream:
-        stream.write(json.dumps(mapping, indent=2) + "\n")
-    if os.name == "posix":
-        map_file.chmod(0o600)
+        dir_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+        dir_fd = os.open(map_dir, dir_flags)
+        try:
+            os.fchmod(dir_fd, 0o700)
+            file_flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+            fd = os.open(map_file.name, file_flags, 0o600, dir_fd=dir_fd)
+            try:
+                os.fchmod(fd, 0o600)
+                stream = os.fdopen(fd, "w", encoding="utf-8")
+                fd = None
+                with stream:
+                    stream.write(serialized)
+            finally:
+                if fd is not None:
+                    os.close(fd)
+        finally:
+            os.close(dir_fd)
+    else:
+        with map_file.open("x", encoding="utf-8") as stream:
+            stream.write(serialized)
 
 
 def validate_scores(scores, cases):
