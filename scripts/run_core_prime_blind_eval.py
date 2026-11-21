@@ -30,7 +30,9 @@ def make_sheet(cases, outputs, seed):
     rng = random.Random(seed)
     sheet, mappings = [], {}
     for case in cases:
-        case_outputs = outputs.get(case[\"id\"], {})\n        if not isinstance(case_outputs, dict): raise ValueError(f'{case[\"id\"]}: outputs must be a condition mapping')\n        candidates = list(case_outputs.items())
+        case_outputs = outputs.get(case["id"], {})
+        if not isinstance(case_outputs, dict): raise ValueError(f'{case["id"]}: outputs must be a condition mapping')
+        candidates = list(case_outputs.items())
         if len(candidates) < 2:
             raise ValueError(f'{case["id"]}: at least two conditions are required for blind comparison')
         if any(not isinstance(name, str) or not isinstance(response, str) or not response.strip() for name, response in candidates):
