@@ -102,6 +102,15 @@ class EvalHarnessTests(unittest.TestCase):
         with patch.object(ev.random, "SystemRandom", return_value=ReverseShuffle()):
             _, mapping = ev.make_sheet([case()], outputs)
         self.assertEqual(mapping["x"], {"candidate_1": "character_prompt", "candidate_2": "base"})
+    def test_cli_rejects_fixed_seed_option(self):
+        with tempfile.TemporaryDirectory() as td:
+            output = Path(td) / "sheet"
+            args = ["run_core_prime_blind_eval.py", "--output", str(output), "--seed", "20261121"]
+            with patch.object(sys, "argv", args):
+                with self.assertRaises(SystemExit):
+                    ev.main()
+            self.assertFalse(output.exists())
+
 
     @unittest.skipUnless(os.name == "posix", "POSIX symlink semantics required")
     def test_mapping_directory_symlink_is_rejected_before_resolution(self):
