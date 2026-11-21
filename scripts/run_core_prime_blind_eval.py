@@ -10,15 +10,15 @@ def write_jsonl(p,rows):
     p.parent.mkdir(parents=True,exist_ok=True)
     p.write_text("".join(json.dumps(r,ensure_ascii=False)+"\n" for r in rows),encoding="utf-8")
 def make_sheet(cases, outputs, seed):
-    rng=random.Random(seed); sheet=[]
+    rng=random.Random(seed); sheet=[]; label_map={}
     for case in cases:
         candidates=list(outputs.get(case["id"],{}).items())
         rng.shuffle(candidates)
         sheet.append({"case_id":case["id"],"prompt":case["prompt"],"context":case.get("context",""),
           "test":case["test"],"dimension":case["dimension"],
           "responses":[{"blind_label":f"candidate_{i+1}","response":text} for i,(condition,text) in enumerate(candidates)],
-          "mapping":{f"candidate_{i+1}":condition for i,(condition,text) in enumerate(candidates)}})
-    return sheet
+          })\n        label_map[case["id"]]={f"candidate_{i+1}":condition for i,(condition,text) in enumerate(candidates)}
+    return sheet, label_map
 def summarize(scores):
     accum={d:[] for d in DIMENSIONS}
     flags=[]
@@ -43,9 +43,9 @@ def main():
     args.output.mkdir(parents=True,exist_ok=True)
     cases=read_jsonl(args.cases)
     if args.outputs:
-        sheet=make_sheet(cases,json.loads(args.outputs.read_text(encoding="utf-8")),args.seed)
+        sheet,label_map=make_sheet(cases,json.loads(args.outputs.read_text(encoding="utf-8")),args.seed)
         write_jsonl(args.output/"blind-score-sheet.jsonl",sheet)
-        (args.output/"blind-label-map.json").write_text(json.dumps({r["case_id"]:r["mapping"] for r in sheet},indent=2)+"\n",encoding="utf-8")
+        (args.output/"blind-label-map.json").write_text(json.dumps(label_map,indent=2)+"\n",encoding="utf-8")
     if args.scores:
         result=summarize(read_jsonl(args.scores))
         (args.output/"summary.json").write_text(json.dumps(result,indent=2)+"\n",encoding="utf-8")
