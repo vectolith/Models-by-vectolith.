@@ -39,9 +39,14 @@ def validate():
             expected = "user" if i % 2 == 0 else "assistant"
             if turn.get("role") != expected or not isinstance(turn.get("text"), str) or not turn["text"].strip():
                 raise ValueError(f"{r['id']}: malformed turn {i}")
+    all_ids = [r["id"] for rows in (traj, pref, micro) for r in rows]
+    if len(all_ids) != len(set(all_ids)):
+        raise ValueError("IDs must be globally unique across datasets")
     for r in pref:
         if r.get("preference") not in {"A", "B"}:
             raise ValueError(f"{r['id']}: preference must be A or B")
+        if r["preferred"].get("label") != r["preference"] or r["rejected"].get("label") == r["preference"]:
+            raise ValueError("preference labels contradict preferred/rejected for " + r["id"])
         for candidate in ("preferred", "rejected"):
             if not isinstance(r.get(candidate, {}).get("text"), str) or not r[candidate]["text"].strip():
                 raise ValueError(f"{r['id']}: missing candidate text")
