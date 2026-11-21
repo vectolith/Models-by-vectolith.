@@ -82,7 +82,10 @@ def main():
     if args.outputs:
         sheet, mapping = make_sheet(cases, json.loads(args.outputs.read_text(encoding="utf-8")), args.seed)
         write_jsonl(args.output / "blind-score-sheet.jsonl", sheet)
-        (args.output / "blind-label-map.json").write_text(json.dumps(mapping, indent=2) + "\n", encoding="utf-8")
+        map_dir = args.map_output or args.output.parent / (args.output.name + "-restricted")
+        if map_dir.resolve() == args.output.resolve(): p.error("--map-output must be separate from evaluator-facing output")
+        map_dir.mkdir(parents=True, exist_ok=True)
+        (map_dir / "blind-label-map.json").write_text(json.dumps(mapping, indent=2) + "\n", encoding="utf-8")
     if args.scores:
         result = summarize(read_jsonl(args.scores))
         (args.output / "summary.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
