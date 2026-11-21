@@ -57,6 +57,33 @@ class EvalHarnessTests(unittest.TestCase):
             with self.assertRaises(ValueError): ev.validate_output_directories(root / "sheet" / "nested", root / "sheet")
             self.assertEqual(ev.validate_output_directories(root / "sheet", root / "map")[0], (root / "sheet").resolve())
 
+
+    def test_score_ids_and_dimensions_are_bound_to_cases(self):
+        score_rows = [{"case_id":"x","dimension":"judgment","score":3}]
+        self.assertEqual(ev.validate_scores(score_rows, [case()]), score_rows)
+        with self.assertRaises(ValueError):
+            ev.validate_scores([{"case_id":"unknown","dimension":"judgment","score":3}], [case()])
+        with self.assertRaises(ValueError):
+            ev.validate_scores([{"case_id":"x","dimension":"repair","score":3}], [case()])
+
+    def test_cli_refuses_to_overwrite_summary(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            cases_path = root / "cases.jsonl"
+            scores_path = root / "scores.jsonl"
+            output = root / "summary-output"
+            cases_path.write_text(json.dumps(case()) + "\\n", encoding="utf-8")
+            scores_path.write_text(json.dumps({"case_id":"x","dimension":"judgment","score":4,"gate_flags":[]}) + "\\n", encoding="utf-8")
+            args = ["run_core_prime_blind_eval.py", "--cases", str(cases_path), "--scores", str(scores_path), "--output", str(output)]
+            with patch.object(sys, "argv", args):
+                ev.main()
+            summary = output / "summary.json"
+            original = summary.read_text(encoding="utf-8")
+            with patch.object(sys, "argv", args):
+                with self.assertRaises(SystemExit):
+                    ev.main()
+            self.assertEqual(summary.read_text(encoding="utf-8"), original)
+
     def test_cli_keeps_mapping_out_of_evaluator_dir(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
