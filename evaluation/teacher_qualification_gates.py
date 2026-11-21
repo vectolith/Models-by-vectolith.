@@ -109,6 +109,13 @@ def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
     require("grading", grading.get("graded_response_count") == expected_grades, "coverage_incomplete")
     require("grading", valid_sha(grading.get("grade_report_sha256")), "grade_report_digest_missing")
     require("grading", bool(grading.get("rubric_version")), "rubric_version_missing")
+    reviewers=grading.get("independent_reviewer_ids")
+    distinct_reviewers={value for value in reviewers if isinstance(value,str) and value.strip()} if isinstance(reviewers,list) else set()
+    require("grading", grading.get("review_method")=="independent_human", "review_method_not_independent_human")
+    require("grading", isinstance(reviewers,list) and len(distinct_reviewers)>=2 and len(distinct_reviewers)==len(reviewers) and candidate_id not in distinct_reviewers, "independent_reviewers_insufficient_or_invalid")
+    require("grading", valid_sha(grading.get("independence_attestation_sha256")), "independence_attestation_missing")
+    require("grading", valid_sha(grading.get("agreement_report_sha256")), "agreement_report_missing")
+    require("grading", valid_sha(grading.get("adjudication_report_sha256")), "adjudication_report_missing")
 
     safety = gate("safety_review")
     require("safety_review", safety.get("status") == "passed", "not_passed")
@@ -152,6 +159,13 @@ def evaluate_cohort(manifests: list[dict[str, Any]], required_teachers: int = 4)
     results = [evaluate_candidate(manifest) for manifest in manifests]
     candidate_ids = [row.get("candidate_id") for row in results]
     duplicates = len(candidate_ids) != len(set(candidate_ids))
+    cohort_teacher_ids={candidate_id for candidate_id in candidate_ids if isinstance(candidate_id,str)}
+    for row,manifest in zip(results,manifests):
+        reviewers=manifest.get("gates",{}).get("grading",{}).get("independent_reviewer_ids",[])
+        distinct={value for value in reviewers if isinstance(value,str) and value.strip()} if isinstance(reviewers,list) else set()
+        if distinct.intersection(cohort_teacher_ids):
+            row["failed_gates"].append("grading:reviewers_not_independent_of_teacher_cohort")
+            row["qualification_status"]="not_qualified"
     qualified_count = sum(row["qualification_status"] == "qualified" for row in results)
     return {
         "schema_version": "vectolith-teacher-qualification-cohort/1.0",
