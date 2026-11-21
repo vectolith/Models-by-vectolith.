@@ -1,7 +1,7 @@
 """Evidence-backed student evaluation. Keyword overlap is never a quality score."""
 from __future__ import annotations
 from dataclasses import dataclass
-import hashlib, json, os
+import hashlib, json, os, tempfile
 from pathlib import Path
 from typing import Any, Callable
 from .distillation import IndependenceEvidence, TeacherContribution
@@ -115,7 +115,22 @@ def leave_one_teacher_out(train_and_evaluate: Callable[[str|None],float], teache
         "every_teacher_contributed":all(d>0 for d in deltas.values()),"release_eligible":all(d>0 for d in deltas.values())}
 
 def write_release_report(path: str|Path, report: dict[str,Any]) -> None:
-    Path(path).write_text(json.dumps(report,indent=2,ensure_ascii=False),encoding="utf-8")
+    """Write the report atomically so a crash never leaves a half-written verdict."""
+    target=Path(path)
+    payload=json.dumps(report,indent=2,ensure_ascii=False)
+    handle,temporary=tempfile.mkstemp(dir=target.parent,prefix=f".{target.name}.",suffix=".tmp")
+    try:
+        with os.fdopen(handle,"w",encoding="utf-8") as stream:
+            stream.write(payload)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary,target)
+    except BaseException:
+        try:
+            os.unlink(temporary)
+        except FileNotFoundError:
+            pass
+        raise
 
 def evaluate_release(*, capability_report: dict[str,Any], minimum_capability_pass_rate: float, ablation_report: dict[str,Any], independence_evidence: IndependenceEvidence, teacher_contributions: tuple[TeacherContribution,...]) -> dict[str,Any]:
     raw=capability_report.get("pass_rate")
