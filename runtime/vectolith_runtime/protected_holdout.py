@@ -122,7 +122,9 @@ def validate_evaluation_report(report: dict[str, Any], deployment: dict[str, Any
                        and isinstance(report_threshold, (int, float))
                        and math.isfinite(report_threshold)
                        and MINIMUM_HOLDOUT_PASS_RATE <= report_threshold <= 1)
-    if not score_valid or not threshold_valid or report_threshold != deployment_threshold or not score_valid or (score_valid and threshold_valid and score < report_threshold):
+    if not score_valid or not threshold_valid or report_threshold != deployment_threshold:
+        errors.append("evaluation_did_not_meet_or_bind_declared_threshold")
+    elif score < report_threshold:
         errors.append("evaluation_did_not_meet_or_bind_declared_threshold")
     elif counts_valid and isinstance(report_case_count, int) and report_case_count > 0:
         expected_rate = counts[0] / report_case_count
