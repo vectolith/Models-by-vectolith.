@@ -34,6 +34,18 @@ class TeacherEndpoint:
     timeout_seconds: int = 120
 
 
+class _RejectRedirects(HTTPRedirectHandler):
+    """Refuse redirects so the bearer credential is never replayed to another origin."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise HTTPError(req.full_url, code, "teacher endpoint redirects are not permitted", headers, fp)
+
+
+def _open_teacher_request(request: Request, timeout: int):
+    """Open a teacher request with redirects disabled so credentials never travel cross-origin."""
+    return build_opener(_RejectRedirects()).open(request, timeout=timeout)
+
+
 class OpenAICompatibleTeacher:
     """Minimal chat-completions client; secrets are read only at call time."""
 
@@ -65,7 +77,7 @@ class OpenAICompatibleTeacher:
             "Content-Type": "application/json",
         })
         try:
-            with build_opener(_RejectRedirects()).open(request, timeout=self.endpoint.timeout_seconds) as response:
+            with _open_teacher_request(request, self.endpoint.timeout_seconds) as response:
                 raw = response.read(self.MAX_RESPONSE_BYTES + 1)
                 if len(raw) > self.MAX_RESPONSE_BYTES:
                     raise RuntimeError("teacher response exceeds configured byte limit")
