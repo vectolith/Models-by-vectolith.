@@ -24,10 +24,10 @@ def validate_cases(cases):
 def make_sheet(cases, outputs, seed):
     validate_cases(cases)
     if not isinstance(outputs, dict): raise ValueError('Outputs must be a mapping')
-    rng = random.Random(seed)
+    case_ids = {case['id'] for case in cases}\n    extra_ids = set(outputs) - case_ids\n    if extra_ids: raise ValueError('Unexpected output case IDs: ' + ', '.join(sorted(extra_ids)))\n    rng = random.Random(seed)
     sheet, mappings = [], {}
     for case in cases:
-        candidates = list(outputs.get(case["id"], {}).items())
+        case_outputs = outputs.get(case[\"id\"], {})\n        if not isinstance(case_outputs, dict): raise ValueError(f'{case[\"id\"]}: outputs must be a condition mapping')\n        candidates = list(case_outputs.items())
         if len(candidates) < 2:
             raise ValueError(f'{case["id"]}: at least two conditions are required for blind comparison')
         if any(not isinstance(name, str) or not isinstance(response, str) or not response.strip() for name, response in candidates):
