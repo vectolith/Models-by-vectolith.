@@ -11,7 +11,7 @@ Every candidate requires a completed, revision-pinned manifest based on [the qua
 3. **Loader compatibility:** the same immutable revision was loaded successfully, with model class and runtime versions recorded. Remote code must be disabled or separately audited with a source digest.
 4. **Real inference:** completed run and internal run IDs, artifact digest, exact expected response coverage, zero inference errors, and matching revision.
 5. **Resource measurement:** runner/device, peak RSS, mean latency, and compute-record digest.
-6. **Grading:** a completed grading report covering the full expected response set, the rubric version used, and a SHA-256 digest of the report. The qualification gate does not impose a minimum grader count, reviewer-independence attestation, inter-grader agreement threshold, or adjudication requirement.
+6. **Grading:** complete coverage of the expected response set by at least two distinct independent human reviewers; the report must bind the rubric version and report digest, reviewer-independence attestation, inter-grader agreement report, and adjudication report (including a documented no-disagreement disposition where applicable).
 7. **Safety review:** named reviewer and report digest, with an explicit pass.
 8. **Private holdout:** non-empty holdout evaluation, passed leakage audit, and audit digest.
 9. **Corpus integrity:** corpus digest, zero duplicate records, and verified provenance.

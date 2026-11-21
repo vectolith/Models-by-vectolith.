@@ -31,7 +31,7 @@ claim a gate has passed.
 | Dataset provenance | Non-empty corpus artifact, exact SHA-256, source/creator records, license text and authority to use the contents for training | Dataset owner + rights reviewer | BLOCKED |
 | Teacher qualification | Four or more distinct teacher manifests, each tied to an immutable revision and passing every required qualification gate | Teacher qualification owner | BLOCKED |
 | Teacher rights | Exact license review, legal reviewer, dated decision, evidence URI, and separate explicit training-output permission document for each teacher | Authorized rights holder + legal reviewer | BLOCKED |
-| Teacher evaluation | Real inference artifacts, resource measurements, safety review, a completed grading report covering the full response set, with rubric version and report digest | Evaluation lead | BLOCKED |
+| Teacher evaluation | Real inference artifacts, resource measurements, safety review, two independent human graders with full response coverage, independence attestation, agreement and adjudication evidence, rubric version and report digests | Evaluation lead | BLOCKED |
 | Protected holdout deployment | Actual restricted dataset, verified byte digest, case count, custody and key separation, evaluator isolation, access logs, provenance and leakage audits | Independent dataset custodian + security auditor | BLOCKED |
 | Protected teacher results | One validated candidate result per teacher, bound to the deployment digest, exact teacher revision, evaluator identity/image and complete scoring counts | Independent evaluator | BLOCKED |
 | Foundation selection | Comparative report and evidence for required categories, explicit approved decision, exact model ID and immutable 40-character revision | Authorized model-selection approver | BLOCKED |
@@ -67,14 +67,11 @@ are still zero qualified teachers**. The candidate manifest template remains
 empty/pending; do not copy inference metadata into a qualification status or
 treat model-weight license tags as permission to train on generated outputs.
 
-Existing grading evidence is separate: the two supplied AI-generated
-grading files cover 900 blinded response IDs and 2,765 rubric entries each
-(1,800 AI score entries in total). The user checked and approved those AI
-scores. These files are AI-generated scores that the user reviewed and approved;
-they are not a substitute for grading teacher responses. The files contain 391
-cross-file criterion differences. Preserve both originals and their provenance;
-these historical differences are descriptive and do not require adjudication
-under the current Grading policy. The current evidence package v2 contains the
+Existing AI-generated grading files cover 900 blinded response IDs and 2,765
+rubric entries each. They are not independent human grades and cannot satisfy
+the teacher-response grading gate. Preserve their originals and provenance;
+they remain separate from the required independent human review, agreement,
+and adjudication evidence. The current evidence package v2 contains the
 originals, a difference queue, and its manifest/README.
 
 The GitHub Actions artifacts are time-limited and should be retained in the

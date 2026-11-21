@@ -165,7 +165,7 @@ python evaluation/prepare_blinded_human_review.py build --help
 python evaluation/prepare_blinded_human_review.py unblind --help
 \`\`\`
 
-The builder verifies immutable artifact ZIPs, JSON/JSONL parity, provenance, exact suite coverage, and original rubric integrity. It writes separate reviewer ZIPs and a restricted private identity key that must never be shared with reviewers. The optional legacy blinded-review utility supports multiple evaluator packages; it is not required by the current Grading qualification gate. The gate requires complete grading coverage, a rubric version and a grade-report digest. See [Core Prime blinded human-review operations](../docs/core-prime-blinded-human-review.md).
+The builder verifies immutable artifact ZIPs, JSON/JSONL parity, provenance, exact suite coverage, and original rubric integrity. It writes separate reviewer ZIPs and a restricted private identity key that must never be shared with reviewers. Independent human grading is mandatory for teacher qualification: two distinct reviewers, complete coverage, rubric/report digest, independence attestation, agreement report, and adjudication evidence. See [Core Prime blinded human-review operations](../docs/core-prime-blinded-human-review.md).
 
 
 Additional verified follow-up artifacts from Core Prime runs 42 and 43 are recorded in [run 42/43 evidence](core-prime-multi-teacher-runs-42-43-evidence-2026-11-16.md). The blinded review builder supports repeated inference runs for the same candidate without overwriting or collapsing their provenance.
@@ -178,7 +178,7 @@ The legacy disagreement/adjudication utilities remain available for historical a
 
 ## Fail-closed teacher qualification
 
-Use `teacher_qualification_gates.py` to validate candidate evidence against ten independent gates and enforce the minimum four-teacher Core Prime cohort. Inference success is not qualification. Legal permission to use generated outputs for training is separate from the model-weight license. Grading requires a complete grading report and rubric version; protected-holdout evidence, corpus integrity, safety, and resource evidence remain mandatory. The template is intentionally empty and no candidate is approved by default. See [Core Prime teacher qualification gates](../docs/core-prime-four-teacher-qualification.md).
+Use `teacher_qualification_gates.py` to validate candidate evidence against ten independent gates and enforce the minimum four-teacher Core Prime cohort. Inference success is not qualification. Legal permission to use generated outputs for training is separate from the model-weight license. Grading requires two independent human reviewers, complete response coverage, independence attestation, agreement and adjudication evidence, a grading report digest and rubric version; protected-holdout evidence, corpus integrity, safety, and resource evidence remain mandatory. The template is intentionally empty and no candidate is approved by default. See [Core Prime teacher qualification gates](../docs/core-prime-four-teacher-qualification.md).
 
 
 ## Controlled completion-budget study

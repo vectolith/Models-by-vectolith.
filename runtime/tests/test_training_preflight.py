@@ -23,7 +23,9 @@ def teacher_manifest(name, deployment_sha=SHA, result_sha=SHA):
             "loader_compatibility":{"status":"passed","tested_revision":REV,"model_class":"AutoModel","runtime_versions":{"torch":"2.8"},"remote_code":{"status":"disabled"}},
             "real_inference":{"status":"completed","tested_revision":REV,"workflow_run_id":"run-1","internal_run_id":"internal-1","expected_response_count":10,"response_count":10,"error_count":0,"artifact_sha256":SHA},
             "resource_measurement":{"status":"recorded","runner_type":"runner","device":"cpu","peak_rss_bytes":1024,"mean_latency_seconds":1.0,"compute_record_sha256":SHA},
-            "grading":{"status":"passed","expected_response_count":10,"graded_response_count":10,"grade_report_sha256":SHA,"rubric_version":"prime-rubric-v1"},
+            "grading":{"status":"passed","expected_response_count":10,"graded_response_count":10,"grade_report_sha256":SHA,"rubric_version":"prime-rubric-v1",
+                "review_method":"independent_human","independent_reviewer_ids":["human-1","human-2"],
+                "independence_attestation_sha256":SHA,"agreement_report_sha256":SHA,"adjudication_report_sha256":SHA},
             "safety_review":{"status":"passed","reviewer_id":"safety-1","report_sha256":SHA},
             "holdout":{"status":"passed","case_count":100,"leakage_audit_passed":True,"audit_sha256":SHA,"deployment_manifest_sha256":deployment_sha,"evaluation_report_sha256":result_sha},
             "corpus_integrity":{"status":"passed","corpus_sha256":SHA,"duplicate_count":0,"provenance_verified":True},
@@ -45,7 +47,7 @@ def foundation_manifest():
 def write_holdout_evidence(root, teacher_ids):
     deployment = {
         "schema_version": DEPLOYMENT_SCHEMA, "dataset_version": "holdout-v1",
-        "dataset_sha256": SHA, "case_count": 100,
+        "dataset_sha256": SHA, "case_count": 100, "minimum_required_pass_rate": 0.8,
         "custody": {"storage_uri": "vault://restricted/prime/holdout-v1",
             "access_boundary": "dedicated_vault", "encryption_at_rest": True,
             "key_custody_separate": True, "custodian_id": "custodian-1",
@@ -115,6 +117,13 @@ class TrainingPreflightTests(unittest.TestCase):
     def test_teacher_requires_all_ten_gates(self):
         manifest=teacher_manifest("teacher-a")
         self.assertEqual(validate_teacher_manifest(manifest,"teacher-a",REV),[])
+        manifest=teacher_manifest("teacher-a")
+        manifest["gates"]["grading"]["independent_reviewer_ids"]=["human-1"]
+        self.assertIn("grading independent human review, agreement, or adjudication gate failed", validate_teacher_manifest(manifest,"teacher-a",REV))
+        manifest=teacher_manifest("teacher-a")
+        manifest["gates"]["grading"]["review_method"]="ai"
+        self.assertIn("grading independent human review, agreement, or adjudication gate failed", validate_teacher_manifest(manifest,"teacher-a",REV))
+        manifest=teacher_manifest("teacher-a")
         del manifest["gates"]["holdout"]
         self.assertTrue(any("holdout" in item for item in validate_teacher_manifest(manifest,"teacher-a",REV)))
 
@@ -151,6 +160,15 @@ class TrainingPreflightTests(unittest.TestCase):
             self.assertEqual(len(validated),4)
             self.assertEqual(report["status"],"passed")
             self.assertEqual(len(report["teacher_manifest_sha256"]),4)
+            teacher0_path=root/"teachers"/"teacher-0.json"
+            teacher0=json.loads(teacher0_path.read_text())
+            teacher0["gates"]["grading"]["independent_reviewer_ids"]=["teacher-1","human-2"]
+            teacher0_path.write_text(json.dumps(teacher0))
+            with self.assertRaisesRegex(ValueError,"grading reviewers must be outside the qualified teacher cohort"):
+                validate_training_preflight(dataset_path=dataset,foundation_model="publisher/model",
+                    foundation_revision=REV,foundation_selection_path=selection,teacher_manifest_dir=root/"teachers",
+                    holdout_deployment_manifest_path=deployment_path,holdout_evaluation_results_dir=results_dir,
+                    training_execution_manifest_path=execution_path,training_code_revision=CODE_REV,training_config=TRAIN_CONFIG)
 
     def test_dataset_teacher_revision_mismatch_blocks_preflight(self):
         with tempfile.TemporaryDirectory() as tmp:

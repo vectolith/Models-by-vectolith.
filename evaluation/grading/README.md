@@ -107,7 +107,7 @@ python evaluation/grading/grade_run42.py \
 
 Grade each of the 29 candidate-balanced batches of 30 with the same local command, then concatenate the resulting decision JSONL files in batch order and import them using the same `--phase remaining` arguments plus `--decisions /secure/run42/remaining-decisions.jsonl` and the actual UTC `--graded-at` timestamp. The CLI verifies the completed pilot report, exact artifact hashes and unchanged grader/prompt versions before accepting the remaining phase.
 
-The historical 30-response pilot did not preserve criterion-level records; it is a comparison reference, not ground truth. No reviewer-count, reviewer-independence, agreement-threshold or adjudication requirement is imposed by this Grading engine. Specialized factuality, executable code verification, safety review, protected holdout and corpus-integrity evidence remain separate gates.
+The historical 30-response pilot did not preserve criterion-level records; it is a comparison reference, not ground truth. This machine-assisted grading engine is not the independent human qualification gate and cannot satisfy it. Core Prime qualification requires two distinct independent human reviewers, complete response coverage, reviewer-independence attestation, agreement and adjudication evidence. Specialized factuality, executable code verification, safety review, protected holdout and corpus-integrity evidence remain separate gates.
 
 ## Tests
 

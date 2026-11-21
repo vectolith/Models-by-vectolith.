@@ -1,29 +1,16 @@
 # Historical blinded-review tooling
 
-Status: optional legacy tooling. This document describes utilities that may be
-used to inspect historical evaluation material; it does not define a current
-teacher-qualification requirement or authorize training.
+Status: optional package-building tooling. Independent human grading remains
+mandatory for teacher qualification.
 
 ## Current Grading policy
 
-The active qualification gate is **Grading**. It requires:
-
-- a passed grading status;
-- a positive expected response count;
-- complete grading coverage of that response set;
-- a SHA-256 digest for the grading report; and
-- a documented rubric version.
-
-The qualification gate does not require a minimum number of graders, reviewer
-independence attestations, inter-grader agreement statistics or thresholds, or
-third-party adjudication. None of those are release or training prerequisites.
-
-The scripts `prepare_blinded_human_review.py`,
-`prepare_human_adjudication.py`, and `summarize_human_grades.py` remain
-available for optional historical analysis. Their outputs must not be
-represented as mandatory qualification evidence. Existing source artifacts
-and grade files should remain unchanged; preserve provenance and record any
-new analysis as a separate artifact.
+The qualification gate requires complete coverage of the expected response
+set by at least two distinct independent human reviewers. It also requires
+the grade-report digest, rubric version, reviewer-independence attestation,
+inter-grader agreement report, and adjudication report (including a
+documented no-disagreement disposition where applicable). Machine-only or
+single-pass AI grading does not satisfy the gate.
 
 ## Historical run 40 material
 
