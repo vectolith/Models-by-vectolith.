@@ -18,6 +18,9 @@ def write_jsonl(path, rows):
 def make_sheet(cases, outputs, seed):
     rng = random.Random(seed)
     sheet, label_map = [], {}
+    expected_ids = {case.get("id") for case in cases}
+    if set(outputs) != expected_ids:
+        raise ValueError(f"Output IDs mismatch: missing={sorted(expected_ids-set(outputs))}, extra={sorted(set(outputs)-expected_ids)}")
     case_ids=set()
     for case in cases:
         case_id=case.get("id")
