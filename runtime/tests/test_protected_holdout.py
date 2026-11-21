@@ -11,6 +11,7 @@ def deployment():
         'dataset_version': 'holdout-2026-11',
         'dataset_sha256': SHA64,
         'case_count': 4,
+        'minimum_required_pass_rate': 0.8,
         'custody': {
             'storage_uri': 'vault://restricted/holdout',
             'access_boundary': 'dedicated_vault',
@@ -42,15 +43,15 @@ def report_for(dep, **overrides):
         'schema_version': ph.RESULT_SCHEMA,
         'deployment_manifest_sha256': ph.canonical_digest(dep),
         'candidate_id': 'cand-1',
-        'candidate_revision': 'rev-1',
+        'candidate_revision': 'f' * 40,
         'evaluator_id': 'evaluator-b',
         'evaluator_image_sha256': 'b' * 64,
         'case_count': 4,
-        'verified_pass_count': 3,
-        'verified_fail_count': 1,
+        'verified_pass_count': 4,
+        'verified_fail_count': 0,
         'unscored_count': 0,
-        'pass_rate': 0.75,
-        'minimum_required_pass_rate': 0.70,
+        'pass_rate': 1.0,
+        'minimum_required_pass_rate': 0.8,
         'status': 'passed',
         'evaluation_suite_version': '1.0',
         'evaluated_at': '2026-11-20T00:00:00Z',
@@ -122,6 +123,12 @@ class DeploymentTests(unittest.TestCase):
         mutated = deployment()
         mutated['audit']['leakage_audit_sha256'] = 'x'
         self.assertIn('audit_digest_invalid:leakage_audit_sha256', ph.validate_deployment_manifest(mutated))
+        mutated = deployment()
+        mutated['audit']['unauthorized_access_count'] = False
+        self.assertIn('unauthorized_access_detected_or_unreported', ph.validate_deployment_manifest(mutated))
+        mutated = deployment()
+        mutated['audit']['reviewed_by'] = 7
+        self.assertIn('independent_audit_reviewer_required', ph.validate_deployment_manifest(mutated))
 
 class EvaluationReportTests(unittest.TestCase):
     def setUp(self):
@@ -134,15 +141,17 @@ class EvaluationReportTests(unittest.TestCase):
         checks = [
             ({'deployment_manifest_sha256': 'f' * 64}, 'evaluation_not_bound_to_protected_deployment'),
             ({'candidate_id': 'other'}, 'evaluation_candidate_identity_or_revision_mismatch'),
-            ({'candidate_revision': 'rev-2'}, 'evaluation_candidate_identity_or_revision_mismatch'),
+            ({'candidate_revision': 'e' * 40}, 'evaluation_candidate_identity_or_revision_mismatch'),
+            ({'candidate_revision': 'rev-2'}, 'evaluation_candidate_revision_invalid'),
             ({'evaluator_id': 'custodian-a'}, 'evaluation_evaluator_identity_mismatch'),
             ({'evaluator_image_sha256': 'c' * 64}, 'evaluation_evaluator_image_mismatch'),
             ({'case_count': 5}, 'evaluation_case_count_mismatch'),
+            ({'case_count': True}, 'evaluation_case_count_invalid'),
             ({'status': 'attempted'}, 'holdout_evaluation_not_passed'),
             ({'evaluator_run_id': ''}, 'evaluation_provenance_missing:evaluator_run_id'),
         ]
         for override, code in checks:
-            errors = ph.validate_evaluation_report(report_for(self.dep, **override), self.dep, 'cand-1', 'rev-1')
+            errors = ph.validate_evaluation_report(report_for(self.dep, **override), self.dep, 'cand-1', 'f' * 40)
             self.assertIn(code, errors)
 
     def test_case_count_accounting_errors(self):
@@ -154,9 +163,11 @@ class EvaluationReportTests(unittest.TestCase):
         self.assertIn('evaluation_case_counts_invalid', errors)
 
     def test_threshold_and_pass_rate_errors(self):
-        errors = ph.validate_evaluation_report(report_for(self.dep, pass_rate=0.25, verified_pass_count=1, verified_fail_count=3), self.dep, 'cand-1', 'rev-1')
-        self.assertIn('evaluation_did_not_meet_declared_threshold', errors)
-        errors = ph.validate_evaluation_report(report_for(self.dep, pass_rate=0.95), self.dep, 'cand-1', 'rev-1')
+        errors = ph.validate_evaluation_report(report_for(self.dep, pass_rate=0.25, verified_pass_count=1, verified_fail_count=3), self.dep, 'cand-1', 'f' * 40)
+        self.assertIn('evaluation_did_not_meet_or_bind_declared_threshold', errors)
+        errors = ph.validate_evaluation_report(report_for(self.dep, minimum_required_pass_rate=0.7), self.dep, 'cand-1', 'f' * 40)
+        self.assertIn('evaluation_did_not_meet_or_bind_declared_threshold', errors)
+        errors = ph.validate_evaluation_report(report_for(self.dep, pass_rate=0.95), self.dep, 'cand-1', 'f' * 40)
         self.assertIn('evaluation_pass_rate_does_not_match_case_counts', errors)
 
 class FileValidationTests(unittest.TestCase):
@@ -170,7 +181,7 @@ class FileValidationTests(unittest.TestCase):
             self.assertEqual(digest, ph.canonical_digest(dep))
             result_path = Path(tmp, 'cand-1.json')
             result_path.write_text(json.dumps(report_for(dep)))
-            report, report_digest = ph.validate_candidate_result(result_path, manifest, digest, 'cand-1', 'rev-1')
+            report, report_digest = ph.validate_candidate_result(result_path, manifest, digest, 'cand-1', 'f' * 40)
             self.assertEqual(report['candidate_id'], 'cand-1')
             self.assertEqual(len(report_digest), 64)
     def test_invalid_deployment_file_raises(self):
@@ -187,11 +198,11 @@ class FileValidationTests(unittest.TestCase):
         dep = deployment()
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaises(ValueError):
-                ph.validate_candidate_result(Path(tmp, 'x.json'), dep, ph.canonical_digest(dep), '../etc/passwd', 'rev-1')
+                ph.validate_candidate_result(Path(tmp, 'x.json'), dep, ph.canonical_digest(dep), '../etc/passwd', 'f' * 40)
             with self.assertRaises(ValueError):
-                ph.validate_candidate_result(Path(tmp, 'x.json'), dep, ph.canonical_digest(dep), 'bad id', 'rev-1')
+                ph.validate_candidate_result(Path(tmp, 'x.json'), dep, ph.canonical_digest(dep), 'bad id', 'f' * 40)
             with self.assertRaises(FileNotFoundError):
-                ph.validate_candidate_result(Path(tmp, 'missing.json'), dep, ph.canonical_digest(dep), 'cand-1', 'rev-1')
+                ph.validate_candidate_result(Path(tmp, 'missing.json'), dep, ph.canonical_digest(dep), 'cand-1', 'f' * 40)
 
     def test_result_digest_mismatch_raises(self):
         dep = deployment()
@@ -199,7 +210,7 @@ class FileValidationTests(unittest.TestCase):
             path = Path(tmp, 'cand-1.json')
             path.write_text(json.dumps(report_for(dep)))
             with self.assertRaises(ValueError) as ctx:
-                ph.validate_candidate_result(path, dep, 'f' * 64, 'cand-1', 'rev-1')
+                ph.validate_candidate_result(path, dep, 'f' * 64, 'cand-1', 'f' * 40)
             self.assertIn('holdout_result_deployment_digest_mismatch', str(ctx.exception))
 
 if __name__ == '__main__':
