@@ -75,7 +75,7 @@ def generate(model, tokenizer, torch, messages, max_new_tokens):
 
 def write_outputs(path, outputs):
     path.parent.mkdir(parents=True, exist_ok=True)
-    serialized = json.dumps(outputs, ensure_ascii=False, indent=2) + "\\n"
+    serialized = json.dumps(outputs, ensure_ascii=False, indent=2) + "\n"
     with path.open("x", encoding="utf-8") as stream:
         stream.write(serialized)
 
@@ -114,8 +114,10 @@ def main():
             outputs[row["id"]][condition] = generate(
                 model, tok, torch, build_messages(row, system_prompt), args.max_new_tokens
             )
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(outputs, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    try:
+        write_outputs(args.output, outputs)
+    except FileExistsError:
+        p.error("Output file already exists; use a fresh path to preserve prior results")
     print(f"Generated paired outputs for {len(outputs)} cases using {args.model}")
 
 
