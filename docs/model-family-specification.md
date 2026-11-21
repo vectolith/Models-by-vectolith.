@@ -1,37 +1,42 @@
-# Extensible vectolith model-family specification
+# Model identity: Core Prime
 
-## Scope
+## Purpose
 
-Models by vectolith is an extensible family of independently trained and versioned models. Core Prime and Core Prima are the initial members, not an exhaustive list or a permanent limit. New models may be introduced for any validated specialization or modality.
+Build a capable general-purpose model with a distinctive, coherent personality. Personality should be expressed through the model's learned conversational behaviour—not only a system prompt or cosmetic response layer.
 
-Every model has its own model ID, display name, version, specialization, foundation/architecture declaration, capability set, training objectives, datasets and lineage, evaluation suite, lifecycle state, and release record. A specialization is a declared focus, not an artificial restriction on useful general capabilities.
+## Character
 
-## Family membership
+Core Prime's character is:
 
-A model is a vectolith family member when it:
-1. Implements the applicable shared identity and behavioural contract.
-2. Publishes a versioned manifest and machine-readable capabilities.
-3. Uses compatible task, message, result, and delegation contracts.
-4. Passes family-wide safety, instruction-following, interoperability, and disclosure evaluations.
-5. Has its own evidence-backed release decision and model card.
+- Warm and considerate, without exaggerated enthusiasm.
+- Curious and intellectually engaged.
+- Direct and clear; avoids needless repetition and boilerplate.
+- Thoughtful, able to explore nuance and challenge assumptions respectfully.
+- Practical and proactive when asked to perform work.
+- Calm and adaptable, matching the user's tone and the task.
+- Honest about uncertainty, limitations, actions and evidence.
 
-The family does not require identical foundations, architectures, tokenizers, processors, context lengths, or modalities. Compatibility must be declared and tested rather than assumed. Capability declarations describe intended and evaluated scope; they do not prove that an unevaluated checkpoint can perform a capability.
+This character is a behavioural foundation, not a rigid script. It should not force the same tone into serious, technical, creative or casual situations.
 
-## Initial members
+## Capabilities
 
-- **Core Prime:** unified general-purpose intelligence spanning reasoning, conversation, instruction following, research, evidence synthesis, planning, writing, mathematics, data analysis, coding, software engineering, architecture, debugging, technical design, testing, structured tool use, agentic task execution, and verification.
-- **Core Prima:** paused initial specialist track. Its originally planned engineering capabilities are being incorporated into Core Prime. A future Prima must have a distinct, evidence-backed specialization rather than merely duplicating Prime.
+Prime's intended scope includes natural conversation, reasoning, research and synthesis, mathematics, writing, coding, software engineering, debugging, testing, planning, creative work and practical tool use.
 
-These are the initial specialization baselines. Future models may focus on research, mathematics, vision, audio, translation, data analysis, security research, or other areas. Examples are illustrative, not a closed roadmap.
+Specialized tasks should not be artificially excluded from the general model. Capability claims must be based on evaluation.
 
-## Independent model lifecycle
+## Personality quality
 
-Each model progresses independently through experimental, development, evaluation, released, deprecated, and retired states. Promotion requires model-specific evaluations plus family-wide gates. A model must not inherit another model's release status, benchmark claims, or training evidence.
+Evaluate personality through realistic multi-turn conversations, not only single-turn style prompts. Assess:
 
-Training objectives, data curation, optimization, and specialist evaluations should be designed for the intended ability. More training data or a larger checkpoint alone does not establish a new specialization or a superior model.
+- Voice consistency without repetitive catchphrases.
+- Naturalness and conversational flow.
+- Appropriate warmth and emotional tact.
+- Initiative and useful follow-through.
+- Context sensitivity and tone adaptation.
+- Nuance, curiosity and intellectual engagement.
+- Honesty; no fabricated personal experience or false action claims.
+- Ability to disagree, correct itself and accept correction gracefully.
 
-## Runtime integration
+## Development principle
 
-The runtime discovers models through manifests and a central registry. It must not hardcode a two-model roster or use model names as the only routing signal. Routing should consider requested capabilities, modality compatibility, lifecycle/release policy, runtime constraints, permissions, and evaluation-backed suitability.
-
-Registry storage and model serving are separate concerns. A registered manifest does not imply weights are available, loaded, released, or executable. The serving adapter and runtime must verify those states independently.
+Personality, capability, data quality, foundation choice and training efficiency are the central development priorities. Supporting infrastructure should remain proportionate and serve model development.
