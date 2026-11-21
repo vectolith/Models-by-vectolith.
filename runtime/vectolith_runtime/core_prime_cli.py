@@ -10,10 +10,19 @@ SYSTEM_PROMPT = "You are Core Prime, a model from Models by vectolith. Be accura
 def render_messages(tokenizer: Any, messages: list[dict[str, str]]) -> str:
     if getattr(tokenizer, "chat_template", None):
         return tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-    return "\n".join(f"{m['role'].upper()}: {m['content']}" for m in messages) + "\nASSISTANT:"
+    return "\\n".join(f"{m['role'].upper()}: {m['content']}" for m in messages) + "\\nASSISTANT:"
 
 
-def load_local_generator(checkpoint: Path, max_new_tokens: int = 512):
+def trim_messages(tokenizer: Any, messages: list[dict[str, str]], budget: int) -> list[dict[str, str]]:
+    """Drop oldest conversation turns while preserving the system message and newest input."""
+    kept = list(messages)
+    while len(kept) > 2 and len(tokenizer(render_messages(tokenizer, kept), add_special_tokens=False)["input_ids"]) > budget:
+        # Keep system instructions and the latest user request; discard the oldest conversational item.
+        del kept[1]
+    return kept
+
+
+def load_local_generator(checkpoint: Path, max_new_tokens: int = 512, max_context_tokens: int = 4096):
     if not checkpoint.is_dir():
         raise FileNotFoundError(f"Checkpoint directory does not exist: {checkpoint}")
     try:
@@ -28,9 +37,15 @@ def load_local_generator(checkpoint: Path, max_new_tokens: int = 512):
     model.eval()
 
     def generate(messages: list[dict[str, str]]) -> str:
-        rendered = render_messages(tokenizer, messages)
+        budget = max(1, max_context_tokens - max_new_tokens)
+        trimmed = trim_messages(tokenizer, messages, budget)
+        rendered = render_messages(tokenizer, trimmed)
         inputs = tokenizer(rendered, return_tensors="pt")
-        device = getattr(model, "device", None)
+        # For dispatched/sharded models, send inputs to the embedding layer's device.
+        try:
+            device = model.get_input_embeddings().weight.device
+        except (AttributeError, RuntimeError):
+            device = getattr(model, "device", None)
         if device is not None:
             inputs = {k: v.to(device) for k, v in inputs.items()}
         with torch.inference_mode():
@@ -76,14 +91,17 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="core-prime", description="Run a local Core Prime checkpoint.")
     parser.add_argument("--checkpoint", required=True, help="Local checkpoint directory (offline; no download).")
     parser.add_argument("--max-new-tokens", type=int, default=512)
+    parser.add_argument("--max-context-tokens", type=int, default=4096, help="Input context budget including chat formatting.")
     parser.add_argument("--prompt", help="Run a single prompt and exit.")
     args = parser.parse_args(argv)
     if args.max_new_tokens < 1 or args.max_new_tokens > 8192:
         parser.error("--max-new-tokens must be between 1 and 8192")
+    if args.max_context_tokens < 256 or args.max_context_tokens > 131072:
+        parser.error("--max-context-tokens must be between 256 and 131072")
     try:
-        generator = load_local_generator(Path(args.checkpoint), args.max_new_tokens)
+        generator = load_local_generator(Path(args.checkpoint), args.max_new_tokens, args.max_context_tokens)
     except Exception as exc:
-        parser.exit(2, f"core-prime: {type(exc).__name__}: {exc}\n")
+        parser.exit(2, f"core-prime: {type(exc).__name__}: {exc}\\n")
     return chat_loop(generator, one_shot=args.prompt)
 
 
