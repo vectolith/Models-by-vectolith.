@@ -48,6 +48,14 @@ def validate_teacher_manifest(manifest: dict[str,Any], teacher_id: str, revision
         or grading.get("graded_response_count")!=expected or not _sha(grading.get("grade_report_sha256"))
         or not grading.get("rubric_version")):
         errors.append("grading gate failed")
+    reviewers=grading.get("independent_reviewer_ids")
+    distinct_reviewers={value for value in reviewers if isinstance(value,str) and value.strip()} if isinstance(reviewers,list) else set()
+    if (grading.get("review_method")!="independent_human" or not isinstance(reviewers,list)
+        or len(distinct_reviewers)<2 or len(distinct_reviewers)!=len(reviewers) or teacher_id in distinct_reviewers
+        or not _sha(grading.get("independence_attestation_sha256"))
+        or not _sha(grading.get("agreement_report_sha256"))
+        or not _sha(grading.get("adjudication_report_sha256"))):
+        errors.append("grading independent human review, agreement, or adjudication gate failed")
     safety=gate("safety_review")
     if safety.get("status")!="passed" or not safety.get("reviewer_id") or not _sha(safety.get("report_sha256")): errors.append("safety review gate failed")
     holdout=gate("holdout")
@@ -160,6 +168,7 @@ def validate_training_preflight(*, dataset_path: str|Path, foundation_model: str
     if selection_errors: raise ValueError("foundation selection preflight failed: "+"; ".join(selection_errors))
     manifests={}
     manifest_hashes={}
+    grading_reviewer_ids=set()
     for path in sorted(manifest_dir.glob("*.json")):
         value=json.loads(path.read_text(encoding="utf-8"))
         teacher_id=value.get("candidate_id") if isinstance(value,dict) else None
@@ -180,6 +189,12 @@ def validate_training_preflight(*, dataset_path: str|Path, foundation_model: str
         if errors: raise ValueError(f"{teacher_id}: qualification preflight failed: "+"; ".join(errors))
         manifests[teacher_id]=revision
         manifest_hashes[teacher_id]=hashlib.sha256(path.read_bytes()).hexdigest()
+        reviewers=value.get("gates",{}).get("grading",{}).get("independent_reviewer_ids",[])
+        if isinstance(reviewers,list):
+            grading_reviewer_ids.update(item for item in reviewers if isinstance(item,str) and item.strip())
+    cohort_reviewer_overlap=grading_reviewer_ids.intersection(manifests)
+    if cohort_reviewer_overlap:
+        raise ValueError("grading reviewers must be outside the qualified teacher cohort: "+", ".join(sorted(cohort_reviewer_overlap)))
     rows=[]
     for number,line in enumerate(dataset.read_text(encoding="utf-8").splitlines(),1):
         if not line.strip(): continue
