@@ -39,9 +39,66 @@ class TeacherPipelineTests(unittest.TestCase):
             def __enter__(self): return self
             def __exit__(self, *args): return None
             def read(self, size): return b"x" * size
-        with patch.dict("os.environ", {"TEST_KEY": "secret"}), patch("vectolith_runtime.teacher_pipeline.urlopen", return_value=FakeResponse()):
+        with patch.dict("os.environ", {"TEST_KEY": "secret"}), patch("vectolith_runtime.teacher_pipeline._open_teacher_request", return_value=FakeResponse()):
             with self.assertRaisesRegex(RuntimeError, "byte limit"):
                 OpenAICompatibleTeacher(endpoint).generate([{"role":"user","content":"test"}], max_tokens=1)
+
+    def test_endpoint_rejects_embedded_credentials_and_non_http_scheme(self):
+        from vectolith_runtime.teacher_pipeline import OpenAICompatibleTeacher
+        with patch.dict("os.environ", {"TEST_KEY": "secret"}):
+            for url in ("https://user:pass@example.com/v1", "file:///tmp", "https://example.com/v1?token=secret"):
+                endpoint = TeacherEndpoint("teacher-x", "model-x", url, "TEST_KEY", REV)
+                with self.subTest(url=url), self.assertRaises(ValueError):
+                    OpenAICompatibleTeacher(endpoint).generate([{"role": "user", "content": "test"}], max_tokens=1)
+
+    def test_redirects_are_refused_and_credentials_are_not_replayed(self):
+        import threading
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+        from vectolith_runtime.teacher_pipeline import OpenAICompatibleTeacher
+
+        hits = []
+
+        class Target(BaseHTTPRequestHandler):
+            def do_POST(self):
+                hits.append(("target", dict(self.headers)))
+                body = b'{"choices":[{"message":{"content":"redirected"}}]}'
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *args):
+                pass
+
+        class Redirector(BaseHTTPRequestHandler):
+            def do_POST(self):
+                hits.append(("origin", dict(self.headers)))
+                self.send_response(302)
+                self.send_header("Location", f"http://127.0.0.1:{target.server_port}/chat/completions")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+
+            def log_message(self, *args):
+                pass
+
+        target = HTTPServer(("127.0.0.1", 0), Target)
+        redirector = HTTPServer(("127.0.0.1", 0), Redirector)
+        servers = (target, redirector)
+        for server in servers:
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(target.server_close)
+        self.addCleanup(redirector.server_close)
+        for server in servers:
+            self.addCleanup(server.shutdown)
+
+        endpoint = TeacherEndpoint("teacher-x", "model-x", f"http://127.0.0.1:{redirector.server_port}/v1", "TEST_KEY", REV)
+        with patch.dict("os.environ", {"TEST_KEY": "secret"}):
+            with self.assertRaisesRegex(RuntimeError, "teacher request failed"):
+                OpenAICompatibleTeacher(endpoint).generate([{"role": "user", "content": "test"}], max_tokens=1)
+
+        self.assertEqual([host for host, _ in hits], ["origin"])
+        self.assertEqual(hits[0][1].get("Authorization"), "Bearer secret")
 
     def test_teaching_corpus_digest_uses_same_nul_separator_as_training_preflight(self):
         import hashlib
