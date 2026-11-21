@@ -4,6 +4,7 @@
   "dataset_version": "",
   "dataset_sha256": "",
   "case_count": 0,
+  "minimum_required_pass_rate": 0.8,
   "custody": {
     "storage_uri": "",
     "access_boundary": "",
