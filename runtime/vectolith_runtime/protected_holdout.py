@@ -91,6 +91,9 @@ def validate_evaluation_report(report: dict[str, Any], deployment: dict[str, Any
         errors.append("evaluation_not_bound_to_protected_deployment")
     if report.get("candidate_id") != candidate_id or report.get("candidate_revision") != candidate_revision:
         errors.append("evaluation_candidate_identity_or_revision_mismatch")
+    report_revision = report.get("candidate_revision")
+    if not isinstance(report_revision, str) or not REVISION_SHA.fullmatch(report_revision):
+        errors.append("evaluation_report_candidate_revision_invalid")
     if not isinstance(candidate_revision, str) or not REVISION_SHA.fullmatch(candidate_revision):
         errors.append("evaluation_candidate_revision_invalid")
     custody = deployment.get("custody", {}) if isinstance(deployment, dict) else {}
