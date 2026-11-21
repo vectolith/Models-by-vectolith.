@@ -267,6 +267,30 @@ class TeacherPipelineTests(unittest.TestCase):
         self.assertEqual(candidate.response_evidence[0]["response"], "Paris is the capital of France, but the Moon is made of cheese.")
         self.assertEqual(len(candidate.response_evidence[0]["response_sha256"]), 64)
 
+    def test_peer_review_rejects_malformed_scores_and_issues(self):
+        assignment = select_teacher_panel("core_prime", REV, "run-review", [candidate(i) for i in range(4)], required_competencies={"reasoning"})
+        endpoints = {teacher.endpoint.teacher_id: teacher.endpoint for teacher in assignment.teachers}
+        task = TeachingTask("case-review", "reasoning", "Prompt", "Rubric")
+        malformed = [
+            {"score": True, "verdict": "accept", "issues": []},
+            {"score": 1.5, "verdict": "accept", "issues": []},
+            {"score": -0.1, "verdict": "accept", "issues": []},
+            {"score": "0.9", "verdict": "accept", "issues": []},
+            {"score": 0.9, "verdict": "maybe", "issues": []},
+            {"score": 0.9, "verdict": "accept", "issues": [1, 2]},
+            {"score": 0.9, "verdict": "accept", "issues": "none"},
+            {"score": 0.9, "verdict": "accept"},
+        ]
+        for payload in malformed:
+            responses = iter(["Answer"] * 4 + [json.dumps(payload)] * 4)
+
+            def mocked_generate(self, messages, *, max_tokens):
+                return next(responses)
+
+            with self.subTest(payload=payload), tempfile.TemporaryDirectory() as tmp, patch("vectolith_runtime.teacher_pipeline.OpenAICompatibleTeacher.generate", new=mocked_generate):
+                with self.assertRaisesRegex(RuntimeError, "no accepted examples"):
+                    asyncio.run(generate_teaching_corpus(assignment, endpoints, [task], Path(tmp) / "out.jsonl"))
+
 
 if __name__ == "__main__":
     unittest.main()
