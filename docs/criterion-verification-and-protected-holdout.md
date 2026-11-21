@@ -16,7 +16,7 @@ required evidence is absent.
 
 ## Protected holdout deployment
 
-The protected-holdout manifest validator requires separate storage and key custody,
+The protected-holdout manifest validator binds the minimum pass-rate policy (at least 0.80) to the deployment digest and requires the report to match it. The threshold must be set before the evaluation; reports cannot lower it. It also requires separate storage and key custody,
 a distinct evaluator operator, a dedicated evaluator deployment, denial of pull-request
 code and candidate egress, read-only dataset mounting, access logs, leakage and
 provenance audits, and an auditor independent of the custodian and evaluator operator.
