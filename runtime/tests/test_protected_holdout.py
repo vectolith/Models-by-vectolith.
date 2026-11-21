@@ -208,9 +208,9 @@ class FileValidationTests(unittest.TestCase):
         dep = deployment()
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp, 'cand-1.json')
-            path.write_text(json.dumps(report_for(dep)))
+            path.write_text(json.dumps(report_for(dep, deployment_manifest_sha256='f' * 64)))
             with self.assertRaises(ValueError) as ctx:
-                ph.validate_candidate_result(path, dep, 'f' * 64, 'cand-1', 'f' * 40)
+                ph.validate_candidate_result(path, dep, ph.canonical_digest(dep), 'cand-1', 'f' * 40)
             self.assertIn('holdout_result_deployment_digest_mismatch', str(ctx.exception))
 
 if __name__ == '__main__':
