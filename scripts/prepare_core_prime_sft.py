@@ -41,7 +41,7 @@ def prepare(root=ROOT, output=None):
     dpo=[]
     for row in preference_rows:
         if row.get("split") != "train": continue
-        dpo.append({"source_id":row["id"],"prompt":[{"role":"user","text":row["prompt"]}],
+        dpo.append({"source_id":row["id"],"prompt":[{"role":"user","content":row["prompt"]}],
                     "chosen":[{"role":"assistant","content":row["preferred"]["text"]}],
                     "rejected":[{"role":"assistant","content":row["rejected"]["text"]}]})
     write_jsonl(output / "sft-train.jsonl", sft)
