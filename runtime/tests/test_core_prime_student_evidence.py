@@ -1,4 +1,4 @@
-import importlib.util
+import importlib.util,math
 from pathlib import Path
 S=Path(__file__).resolve().parents[2]/"scripts"/"core_prime_student_evidence.py"
 sp=importlib.util.spec_from_file_location("student",S);m=importlib.util.module_from_spec(sp);sp.loader.exec_module(m)
@@ -14,3 +14,10 @@ def test_digest_invalid_blocks():
 def test_duplicate_model_blocks():
  r=record()
  assert any("duplicate model_id" in e for e in m.validate({"candidates":[r,r]}))
+def test_nan_infinity_block():
+ for field,value in (("quality_score",math.nan),("cost_usd",math.inf),("peak_memory_mb",math.nan),("tokens_per_second",math.inf)):
+  r=record();r[field]=value
+  assert m.validate({"candidates":[r]})
+def test_empty_identifiers_block():
+ r=record();r["model_id"]=" "
+ assert any("model_id" in e for e in m.validate({"candidates":[r]}))
