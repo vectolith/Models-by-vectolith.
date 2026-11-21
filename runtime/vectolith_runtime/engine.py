@@ -59,6 +59,17 @@ class TaskStore:
                 raise ValueError("terminal task cannot transition")
             if status in TERMINAL_STATUSES:
                 raise ValueError("terminal task statuses must be set through set_result")
+            allowed = {
+                TaskStatus.RECEIVED: {TaskStatus.UNDERSTOOD, TaskStatus.PLANNED, TaskStatus.DELEGATED},
+                TaskStatus.UNDERSTOOD: {TaskStatus.PLANNED, TaskStatus.DELEGATED},
+                TaskStatus.PLANNED: {TaskStatus.DELEGATED},
+                TaskStatus.DELEGATED: {TaskStatus.RUNNING},
+                TaskStatus.RUNNING: {TaskStatus.AWAITING_APPROVAL, TaskStatus.VERIFYING},
+                TaskStatus.AWAITING_APPROVAL: {TaskStatus.RUNNING, TaskStatus.VERIFYING},
+                TaskStatus.VERIFYING: set(),
+            }
+            if status not in allowed.get(record.status, set()):
+                raise ValueError(f"invalid task transition: {record.status.value} -> {status.value}")
             record.status = status
             self._event(record, status, detail)
             return record
