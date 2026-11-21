@@ -1,6 +1,10 @@
 """Tests for paired Core Prime evaluation generation helpers."""
 import sys
 import unittest
+import json
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import generate_core_prime_eval_outputs as gen
@@ -74,6 +78,29 @@ class GenerationHelperTests(unittest.TestCase):
         gen.generate(model, tokenizer, FakeTorch(), gen.build_messages({"prompt": "Q"}), 2)
         self.assertEqual(tokenizer.messages, [{"role": "user", "content": "Q"}])
         self.assertEqual(model.received[0].device, "cuda:1")
+
+    def test_output_writer_refuses_overwrite(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "outputs.json"
+            path.write_text("preserve", encoding="utf-8")
+            with self.assertRaises(FileExistsError):
+                gen.write_outputs(path, {"x": {"base": "A"}})
+            self.assertEqual(path.read_text(encoding="utf-8"), "preserve")
+
+    def test_cli_refuses_existing_output_before_model_load(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            cases = root / "cases.jsonl"
+            prompt = root / "character.txt"
+            output = root / "outputs.json"
+            cases.write_text(json.dumps({"id":"x","prompt":"p"}) + "\\n", encoding="utf-8")
+            prompt.write_text("character", encoding="utf-8")
+            output.write_text("existing", encoding="utf-8")
+            args = ["generator.py", "--model", "unused", "--cases", str(cases), "--character-prompt", str(prompt), "--output", str(output)]
+            with patch.object(sys, "argv", args):
+                with self.assertRaises(SystemExit):
+                    gen.main()
+            self.assertEqual(output.read_text(encoding="utf-8"), "existing")
 
     def test_case_validation_rejects_duplicate_ids_and_bad_context(self):
         with self.assertRaises(ValueError):
