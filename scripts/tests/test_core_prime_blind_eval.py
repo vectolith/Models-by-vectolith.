@@ -26,6 +26,17 @@ class EvalHarnessTests(unittest.TestCase):
         self.assertNotIn("mapping", a[0])
         self.assertEqual(len(mapping["x"]), 2)
 
+    def test_duplicate_case_ids_and_missing_outputs(self):
+        with self.assertRaises(ValueError): ev.validate_cases([{'id':'x','prompt':'p','test':'t','dimension':'judgment'},{'id':'x','prompt':'p','test':'t','dimension':'judgment'}])
+        with self.assertRaises(ValueError): ev.make_sheet([{'id':'x','prompt':'p','test':'t','dimension':'judgment'}], {}, 1)
+
+    def test_jsonl_writer_real_newlines(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / 'out.jsonl'
+            ev.write_jsonl(path, [{'x':1},{'x':2}])
+            self.assertEqual(len(path.read_text(encoding='utf-8').splitlines()), 2)
+
     def test_missing_condition_fails(self):
         with self.assertRaises(ValueError):
             ev.make_sheet([{"id":"x","prompt":"p","test":"t","dimension":"judgment"}], {"x":{"only":"one"}}, 1)
