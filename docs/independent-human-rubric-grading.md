@@ -68,6 +68,6 @@ The output retains criterion-level means, population standard deviation, case co
 
 ## Core Prime qualification gate
 
-The qualification gate is **Grading**. It requires a completed grading report covering the expected response set, a documented rubric version, and a SHA-256 digest of the report. It does not require a minimum number of graders, reviewer-independence attestations, inter-grader agreement statistics or thresholds, or adjudication. Those are not qualification safeguards under the current policy.
+The qualification gate requires complete coverage of the expected response set by at least two distinct independent human reviewers. It binds the grading report and rubric version, reviewer-independence attestation, inter-grader agreement report, and adjudication report (including a documented no-disagreement disposition where applicable). Machine-only or single-pass AI grading does not satisfy the gate.
 
-Preserve source outputs and grading reports with their provenance. The Grading gate validates report completion and traceability; it does not itself establish factual correctness or replace criterion-specific executable verification where an objective verifier is available.
+Preserve source outputs and grading reports with their provenance. The gate validates report completion and traceability, but it does not itself establish factual correctness or replace criterion-specific executable verification where an objective verifier is available.
