@@ -73,6 +73,13 @@ def generate(model, tokenizer, torch, messages, max_new_tokens):
     return tokenizer.decode(generated[0][input_ids.shape[-1]:], skip_special_tokens=True).strip()
 
 
+def write_outputs(path, outputs):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    serialized = json.dumps(outputs, ensure_ascii=False, indent=2) + "\\n"
+    with path.open("x", encoding="utf-8") as stream:
+        stream.write(serialized)
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--model", required=True, help="Model ID or local directory")
@@ -91,6 +98,8 @@ def main():
             p.error("Character prompt file must not be empty")
     except (ValueError, OSError, json.JSONDecodeError) as exc:
         p.error(str(exc))
+    if args.output.exists():
+        p.error("Output file already exists; use a fresh path to preserve prior results")
     try:
         from transformers import AutoTokenizer, AutoModelForCausalLM
         import torch
