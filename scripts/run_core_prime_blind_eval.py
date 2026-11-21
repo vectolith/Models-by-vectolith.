@@ -37,7 +37,7 @@ def main():
     p.add_argument("--cases",type=Path,default=Path("evaluation/personality/core-prime-evaluation-cases-v1.jsonl"))
     p.add_argument("--outputs",type=Path,help="JSON mapping case ID to condition name and response text")
     p.add_argument("--scores",type=Path,help="JSONL with case_id, dimension, integer score 1-5 or null, gate_flags")
-    p.add_argument("--output",type=Path,required=True)
+    p.add_argument("--output",type=Path,required=True,help="Evaluator-facing score-sheet directory")\n    p.add_argument("--map-output",type=Path,help="Restricted mapping directory; defaults to a sibling directory, not the evaluator output")
     p.add_argument("--seed",type=int,default=20261121)
     args=p.parse_args()
     args.output.mkdir(parents=True,exist_ok=True)
