@@ -44,11 +44,27 @@ class EvalHarnessTests(unittest.TestCase):
         with self.assertRaises(ValueError): ev.make_sheet([case()], {"x":{"base":"A","character_prompt":""}}, 1)
         with self.assertRaises(ValueError): ev.make_sheet([case()], {"x":{"base":"A","character_prompt":"B"},"extra":{}}, 1)
 
+    def test_jsonl_writer_refuses_overwrite(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "out.jsonl"
+            path.write_text("preserve", encoding="utf-8")
+            with self.assertRaises(FileExistsError): ev.write_jsonl(path, [{"x":2}])
+            self.assertEqual(path.read_text(encoding="utf-8"), "preserve")
+
     def test_jsonl_writer_real_newlines(self):
         with tempfile.TemporaryDirectory() as td:
             path = Path(td) / "out.jsonl"
             ev.write_jsonl(path, [{"x":1},{"x":2}])
             self.assertEqual(len(path.read_text(encoding="utf-8").splitlines()), 2)
+
+    def test_mapping_writer_refuses_overwrite(self):
+        with tempfile.TemporaryDirectory() as td:
+            map_dir = Path(td) / "restricted"
+            map_dir.mkdir()
+            map_file = map_dir / "blind-label-map.json"
+            map_file.write_text("preserve", encoding="utf-8")
+            with self.assertRaises(FileExistsError): ev.write_restricted_mapping(map_dir, {"x": {"candidate_1": "base"}})
+            self.assertEqual(map_file.read_text(encoding="utf-8"), "preserve")
 
     def test_directories_must_be_disjoint(self):
         with tempfile.TemporaryDirectory() as td:
