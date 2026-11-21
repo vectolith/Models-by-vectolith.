@@ -45,7 +45,7 @@ def foundation_manifest():
 def write_holdout_evidence(root, teacher_ids):
     deployment = {
         "schema_version": DEPLOYMENT_SCHEMA, "dataset_version": "holdout-v1",
-        "dataset_sha256": SHA, "case_count": 100,
+        "dataset_sha256": SHA, "case_count": 100, "minimum_required_pass_rate": 0.8,
         "custody": {"storage_uri": "vault://restricted/prime/holdout-v1",
             "access_boundary": "dedicated_vault", "encryption_at_rest": True,
             "key_custody_separate": True, "custodian_id": "custodian-1",
