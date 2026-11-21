@@ -3,7 +3,7 @@
 from pathlib import Path
 import json
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 FILES = {
     "trajectories": ROOT / "data/personality/core-prime-multiturn-trajectories-v1.jsonl",
     "preferences": ROOT / "data/personality/core-prime-contrastive-preferences-v1.jsonl",
