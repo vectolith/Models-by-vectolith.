@@ -1,17 +1,26 @@
-# Training and promotion
+# Training Core Prime
 
-## Training prerequisites
+## Objective
 
-Core Prime training is blocked until its foundation is selected and pinned to an immutable revision; licenses are reviewed; data provenance and splits are documented; trainer compatibility is proven; baselines are complete; and an approved execution environment with measured capacity is available. No execution may begin without explicit approval of the exact environment and run configuration. A reproducible configuration, rollback plan and explicit owner authorization are also required.
+Train and shape Core Prime to improve general capability and establish its distinctive personality as learned behaviour. The personality should not be merely a thin prompt wrapper.
 
-Do not launch expensive jobs on smoke-test data or unverified hardware assumptions.
+## Training focus
 
-## Independent runs
+- Natural multi-turn conversation and context retention.
+- Personality consistency and context-appropriate tone.
+- Reasoning, research, mathematics and writing.
+- Coding, software engineering, debugging and testing.
+- Instruction following and practical task completion.
+- Truthfulness, calibration, correction and safe behaviour.
 
-Every active model has its own run ID, configuration, dataset, checkpoint, evaluation report and promotion decision. Core Prima is paused and has no active run. Every Core Prime run records model and tokenizer revisions, dataset hashes, training-code commit, hyperparameters, seed, hardware/runtime versions, logs, checkpoints and limitations.
+## Approach
 
-## Promotion gates
+Compare viable open-weight foundations, establish baselines, build high-quality training examples, and use efficient fine-tuning or distillation when technically and legally feasible. Prefer focused, measurable experiments over elaborate process.
 
-A release must pass training integrity/reproducibility, held-out role-specific capability tests, regressions against foundation and previous release, safety/instruction hierarchy, tool-use/serialization conformance, family identity/interoperability, latency/memory/deployment smoke tests, and license/artifact/model-card completeness.
+## Evaluation
 
-A failed gate blocks promotion. Training loss alone is never sufficient. Future specialist models may be promoted independently under their own release gates.
+Evaluate the base model and each candidate checkpoint across capability and personality. Preserve raw outputs and reproducible run details. Include multi-turn tests, counterexamples, regression tests, and independent review where possible. Personality improvements must not conceal capability regressions.
+
+## Execution reality
+
+Only legitimately free resources are in scope. Training remains unstarted until a suitable foundation, data, execution environment and configuration are genuinely available. Do not fabricate results or claim a model has been trained when it has not.
