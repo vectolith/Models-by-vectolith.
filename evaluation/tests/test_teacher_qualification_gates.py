@@ -57,6 +57,11 @@ def valid_manifest(candidate_id="candidate-a"):
                 "graded_response_count": 180,
                 "grade_report_sha256": sha,
                 "rubric_version": "prime-rubric-v1",
+                "review_method": "independent_human",
+                "independent_reviewer_ids": ["human-reviewer-1", "human-reviewer-2"],
+                "independence_attestation_sha256": sha,
+                "agreement_report_sha256": sha,
+                "adjudication_report_sha256": sha,
             },
             "safety_review": {
                 "status": "passed",
@@ -114,13 +119,32 @@ class TeacherQualificationGateTests(unittest.TestCase):
         self.assertTrue(any(x.startswith("license_review:") for x in result["failed_gates"]))
         self.assertTrue(any(x.startswith("training_output_permission:") for x in result["failed_gates"]))
 
-    def test_grading_does_not_require_reviewer_agreement_or_adjudication(self):
+    def test_grading_requires_independent_human_review_agreement_and_adjudication(self):
         manifest = valid_manifest()
-        grading = manifest["gates"]["grading"]
-        self.assertNotIn("independent_reviewer_ids", grading)
-        self.assertNotIn("agreement", grading)
-        self.assertNotIn("adjudication_complete", grading)
         self.assertEqual(evaluate_candidate(manifest)["qualification_status"], "qualified")
+        cases = [
+            ("review_method", "ai", "grading:review_method_not_independent_human"),
+            ("independent_reviewer_ids", ["human-1"], "grading:independent_reviewers_insufficient_or_invalid"),
+            ("independence_attestation_sha256", "bad", "grading:independence_attestation_missing"),
+            ("agreement_report_sha256", "bad", "grading:agreement_report_missing"),
+            ("adjudication_report_sha256", "bad", "grading:adjudication_report_missing"),
+        ]
+        for field, value, expected in cases:
+            mutated = valid_manifest()
+            mutated["gates"]["grading"][field] = value
+            result = evaluate_candidate(mutated)
+            self.assertEqual(result["qualification_status"], "not_qualified")
+            self.assertIn(expected, result["failed_gates"])
+        mutated = valid_manifest()
+        mutated["gates"]["grading"]["independent_reviewer_ids"] = ["candidate-a", "human-2"]
+        self.assertIn("grading:independent_reviewers_insufficient_or_invalid", evaluate_candidate(mutated)["failed_gates"])
+
+    def test_cohort_reviewers_must_be_independent_of_teacher_cohort(self):
+        manifests = [valid_manifest(f"candidate-{n}") for n in range(4)]
+        manifests[0]["gates"]["grading"]["independent_reviewer_ids"] = ["candidate-1", "human-2"]
+        result = evaluate_cohort(manifests, required_teachers=4)
+        self.assertEqual(result["cohort_gate"], "blocked")
+        self.assertIn("grading:reviewers_not_independent_of_teacher_cohort", result["candidate_results"][0]["failed_gates"])
 
     def test_revision_mismatch_and_incomplete_grading_block_qualification(self):
         manifest = valid_manifest()
