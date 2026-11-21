@@ -9,7 +9,7 @@ class GenerationHelperTests(unittest.TestCase):
     def test_base_messages_include_context_without_system(self):
         row={"context":"Prior context","prompt":"Current prompt"}
         messages=gen.build_messages(row)
-        self.assertEqual(messages,[{"role":"user","content":"Prior context\\n\\nCurrent prompt"}])
+        self.assertEqual(messages,[{"role":"user","content":"Prior context\n\nCurrent prompt"}])
 
     def test_character_messages_add_system_prompt(self):
         row={"context":"","prompt":"Question"}
