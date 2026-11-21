@@ -22,28 +22,28 @@ def write_jsonl(path, rows):
 
 def prepare(root=ROOT, output=None):
     output = Path(output or root / "data/personality/prepared")
-    trajectory_rows = read_jsonl(SOURCES["trajectories"])
-    micro_rows = read_jsonl(SOURCES["micro"])
-    preference_rows = read_jsonl(SOURCES["preferences"])
+    trajectory_rows = read_jsonl(root / "data/personality/core-prime-multiturn-trajectories-v1.jsonl")
+    micro_rows = read_jsonl(root / "data/personality/core-prime-behavioral-micro-scenarios-v1.jsonl")
+    preference_rows = read_jsonl(root / "data/personality/core-prime-contrastive-preferences-v1.jsonl")
     sft = []
     for row in trajectory_rows:
         if row.get("split") != "train": continue
         turns = row.get("turns", [])
         # Each assistant turn becomes an example with preceding context, preserving dialogue.
         for i in range(1, len(turns), 2):
-            sft.append({"source_id": row["id"], "messages": turns[:i+1]})
+            sft.append({"source_id": row["id"], "messages": [{"role": m["role"], "content": m["text"]} for m in turns[:i+1]]})
     for row in micro_rows:
         if row.get("split") != "train": continue
         sft.append({"source_id": row["id"], "messages": [
-            {"role":"user","text":row["prompt"]},
-            {"role":"assistant","text":row["desired_observable_behavior"]},
+            {"role":"user","content":row["prompt"]},
+            {"role":"assistant","content":row["desired_observable_behavior"]},
         ]})
     dpo=[]
     for row in preference_rows:
         if row.get("split") != "train": continue
         dpo.append({"source_id":row["id"],"prompt":[{"role":"user","text":row["prompt"]}],
-                    "chosen":[{"role":"assistant","text":row["preferred"]["text"]}],
-                    "rejected":[{"role":"assistant","text":row["rejected"]["text"]}]})
+                    "chosen":[{"role":"assistant","content":row["preferred"]["text"]}],
+                    "rejected":[{"role":"assistant","content":row["rejected"]["text"]}]})
     write_jsonl(output / "sft-train.jsonl", sft)
     write_jsonl(output / "dpo-train.jsonl", dpo)
     manifest={"sft_records":len(sft),"dpo_records":len(dpo),
