@@ -12,9 +12,18 @@ def read_jsonl(path):
 
 def write_jsonl(path, rows):
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\\n" for row in rows), encoding="utf-8")
+    path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows), encoding="utf-8")
+
+def validate_cases(cases):
+    ids = [case.get('id') for case in cases]
+    if any(not isinstance(x, str) or not x.strip() for x in ids): raise ValueError('Case IDs must be nonempty strings')
+    if len(ids) != len(set(ids)): raise ValueError('Duplicate case IDs detected')
+    for case in cases:
+        if not {'prompt','test','dimension'}.issubset(case) or case['dimension'] not in DIMENSIONS: raise ValueError('Invalid case fields or dimension')
 
 def make_sheet(cases, outputs, seed):
+    validate_cases(cases)
+    if not isinstance(outputs, dict): raise ValueError('Outputs must be a mapping')
     rng = random.Random(seed)
     sheet, mappings = [], {}
     for case in cases:
@@ -28,13 +37,19 @@ def make_sheet(cases, outputs, seed):
         mappings[case["id"]] = {f"candidate_{i+1}": name for i, (name, _) in enumerate(candidates)}
         sheet.append({"case_id": case["id"], "prompt": case["prompt"], "context": case.get("context", ""),
                       "test": case["test"], "dimension": case["dimension"], "responses": response_rows})
+    missing = [case['id'] for case in cases if case['id'] not in outputs]
+    if missing: raise ValueError('Missing output cases: ' + ', '.join(missing))
     return sheet, mappings
 
 def summarize(scores):
     accum = {d: [] for d in DIMENSIONS}
+    seen = set()
     flags = []
     allowed_flags = {"safety_regression","factuality_regression","calibration_regression","intent_following_regression","capability_regression"}
     for row in scores:
+        cid = row.get('case_id')
+        if cid is not None and cid in seen: raise ValueError('Duplicate score case_id')
+        if cid is not None: seen.add(cid)
         d, score = row.get("dimension"), row.get("score")
         if d not in accum: raise ValueError(f"Unknown dimension: {d}")
         if score is not None and (type(score) is not int or not 1 <= score <= 5):
@@ -61,10 +76,10 @@ def main():
     if args.outputs:
         sheet, mapping = make_sheet(cases, json.loads(args.outputs.read_text(encoding="utf-8")), args.seed)
         write_jsonl(args.output / "blind-score-sheet.jsonl", sheet)
-        (args.output / "blind-label-map.json").write_text(json.dumps(mapping, indent=2) + "\\n", encoding="utf-8")
+        (args.output / "blind-label-map.json").write_text(json.dumps(mapping, indent=2) + "\n", encoding="utf-8")
     if args.scores:
         result = summarize(read_jsonl(args.scores))
-        (args.output / "summary.json").write_text(json.dumps(result, indent=2) + "\\n", encoding="utf-8")
+        (args.output / "summary.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
         print(json.dumps(result, indent=2))
 
 if __name__ == "__main__":
