@@ -70,17 +70,35 @@ def validate_output_directories(sheet_dir, map_dir):
         raise ValueError("Evaluator-facing and condition-map directories must be disjoint")
     if (sheet_resolved / "blind-label-map.json").exists():
         raise ValueError("Evaluator-facing directory already contains a condition map; use a clean directory")
+    if (sheet_resolved / "blind-score-sheet.jsonl").exists():
+        raise ValueError("Evaluator-facing score sheet already exists; use a fresh directory to preserve prior results")
+    if (map_resolved / "blind-label-map.json").exists():
+        raise ValueError("Condition mapping already exists; use a fresh restricted directory to preserve prior results")
     return sheet_resolved, map_resolved
 
 
 def write_restricted_mapping(map_dir, mapping):
     map_dir.mkdir(parents=True, exist_ok=True)
+    map_file = map_dir / "blind-label-map.json"
+    if map_file.exists():
+        raise ValueError("Refusing to overwrite an existing condition mapping")
     if os.name == "posix":
         map_dir.chmod(0o700)
     map_file = map_dir / "blind-label-map.json"
     map_file.write_text(json.dumps(mapping, indent=2) + "\n", encoding="utf-8")
     if os.name == "posix":
         map_file.chmod(0o600)
+
+
+def validate_scores(scores, cases):
+    case_dimensions = {case["id"]: case["dimension"] for case in validate_cases(cases)}
+    for row in scores:
+        cid = row.get("case_id") if isinstance(row, dict) else None
+        if cid not in case_dimensions:
+            raise ValueError(f"Score record references unknown case_id: {cid}")
+        if row.get("dimension") != case_dimensions[cid]:
+            raise ValueError(f"{cid}: score dimension does not match evaluation case")
+    return scores
 
 
 def summarize(scores):
