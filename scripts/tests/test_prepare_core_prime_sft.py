@@ -1,5 +1,5 @@
 """Unit tests for the dependency-free Core Prime data preparation helpers."""
-import json, tempfile, unittest
+import unittest
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -19,7 +19,7 @@ class PrepareTests(unittest.TestCase):
             if row["split"]!="train": continue
             for i in range(1,len(row["turns"]),2):
                 sft.append({"source_id":row["id"],"messages":row["turns"][:i+1]})
-        sft.extend({"source_id":r["id"],"messages":[{"role":"user","text":r["prompt"]},{"role":"assistant","text":r["desired_observable_behavior"}]} for r in micro if r["split"]=="train")
+        sft.extend({"source_id":r["id"],"messages":[{"role":"user","text":r["prompt"]},{"role":"assistant","text":r["desired_observable_behavior"]]} for r in micro if r["split"]=="train")
         dpo=[{"source_id":r["id"],"prompt":[{"role":"user","text":r["prompt"]}],"chosen":[{"role":"assistant","text":r["preferred"]["text"]}],"rejected":[{"role":"assistant","text":r["rejected"]["text"]}]} for r in prefs if r["split"]=="train"]
         self.assertEqual(len(sft),3)
         self.assertEqual(len(dpo),1)
