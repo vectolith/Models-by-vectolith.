@@ -9,7 +9,7 @@ def main():
  p.add_argument("--model",required=True,help="HF model ID or local directory")
  p.add_argument("--cases",type=Path,default=Path("evaluation/personality/core-prime-evaluation-cases-v1.jsonl"))
  p.add_argument("--output",type=Path,required=True)
- p.add_argument("--offline",action="store_true",help="Load only from local model cache/directory")
+ p.add_argument("--offline",action="store_true",help="Load only from local model cache/directory")\n p.add_argument("--character-prompt",type=Path,help="Optional system prompt file to generate a prompt-only character condition alongside baseline")
  p.add_argument("--max-new-tokens",type=int,default=256)
  args=p.parse_args()
  try:
