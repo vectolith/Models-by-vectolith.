@@ -39,7 +39,7 @@ def validate_cases(cases):
     return cases
 
 
-def make_sheet(cases, outputs, seed):
+def make_sheet(cases, outputs, seed=None):
     validate_cases(cases)
     if not isinstance(outputs, dict):
         raise ValueError("Outputs must be a mapping")
@@ -48,7 +48,9 @@ def make_sheet(cases, outputs, seed):
     missing_ids = case_ids - set(outputs)
     if extra_ids or missing_ids:
         raise ValueError(f"Output case IDs mismatch; missing={sorted(missing_ids)}, extra={sorted(extra_ids)}")
-    rng = random.Random(seed)
+    # Actual evaluator sheets use an unpredictable permutation. A fixed seed is
+    # supported only for deterministic unit tests and never exposed by the CLI.
+    rng = random.Random(seed) if seed is not None else random.SystemRandom()
     sheet, mappings = [], {}
     for case in cases:
         case_outputs = outputs[case["id"]]
@@ -66,6 +68,10 @@ def make_sheet(cases, outputs, seed):
 
 
 def validate_output_directories(sheet_dir, map_dir):
+    # Reject the mapping-directory symlink before canonicalizing paths. Returning
+    # resolved paths would silently bypass the writer's own symlink guard.
+    if map_dir.is_symlink():
+        raise ValueError("Condition-map directory must not be a symlink")
     sheet_resolved, map_resolved = sheet_dir.resolve(), map_dir.resolve()
     if sheet_resolved == map_resolved or sheet_resolved in map_resolved.parents or map_resolved in sheet_resolved.parents:
         raise ValueError("Evaluator-facing and condition-map directories must be disjoint")
@@ -75,18 +81,38 @@ def validate_output_directories(sheet_dir, map_dir):
         raise ValueError("Evaluator-facing score sheet already exists; use a fresh directory to preserve prior results")
     if (map_resolved / "blind-label-map.json").exists():
         raise ValueError("Condition mapping already exists; use a fresh restricted directory to preserve prior results")
-    return sheet_resolved, map_resolved
+    # Keep the original map path so the no-follow checks remain effective if
+    # the path changes after this validation step.
+    return sheet_dir, map_dir
 
 
 def write_restricted_mapping(map_dir, mapping):
-    map_dir.mkdir(parents=True, exist_ok=True)
+    map_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+    if map_dir.is_symlink():
+        raise ValueError("Condition-map directory must not be a symlink")
     map_file = map_dir / "blind-label-map.json"
+    serialized = json.dumps(mapping, indent=2) + "\n"
     if os.name == "posix":
-        map_dir.chmod(0o700)
-    with map_file.open("x", encoding="utf-8") as stream:
-        stream.write(json.dumps(mapping, indent=2) + "\n")
-    if os.name == "posix":
-        map_file.chmod(0o600)
+        dir_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+        dir_fd = os.open(map_dir, dir_flags)
+        try:
+            os.fchmod(dir_fd, 0o700)
+            file_flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+            fd = os.open(map_file.name, file_flags, 0o600, dir_fd=dir_fd)
+            try:
+                os.fchmod(fd, 0o600)
+                stream = os.fdopen(fd, "w", encoding="utf-8")
+                fd = None
+                with stream:
+                    stream.write(serialized)
+            finally:
+                if fd is not None:
+                    os.close(fd)
+        finally:
+            os.close(dir_fd)
+    else:
+        with map_file.open("x", encoding="utf-8") as stream:
+            stream.write(serialized)
 
 
 def validate_scores(scores, cases):
@@ -134,14 +160,13 @@ def main():
     p.add_argument("--scores", type=Path, help="JSONL scoring records")
     p.add_argument("--output", type=Path, required=True, help="Evaluator-facing output directory")
     p.add_argument("--map-output", type=Path, help="Restricted condition-map directory; defaults to a sibling directory")
-    p.add_argument("--seed", type=int, default=20261121)
     args = p.parse_args()
     cases = read_jsonl(args.cases)
     args.output.mkdir(parents=True, exist_ok=True)
     if args.scores and (args.output / "summary.json").exists():
         p.error("summary.json already exists; use a fresh output directory to preserve prior results")
     if args.outputs:
-        sheet, mapping = make_sheet(cases, json.loads(args.outputs.read_text(encoding="utf-8")), args.seed)
+        sheet, mapping = make_sheet(cases, json.loads(args.outputs.read_text(encoding="utf-8")))
         map_dir = args.map_output or args.output.parent / (args.output.name + "-restricted")
         try:
             sheet_dir, map_dir = validate_output_directories(args.output, map_dir)

@@ -66,6 +66,66 @@ class EvalHarnessTests(unittest.TestCase):
             with self.assertRaises(FileExistsError): ev.write_restricted_mapping(map_dir, {"x": {"candidate_1": "base"}})
             self.assertEqual(map_file.read_text(encoding="utf-8"), "preserve")
 
+    @unittest.skipUnless(os.name == "posix", "POSIX file modes required")
+    def test_mapping_writer_rejects_symlink_and_preserves_target(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            map_dir = root / "restricted"
+            map_dir.mkdir(mode=0o700)
+            target = root / "target.json"
+            target.write_text("preserve", encoding="utf-8")
+            link = map_dir / "blind-label-map.json"
+            link.symlink_to(target)
+            with self.assertRaises(FileExistsError):
+                ev.write_restricted_mapping(map_dir, {"x": {"candidate_1": "base"}})
+            self.assertEqual(target.read_text(encoding="utf-8"), "preserve")
+            self.assertTrue(link.is_symlink())
+
+    @unittest.skipUnless(os.name == "posix", "POSIX file modes required")
+    def test_mapping_writer_creates_file_restrictively(self):
+        with tempfile.TemporaryDirectory() as td:
+            map_dir = Path(td) / "restricted"
+            previous_umask = os.umask(0)
+            try:
+                ev.write_restricted_mapping(map_dir, {"x": {"candidate_1": "base"}})
+            finally:
+                os.umask(previous_umask)
+            map_file = map_dir / "blind-label-map.json"
+            self.assertEqual(map_dir.stat().st_mode & 0o777, 0o700)
+            self.assertEqual(map_file.stat().st_mode & 0o777, 0o600)
+
+    def test_default_shuffle_uses_system_random(self):
+        class ReverseShuffle:
+            def shuffle(self, values):
+                values.reverse()
+        outputs = {"x": {"base": "A", "character_prompt": "B"}}
+        with patch.object(ev.random, "SystemRandom", return_value=ReverseShuffle()):
+            _, mapping = ev.make_sheet([case()], outputs)
+        self.assertEqual(mapping["x"], {"candidate_1": "character_prompt", "candidate_2": "base"})
+    def test_cli_rejects_fixed_seed_option(self):
+        with tempfile.TemporaryDirectory() as td:
+            output = Path(td) / "sheet"
+            args = ["run_core_prime_blind_eval.py", "--output", str(output), "--seed", "20261121"]
+            with patch.object(sys, "argv", args):
+                with self.assertRaises(SystemExit):
+                    ev.main()
+            self.assertFalse(output.exists())
+
+
+    @unittest.skipUnless(os.name == "posix", "POSIX symlink semantics required")
+    def test_mapping_directory_symlink_is_rejected_before_resolution(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            target = root / "target"
+            target.mkdir()
+            link = root / "restricted-link"
+            link.symlink_to(target, target_is_directory=True)
+            with self.assertRaises(ValueError):
+                ev.validate_output_directories(root / "sheet", link)
+            with self.assertRaises(ValueError):
+                ev.write_restricted_mapping(link, {"x": {"candidate_1": "base"}})
+            self.assertFalse((target / "blind-label-map.json").exists())
+
     def test_directories_must_be_disjoint(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
