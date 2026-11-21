@@ -117,6 +117,13 @@ class TrainingPreflightTests(unittest.TestCase):
     def test_teacher_requires_all_ten_gates(self):
         manifest=teacher_manifest("teacher-a")
         self.assertEqual(validate_teacher_manifest(manifest,"teacher-a",REV),[])
+        manifest=teacher_manifest("teacher-a")
+        manifest["gates"]["grading"]["independent_reviewer_ids"]=["human-1"]
+        self.assertIn("grading independent human review, agreement, or adjudication gate failed", validate_teacher_manifest(manifest,"teacher-a",REV))
+        manifest=teacher_manifest("teacher-a")
+        manifest["gates"]["grading"]["review_method"]="ai"
+        self.assertIn("grading independent human review, agreement, or adjudication gate failed", validate_teacher_manifest(manifest,"teacher-a",REV))
+        manifest=teacher_manifest("teacher-a")
         del manifest["gates"]["holdout"]
         self.assertTrue(any("holdout" in item for item in validate_teacher_manifest(manifest,"teacher-a",REV)))
 
@@ -153,6 +160,15 @@ class TrainingPreflightTests(unittest.TestCase):
             self.assertEqual(len(validated),4)
             self.assertEqual(report["status"],"passed")
             self.assertEqual(len(report["teacher_manifest_sha256"]),4)
+            teacher0_path=root/"teachers"/"teacher-0.json"
+            teacher0=json.loads(teacher0_path.read_text())
+            teacher0["gates"]["grading"]["independent_reviewer_ids"]=["teacher-1","human-2"]
+            teacher0_path.write_text(json.dumps(teacher0))
+            with self.assertRaisesRegex(ValueError,"grading reviewers must be outside the qualified teacher cohort"):
+                validate_training_preflight(dataset_path=dataset,foundation_model="publisher/model",
+                    foundation_revision=REV,foundation_selection_path=selection,teacher_manifest_dir=root/"teachers",
+                    holdout_deployment_manifest_path=deployment_path,holdout_evaluation_results_dir=results_dir,
+                    training_execution_manifest_path=execution_path,training_code_revision=CODE_REV,training_config=TRAIN_CONFIG)
 
     def test_dataset_teacher_revision_mismatch_blocks_preflight(self):
         with tempfile.TemporaryDirectory() as tmp:
