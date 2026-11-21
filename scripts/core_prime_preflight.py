@@ -1,57 +1,89 @@
 #!/usr/bin/env python3
 """Fail-closed Core Prime experiment evidence preflight. This does not launch training."""
-import argparse, hashlib, json, sys
+import argparse
+import hashlib
+import json
+import sys
 from pathlib import Path
 
 REQUIRED = ("rights", "grading", "dataset", "holdout", "student", "compute", "experiment", "authorization")
 
-def digest(p):
-    h=hashlib.sha256()
-    with p.open("rb") as f:
-        for chunk in iter(lambda:f.read(1024*1024), b""): h.update(chunk)
+def digest(path):
+    h = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            h.update(chunk)
     return h.hexdigest()
 
 def validate(manifest_path):
-    manifest_path=Path(manifest_path).resolve()
-    errors=[]
-    try: data=json.loads(manifest_path.read_text(encoding="utf-8"))
-    except Exception as e: return [f"manifest unreadable/invalid JSON: {e}"]
-    if not isinstance(data,dict): return ["manifest root must be an object"]\n    if data.get("schema_version")!="core-prime-training-readiness/1.0":
+    manifest_path = Path(manifest_path).resolve()
+    errors = []
+    try:
+        data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return [f"manifest unreadable/invalid JSON: {exc}"]
+    if not isinstance(data, dict):
+        return ["manifest root must be an object"]
+    if data.get("schema_version") != "core-prime-training-readiness/1.0":
         errors.append("schema_version must be core-prime-training-readiness/1.0")
-    gates=data.get("gates")
-    if not isinstance(gates,dict): return errors+["gates must be an object"]
+    gates = data.get("gates")
+    if not isinstance(gates, dict):
+        return errors + ["gates must be an object"]
+    base = manifest_path.parent.resolve()
     for gate in REQUIRED:
-        record=gates.get(gate)
-        if not isinstance(record,dict): errors.append(f"{gate}: missing gate record"); continue
-        if record.get("status")!="verified": errors.append(f"{gate}: status is not verified")
-        if not isinstance(record.get("reviewer"),str) or not record.get("reviewer").strip() or not isinstance(record.get("verified_at"),str) or not record.get("verified_at").strip(): errors.append(f"{gate}: reviewer and verified_at required")
-        artifacts=record.get("artifacts")
-        if not isinstance(artifacts,list) or not artifacts: errors.append(f"{gate}: at least one artifact reference required"); continue
-        for i,a in enumerate(artifacts):
-            if not isinstance(a,dict): errors.append(f"{gate}: artifact {i} malformed");continue
-            rel=a.get("path"); expected=a.get("sha256")
-            if not isinstance(rel,str) or not isinstance(expected,str) or len(expected)!=64:
-                errors.append(f"{gate}: artifact {i} needs path and 64-char sha256");continue
-            p=(manifest_path.parent/rel).resolve()
-            if not p.is_relative_to(manifest_path.parent.resolve()):
-                errors.append(f"{gate}: artifact path escapes manifest directory");continue
-            if not p.is_file(): errors.append(f"{gate}: artifact missing: {rel}");continue
-            if digest(p)!=expected.lower(): errors.append(f"{gate}: digest mismatch: {rel}")
-    if data.get("training_authorized") is not True: errors.append("training_authorized must be explicitly true")
-    if not data.get("authorization_id"): errors.append("authorization_id required")
+        record = gates.get(gate)
+        if not isinstance(record, dict):
+            errors.append(f"{gate}: missing gate record")
+            continue
+        if record.get("status") != "verified":
+            errors.append(f"{gate}: status is not verified")
+        reviewer, verified_at = record.get("reviewer"), record.get("verified_at")
+        if not isinstance(reviewer, str) or not reviewer.strip() or not isinstance(verified_at, str) or not verified_at.strip():
+            errors.append(f"{gate}: reviewer and verified_at required")
+        artifacts = record.get("artifacts")
+        if not isinstance(artifacts, list) or not artifacts:
+            errors.append(f"{gate}: at least one artifact reference required")
+            continue
+        for i, artifact in enumerate(artifacts):
+            if not isinstance(artifact, dict):
+                errors.append(f"{gate}: artifact {i} malformed")
+                continue
+            rel, expected = artifact.get("path"), artifact.get("sha256")
+            if (not isinstance(rel, str) or not rel.strip() or Path(rel).is_absolute()
+                or not isinstance(expected, str) or len(expected) != 64
+                or any(ch not in "0123456789abcdefABCDEF" for ch in expected)):
+                errors.append(f"{gate}: artifact {i} needs a relative path and 64-char hexadecimal sha256")
+                continue
+            path = (base / rel).resolve()
+            if not path.is_relative_to(base):
+                errors.append(f"{gate}: artifact path escapes manifest directory")
+                continue
+            if not path.is_file():
+                errors.append(f"{gate}: artifact missing: {rel}")
+                continue
+            if digest(path) != expected.lower():
+                errors.append(f"{gate}: digest mismatch: {rel}")
+    if data.get("training_authorized") is not True:
+        errors.append("training_authorized must be explicitly true")
+    auth_id = data.get("authorization_id")
+    if not isinstance(auth_id, str) or not auth_id.strip():
+        errors.append("authorization_id required")
     return errors
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument("manifest",type=Path)
-    args=p.parse_args()
-    errors=validate(args.manifest)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("manifest", type=Path)
+    args = parser.parse_args()
+    errors = validate(args.manifest)
     if errors:
         print("BLOCKED")
-        for e in errors: print("- "+e)
+        for error in errors:
+            print("- " + error)
         return 1
     print("PREFLIGHT PASS: evidence manifest and referenced artifact digests validated.")
     print("This validator does not independently authenticate reviewers, legal conclusions, provider quotas, holdout security, or authorization.")
     print("It does not start training.")
     return 0
-if __name__=="__main__": sys.exit(main())
+
+if __name__ == "__main__":
+    sys.exit(main())
