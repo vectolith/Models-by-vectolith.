@@ -10,7 +10,7 @@ def main():
     p.add_argument("--cases", type=Path, default=Path("evaluation/personality/core-prime-evaluation-cases-v1.jsonl"))
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--offline", action="store_true")
-    p.add_argument("--character-prompt", type=Path, help="System prompt file; generates prompt-only condition")
+    p.add_argument("--character-prompt", type=Path, help="System prompt file; generates prompt-only character condition")
     p.add_argument("--max-new-tokens", type=int, default=256)
     args = p.parse_args()
     if args.max_new_tokens < 1:
@@ -26,7 +26,7 @@ def main():
     character = args.character_prompt.read_text(encoding="utf-8").strip() if args.character_prompt else None
     outputs = {}
     for row in rows:
-        prompt = (row.get("context", "") + "\\n" + row["prompt"]).strip()
+        prompt = (row.get("context", "") + "\n" + row["prompt"]).strip()
         conditions = {"base": None}
         if character:
             conditions["character_prompt"] = character
@@ -36,7 +36,7 @@ def main():
             if hasattr(tok, "apply_chat_template") and tok.chat_template:
                 encoded = tok.apply_chat_template(messages, tokenize=True, add_generation_prompt=True, return_tensors="pt")
             else:
-                fallback = ((system_prompt + "\\n") if system_prompt else "") + prompt
+                fallback = ((system_prompt + "\n") if system_prompt else "") + prompt
                 encoded = tok(fallback, return_tensors="pt").input_ids
             encoded = encoded.to(model.device)
             with torch.no_grad():
@@ -44,7 +44,7 @@ def main():
             response = tok.decode(generated[0][encoded.shape[-1]:], skip_special_tokens=True).strip()
             outputs[row["id"]][condition] = response
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(outputs, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    args.output.write_text(json.dumps(outputs, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"Generated {len(outputs)} cases; conditions: base" + (", character_prompt" if character else ""))
 
 if __name__ == "__main__":
