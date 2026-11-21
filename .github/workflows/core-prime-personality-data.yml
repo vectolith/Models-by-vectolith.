@@ -8,6 +8,8 @@ on:
       - "scripts/validate_core_prime_personality_data.py"
       - "scripts/export_core_prime_personality_train_data.py"
       - "scripts/tests/**"
+      - "scripts/run_core_prime_blind_eval.py"
+      - "evaluation/personality/**"
       - ".github/workflows/core-prime-personality-data.yml"
   push:
     branches: ["main"]
@@ -38,3 +40,4 @@ jobs:
           test -f "$tmpdir/prepared/sft-train.jsonl"
           test -f "$tmpdir/prepared/dpo-train.jsonl"
           test -f "$tmpdir/prepared/prepared-manifest.json"
+          python scripts/run_core_prime_blind_eval.py --output "$tmpdir/eval-smoke"
