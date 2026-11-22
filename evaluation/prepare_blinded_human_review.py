@@ -355,7 +355,7 @@ def build_review_packages(
                 "workflow_job_id": provenance.get("job_id") if provenance else None,
                 "prompt_sha256": row.get("prompt_sha256"),
                 "generation_status": row.get("generation_status"),
-                "generation_cap_reached": bool(row.get("generation_cap_reached")),
+                "generation_cap_reached": row.get("generation_cap_reached"),
                 "generated_tokens": row.get("generated_tokens"),
                 "max_new_tokens": row.get("max_new_tokens"),
                 "error": error,
