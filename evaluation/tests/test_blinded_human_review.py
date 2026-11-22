@@ -92,6 +92,23 @@ class BlindedHumanReviewTests(unittest.TestCase):
             _write_private_file(destination, b"overwrite")
         self.assertEqual(destination.read_bytes(), b"private")
 
+    def test_cli_unblind_output_is_private_and_refuses_overwrite(self):
+        import sys
+        from unittest.mock import patch
+        from evaluation import prepare_blinded_human_review as module
+
+        output = self.root / "canonical-unblinded.jsonl"
+        records = [{"evaluator_id": "reviewer-a", "candidate_id": "restricted"}]
+        argv = ["prepare_blinded_human_review.py", "unblind", "--identity-key", "key.json", "--grades", "grade-a.jsonl", "--grades", "grade-b.jsonl", "--output", str(output)]
+        with patch.object(sys, "argv", argv), patch.object(module, "unblind_grade_files", return_value=records):
+            module.main()
+        self.assertEqual(output.read_text(encoding="utf-8"), json.dumps(records[0], ensure_ascii=False, sort_keys=True) + "\\n")
+        if os.name == "posix":
+            self.assertEqual(output.stat().st_mode & 0o777, 0o600)
+        with patch.object(sys, "argv", argv), patch.object(module, "unblind_grade_files", return_value=records):
+            with self.assertRaises(FileExistsError):
+                module.main()
+
     def test_historical_provenance_registry_covers_all_fifteen_artifacts(self):
         self.assertEqual(len(ARTIFACT_PROVENANCE), 15)
         item = ARTIFACT_PROVENANCE["run42-prime-phi-4-mini-instruct.zip"]
