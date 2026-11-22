@@ -49,6 +49,8 @@ def valid_manifest(candidate_id="candidate-a"):
                 "device": "cpu",
                 "peak_rss_bytes": 1024,
                 "mean_latency_seconds": 1.5,
+                "free_compute_verified": True,
+                "free_compute_evidence_sha256": sha,
                 "compute_record_sha256": sha,
             },
             "grading": {
@@ -139,6 +141,69 @@ class TeacherQualificationGateTests(unittest.TestCase):
         mutated["gates"]["grading"]["independent_reviewer_ids"] = ["candidate-a", "human-2"]
         self.assertIn("grading:independent_reviewers_insufficient_or_invalid", evaluate_candidate(mutated)["failed_gates"])
 
+    def test_free_compute_verification_and_evidence_are_required(self):
+        manifest = valid_manifest()
+        resources = manifest["gates"]["resource_measurement"]
+        resources["free_compute_verified"] = False
+        result = evaluate_candidate(manifest)
+        self.assertEqual(result["qualification_status"], "not_qualified")
+        self.assertIn("resource_measurement:free_compute_not_verified", result["failed_gates"])
+        resources["free_compute_verified"] = True
+        resources.pop("free_compute_evidence_sha256")
+        result = evaluate_candidate(manifest)
+        self.assertIn("resource_measurement:free_compute_evidence_missing", result["failed_gates"])
+
+    def test_unrepresentably_large_latency_is_rejected_without_crashing(self):
+        manifest = valid_manifest()
+        manifest["gates"]["resource_measurement"]["mean_latency_seconds"] = 10 ** 10000
+        result = evaluate_candidate(manifest)
+        self.assertEqual(result["qualification_status"], "not_qualified")
+        self.assertIn("resource_measurement:latency_missing", result["failed_gates"])
+
+    def test_timezone_naive_review_and_permission_timestamps_are_rejected(self):
+        manifest = valid_manifest()
+        manifest["gates"]["license_review"]["reviewed_at"] = "2026-11-16T10:00:00"
+        manifest["gates"]["training_output_permission"]["authorized_at"] = "2026-11-16T11:00:00"
+        result = evaluate_candidate(manifest)
+        self.assertEqual(result["qualification_status"], "not_qualified")
+        self.assertIn("license_review:review_timestamp_invalid", result["failed_gates"])
+        self.assertIn("training_output_permission:authorization_timestamp_invalid", result["failed_gates"])
+
+    def test_boolean_counts_and_non_string_evidence_are_rejected(self):
+        manifest = valid_manifest()
+        manifest["gates"]["real_inference"]["expected_response_count"] = 1
+        manifest["gates"]["real_inference"]["response_count"] = True
+        manifest["gates"]["real_inference"]["error_count"] = False
+        manifest["gates"]["grading"]["expected_response_count"] = 1
+        manifest["gates"]["grading"]["graded_response_count"] = True
+        manifest["gates"]["license_review"]["evidence_uri"] = True
+        result = evaluate_candidate(manifest)
+        self.assertEqual(result["qualification_status"], "not_qualified")
+        self.assertIn("real_inference:response_count_incomplete", result["failed_gates"])
+        self.assertIn("real_inference:inference_errors_present", result["failed_gates"])
+        self.assertIn("grading:coverage_incomplete", result["failed_gates"])
+        self.assertIn("license_review:legal_evidence_missing", result["failed_gates"])
+
+    def test_reviewer_and_authorizer_identity_cannot_be_candidate_identity(self):
+        manifest = valid_manifest()
+        manifest["gates"]["license_review"]["legal_reviewer_id"] = "candidate-a"
+        manifest["gates"]["safety_review"]["reviewer_id"] = "candidate-a"
+        manifest["gates"]["training_output_permission"]["authorized_by"] = "candidate-a"
+        result = evaluate_candidate(manifest)
+        self.assertEqual(result["qualification_status"], "not_qualified")
+        self.assertIn("license_review:legal_reviewer_not_independent", result["failed_gates"])
+        self.assertIn("safety_review:reviewer_not_independent", result["failed_gates"])
+        self.assertIn("training_output_permission:authorizer_not_independent", result["failed_gates"])
+
+    def test_legal_safety_and_permission_roles_must_be_independent_of_cohort(self):
+        manifests = [valid_manifest(f"candidate-{n}") for n in range(4)]
+        manifests[0]["gates"]["license_review"]["legal_reviewer_id"] = "candidate-2"
+        manifests[1]["gates"]["safety_review"]["reviewer_id"] = "candidate-3"
+        manifests[2]["gates"]["training_output_permission"]["authorized_by"] = "candidate-0"
+        result = evaluate_cohort(manifests, required_teachers=4)
+        self.assertEqual(result["cohort_gate"], "blocked")
+        self.assertTrue(any("reviewer_roles_not_independent_of_teacher_cohort" in row["failed_gates"] for row in result["candidate_results"]))
+
     def test_cohort_reviewers_must_be_independent_of_teacher_cohort(self):
         manifests = [valid_manifest(f"candidate-{n}") for n in range(4)]
         manifests[0]["gates"]["grading"]["independent_reviewer_ids"] = ["candidate-1", "human-2"]
@@ -168,15 +233,25 @@ class TeacherQualificationGateTests(unittest.TestCase):
         self.assertEqual(passed["teacher_selection"], "not_performed")
         self.assertFalse(passed["training_started"])
 
-    def test_cohort_cannot_lower_the_four_teacher_requirement(self):
-        with self.assertRaisesRegex(ValueError, "at least four"):
-            evaluate_cohort([valid_manifest()], required_teachers=3)
+    def test_cohort_cannot_lower_or_type_confuse_the_four_teacher_requirement(self):
+        for required in (3, True, 4.0, None):
+            with self.assertRaisesRegex(ValueError, "at least four"):
+                evaluate_cohort([valid_manifest()], required_teachers=required)
 
     def test_duplicate_candidate_entries_block_the_cohort(self):
         manifest = valid_manifest()
         result = evaluate_cohort([manifest, copy.deepcopy(manifest)], required_teachers=4)
         self.assertEqual(result["cohort_gate"], "blocked")
         self.assertTrue(result["duplicate_candidate_ids"])
+
+
+    def test_cohort_rejects_unhashable_candidate_ids_without_crashing(self):
+        manifests = [valid_manifest(), valid_manifest("candidate-b")]
+        manifests[0]["candidate_id"] = {"malformed": "id"}
+        result = evaluate_cohort(manifests, required_teachers=4)
+        self.assertEqual(result["cohort_gate"], "blocked")
+        self.assertFalse(result["duplicate_candidate_ids"])
+        self.assertEqual(result["candidate_results"][0]["qualification_status"], "not_qualified")
 
 
 if __name__ == "__main__":
