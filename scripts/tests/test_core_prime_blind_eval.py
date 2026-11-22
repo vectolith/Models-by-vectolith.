@@ -13,19 +13,21 @@ def case():
     return {"id": "x", "prompt": "p", "context": "", "test": "t", "dimension": "judgment"}
 
 
+def scored_row(cid="x", label="candidate_1", score=3, reviewer="r1", dimension="judgment", flags=None):
+    return {"case_id": cid, "blind_label": label, "dimension": dimension, "score": score, "reviewer_id": reviewer, "gate_flags": flags or []}
+
+
 class EvalHarnessTests(unittest.TestCase):
     def test_summary_and_validation(self):
-        rows = [{"case_id": "x", "dimension": "judgment", "score": 4, "gate_flags": []},
-                 {"case_id": "y", "dimension": "judgment", "score": 2, "gate_flags": ["capability_regression"]},
-                 {"case_id": "z", "dimension": "repair", "score": None, "gate_flags": []}]
+        rows = [scored_row("x", "candidate_1", 4), scored_row("y", "candidate_2", 2, flags=["capability_regression"]), scored_row("z", "candidate_1", None, dimension="repair")]
         result = ev.summarize(rows)
         self.assertEqual(result["dimension_means"]["judgment"], 3.0)
         self.assertEqual(result["dimension_counts"]["repair"], 0)
         self.assertEqual(result["gate_flags"], ["capability_regression"])
-        with self.assertRaises(ValueError): ev.summarize([{"case_id": "x", "dimension": "judgment", "score": 6}])
-        with self.assertRaises(ValueError): ev.summarize([{"case_id": "x", "dimension": "judgment", "score": 2, "gate_flags": ["badflag"]}])
+        with self.assertRaises(ValueError): ev.summarize([scored_row(score=6)])
+        with self.assertRaises(ValueError): ev.summarize([scored_row(flags=["badflag"])])
         with self.assertRaises(ValueError): ev.summarize([{"dimension": "judgment", "score": 2}])
-        with self.assertRaises(ValueError): ev.summarize([{"case_id": "x", "dimension": "judgment", "score": 2}, {"case_id": "x", "dimension": "judgment", "score": 3}])
+        with self.assertRaises(ValueError): ev.summarize([scored_row(), scored_row()])
 
     def test_blinding_mapping_is_separate_and_deterministic(self):
         outputs = {"x": {"base": "response A", "character_prompt": "response B"}}
@@ -133,13 +135,14 @@ class EvalHarnessTests(unittest.TestCase):
             with self.assertRaises(ValueError): ev.validate_output_directories(root / "sheet" / "nested", root / "sheet")
             self.assertEqual(ev.validate_output_directories(root / "sheet", root / "map")[0], (root / "sheet").resolve())
 
-    def test_score_ids_and_dimensions_are_bound_to_cases(self):
-        score_rows = [{"case_id": "x", "dimension": "judgment", "score": 3}]
-        self.assertEqual(ev.validate_scores(score_rows, [case()]), score_rows)
-        with self.assertRaises(ValueError):
-            ev.validate_scores([{"case_id": "unknown", "dimension": "judgment", "score": 3}], [case()])
-        with self.assertRaises(ValueError):
-            ev.validate_scores([{"case_id": "x", "dimension": "repair", "score": 3}], [case()])
+    def test_score_ids_labels_dimensions_and_reviewers_are_bound_to_cases(self):
+        rows = [scored_row()]
+        self.assertEqual(ev.validate_scores(rows, [case()]), rows)
+        with self.assertRaises(ValueError): ev.validate_scores([scored_row("unknown")], [case()])
+        with self.assertRaises(ValueError): ev.validate_scores([scored_row(dimension="repair")], [case()])
+        with self.assertRaises(ValueError): ev.validate_scores([scored_row(label="base")], [case()])
+        with self.assertRaises(ValueError): ev.validate_scores([scored_row(reviewer="")], [case()])
+        with self.assertRaises(ValueError): ev.validate_scores([rows[0], rows[0]], [case()])
 
     def test_cli_refuses_to_overwrite_summary(self):
         with tempfile.TemporaryDirectory() as td:
@@ -148,7 +151,7 @@ class EvalHarnessTests(unittest.TestCase):
             scores_path = root / "scores.jsonl"
             output = root / "summary-output"
             cases_path.write_text(json.dumps(case()) + "\n", encoding="utf-8")
-            scores_path.write_text(json.dumps({"case_id": "x", "dimension": "judgment", "score": 4, "gate_flags": []}) + "\n", encoding="utf-8")
+            scores_path.write_text(json.dumps(scored_row(score=4)) + "\n", encoding="utf-8")
             args = ["run_core_prime_blind_eval.py", "--cases", str(cases_path), "--scores", str(scores_path), "--output", str(output)]
             with patch.object(sys, "argv", args):
                 ev.main()
