@@ -114,6 +114,71 @@ class EvalHarnessTests(unittest.TestCase):
             self.assertFalse(output.exists())
 
 
+    @unittest.skipUnless(os.name == "posix", "POSIX exclusive temp creation required")
+    def test_mapping_writer_does_not_delete_colliding_temp_file(self):
+        with tempfile.TemporaryDirectory() as td:
+            map_dir = Path(td) / "restricted"
+            map_dir.mkdir(mode=0o700)
+            collision = map_dir / ".blind-label-map.json.tmp-collision"
+            collision.write_text("preserve", encoding="utf-8")
+            with patch.object(ev.secrets, "token_hex", return_value="collision"):
+                with self.assertRaises(FileExistsError):
+                    ev.write_restricted_mapping(map_dir, {"x": {"candidate_1": "base"}})
+            self.assertEqual(collision.read_text(encoding="utf-8"), "preserve")
+            self.assertFalse((map_dir / "blind-label-map.json").exists())
+
+    @unittest.skipUnless(os.name == "posix", "POSIX secure path flags required")
+    def test_mapping_writer_fails_closed_when_required_flags_missing(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            for missing_flag in ("O_DIRECTORY", "O_NOFOLLOW"):
+                map_dir = root / missing_flag / "restricted"
+                with patch.object(ev.os, missing_flag, None):
+                    with self.assertRaisesRegex(OSError, "requires O_DIRECTORY and O_NOFOLLOW"):
+                        ev.write_restricted_mapping(map_dir, {"x": {"candidate_1": "base"}})
+                self.assertFalse(map_dir.exists())
+
+
+    @unittest.skipUnless(os.name == "posix", "POSIX no-follow path traversal required")
+    def test_mapping_writer_rejects_intermediate_symlink(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            target = root / "target"
+            target.mkdir(mode=0o700)
+            link = root / "parent-link"
+            link.symlink_to(target, target_is_directory=True)
+            with self.assertRaises(OSError):
+                ev.write_restricted_mapping(link / "restricted", {"x": {"candidate_1": "base"}})
+            self.assertFalse((target / "restricted" / "blind-label-map.json").exists())
+
+    @unittest.skipUnless(os.name == "posix", "POSIX atomic write semantics required")
+    def test_mapping_writer_rolls_back_publication_after_directory_fsync_failure(self):
+        with tempfile.TemporaryDirectory() as td:
+            map_dir = Path(td) / "restricted"
+            real_fsync = os.fsync
+            calls = 0
+            def fail_second_fsync(fd):
+                nonlocal calls
+                calls += 1
+                if calls == 2:
+                    raise OSError("simulated directory fsync failure")
+                return real_fsync(fd)
+            with patch.object(ev.os, "fsync", side_effect=fail_second_fsync):
+                with self.assertRaises(OSError):
+                    ev.write_restricted_mapping(map_dir, {"x": {"candidate_1": "base"}})
+            self.assertFalse((map_dir / "blind-label-map.json").exists())
+            self.assertEqual(list(map_dir.iterdir()), [])
+
+    @unittest.skipUnless(os.name == "posix", "POSIX atomic write semantics required")
+    def test_mapping_writer_cleans_temp_file_after_fsync_failure(self):
+        with tempfile.TemporaryDirectory() as td:
+            map_dir = Path(td) / "restricted"
+            with patch.object(ev.os, "fsync", side_effect=OSError("simulated fsync failure")):
+                with self.assertRaises(OSError):
+                    ev.write_restricted_mapping(map_dir, {"x": {"candidate_1": "base"}})
+            self.assertFalse((map_dir / "blind-label-map.json").exists())
+            self.assertEqual(list(map_dir.iterdir()), [])
+
     @unittest.skipUnless(os.name == "posix", "POSIX symlink semantics required")
     def test_mapping_directory_symlink_is_rejected_before_resolution(self):
         with tempfile.TemporaryDirectory() as td:

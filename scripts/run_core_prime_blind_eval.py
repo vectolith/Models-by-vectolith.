@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import random
+import secrets
 from pathlib import Path
 
 DIMENSIONS = ["judgment", "naturalness", "situational_fit", "independence", "humor_timing", "useful_originality", "restraint", "grounding_calibration", "task_craft", "relational_intelligence", "long_context_consistency", "repair"]
@@ -87,31 +88,92 @@ def validate_output_directories(sheet_dir, map_dir):
     return sheet_dir, map_dir
 
 
+def _open_private_directory_chain(path):
+    """Open/create every path component without following symlinks (POSIX)."""
+    # Fail closed: silently omitting either flag would weaken traversal checks.
+    if getattr(os, "O_DIRECTORY", None) is None or getattr(os, "O_NOFOLLOW", None) is None:
+        raise OSError("Secure condition-map publication requires O_DIRECTORY and O_NOFOLLOW")
+    absolute = Path(os.path.abspath(os.fspath(path)))
+    dir_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    fd = os.open(absolute.anchor, dir_flags)
+    try:
+        for component in absolute.parts[1:]:
+            if component in ("", "."):
+                continue
+            try:
+                next_fd = os.open(component, dir_flags, dir_fd=fd)
+            except FileNotFoundError:
+                try:
+                    os.mkdir(component, 0o700, dir_fd=fd)
+                except FileExistsError:
+                    pass
+                next_fd = os.open(component, dir_flags, dir_fd=fd)
+            os.close(fd)
+            fd = next_fd
+        os.fchmod(fd, 0o700)
+        return fd
+    except BaseException:
+        os.close(fd)
+        raise
+
+
 def write_restricted_mapping(map_dir, mapping):
-    map_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     if map_dir.is_symlink():
         raise ValueError("Condition-map directory must not be a symlink")
     map_file = map_dir / "blind-label-map.json"
     serialized = json.dumps(mapping, indent=2) + "\n"
     if os.name == "posix":
-        dir_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
-        dir_fd = os.open(map_dir, dir_flags)
+        dir_fd = _open_private_directory_chain(map_dir)
+        temp_name = None
+        created_temp = False
+        published = False
+        fd = None
         try:
-            os.fchmod(dir_fd, 0o700)
             file_flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
-            fd = os.open(map_file.name, file_flags, 0o600, dir_fd=dir_fd)
-            try:
-                os.fchmod(fd, 0o600)
-                stream = os.fdopen(fd, "w", encoding="utf-8")
-                fd = None
-                with stream:
-                    stream.write(serialized)
-            finally:
-                if fd is not None:
-                    os.close(fd)
+            for _ in range(8):
+                temp_name = f".{map_file.name}.tmp-{secrets.token_hex(8)}"
+                try:
+                    fd = os.open(temp_name, file_flags, 0o600, dir_fd=dir_fd)
+                    created_temp = True
+                    break
+                except FileExistsError:
+                    continue
+            if fd is None:
+                raise FileExistsError("Could not create an exclusive temporary mapping file")
+            os.fchmod(fd, 0o600)
+            stream = os.fdopen(fd, "w", encoding="utf-8")
+            fd = None
+            with stream:
+                stream.write(serialized)
+                stream.flush()
+                os.fsync(stream.fileno())
+            # Atomically publish the complete mapping without replacing a prior one.
+            os.link(temp_name, map_file.name, src_dir_fd=dir_fd, dst_dir_fd=dir_fd, follow_symlinks=False)
+            published = True
+            os.unlink(temp_name, dir_fd=dir_fd)
+            created_temp = False
+            os.fsync(dir_fd)
+        except BaseException:
+            if fd is not None:
+                os.close(fd)
+            if created_temp and temp_name is not None:
+                try:
+                    os.unlink(temp_name, dir_fd=dir_fd)
+                except FileNotFoundError:
+                    pass
+            if published:
+                try:
+                    os.unlink(map_file.name, dir_fd=dir_fd)
+                    os.fsync(dir_fd)
+                except OSError:
+                    pass
+            raise
         finally:
             os.close(dir_fd)
     else:
+        map_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+        if map_dir.is_symlink():
+            raise ValueError("Condition-map directory must not be a symlink")
         with map_file.open("x", encoding="utf-8") as stream:
             stream.write(serialized)
 
