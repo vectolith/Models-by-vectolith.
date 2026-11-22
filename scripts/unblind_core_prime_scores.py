@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import stat
 from pathlib import Path
 
 from run_core_prime_blind_eval import CONDITIONS, DIMENSIONS, read_jsonl, validate_cases, validate_scores
@@ -20,20 +21,42 @@ def validate_mapping(mapping, cases):
     return mapping
 
 
+def _open_directory_without_symlink_ancestors(path):
+    absolute = Path(os.path.abspath(path))
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(absolute.anchor, flags)
+    try:
+        for component in absolute.parts[1:]:
+            next_fd = os.open(component, flags, dir_fd=fd)
+            os.close(fd)
+            fd = next_fd
+        return fd
+    except Exception:
+        os.close(fd)
+        raise
+
+
 def load_restricted_mapping(path):
+    if os.name == "posix":
+        dir_fd = _open_directory_without_symlink_ancestors(path.parent)
+        try:
+            if os.fstat(dir_fd).st_mode & 0o077:
+                raise PermissionError("Condition map directory must be private (no group/other permissions)")
+            fd = os.open(path.name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=dir_fd)
+            try:
+                file_stat = os.fstat(fd)
+                if not stat.S_ISREG(file_stat.st_mode) or file_stat.st_mode & 0o077:
+                    raise PermissionError("Condition map must be a private regular file (no group/other permissions)")
+                with os.fdopen(fd, "r", encoding="utf-8") as stream:
+                    fd = None
+                    return json.load(stream)
+            finally:
+                if fd is not None:
+                    os.close(fd)
+        finally:
+            os.close(dir_fd)
     if path.is_symlink() or path.parent.is_symlink():
         raise ValueError("Condition map and parent directory must not be symlinks")
-    if os.name == "posix":
-        if path.parent.stat().st_mode & 0o077 or path.stat().st_mode & 0o077:
-            raise PermissionError("Condition map directory/file must be private (no group/other permissions)")
-        fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
-        try:
-            with os.fdopen(fd, "r", encoding="utf-8") as stream:
-                fd = None
-                return json.load(stream)
-        finally:
-            if fd is not None:
-                os.close(fd)
     with path.open("r", encoding="utf-8") as stream:
         return json.load(stream)
 
@@ -73,12 +96,12 @@ def build_summary(scores, cases, mapping):
 def write_restricted_summary(output, map_path, summary):
     if output.parent.resolve() != map_path.parent.resolve() or output.name == map_path.name:
         raise ValueError("Unblinded summary must be written beside the condition map, inside the same restricted directory")
-    if output.parent.is_symlink() or output.is_symlink():
-        raise ValueError("Restricted output path must not be a symlink")
+    if output.is_symlink():
+        raise ValueError("Restricted output file must not be a symlink")
     output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     serialized = json.dumps(summary, indent=2) + "\n"
     if os.name == "posix":
-        dir_fd = os.open(output.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
+        dir_fd = _open_directory_without_symlink_ancestors(output.parent)
         try:
             os.fchmod(dir_fd, 0o700)
             fd = os.open(output.name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600, dir_fd=dir_fd)
@@ -94,6 +117,8 @@ def write_restricted_summary(output, map_path, summary):
         finally:
             os.close(dir_fd)
     else:
+        if output.parent.is_symlink():
+            raise ValueError("Restricted output parent must not be a symlink")
         with output.open("x", encoding="utf-8") as stream:
             stream.write(serialized)
 

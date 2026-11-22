@@ -86,6 +86,36 @@ class BlindScoreContractTests(unittest.TestCase):
                 unblind.write_restricted_summary(Path(td) / "public-summary.json", map_path, summary)
 
     @unittest.skipUnless(os.name == "posix", "POSIX symlink semantics required")
+    def test_mapping_reader_rejects_symlinked_ancestor(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            real = root / "real"
+            private = real / "private"
+            private.mkdir(parents=True, mode=0o700)
+            map_path = private / "map.json"
+            map_path.write_text("{}", encoding="utf-8")
+            map_path.chmod(0o600)
+            alias = root / "alias"
+            alias.symlink_to(real, target_is_directory=True)
+            with self.assertRaises(OSError):
+                unblind.load_restricted_mapping(alias / "private" / "map.json")
+
+    @unittest.skipUnless(os.name == "posix", "POSIX symlink semantics required")
+    def test_unblinded_writer_rejects_symlinked_ancestor(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            real = root / "real"
+            private = real / "private"
+            private.mkdir(parents=True, mode=0o700)
+            map_path = private / "map.json"
+            map_path.write_text("{}", encoding="utf-8")
+            map_path.chmod(0o600)
+            alias = root / "alias"
+            alias.symlink_to(real, target_is_directory=True)
+            with self.assertRaises(OSError):
+                unblind.write_restricted_summary(alias / "private" / "out.json", map_path, {})
+
+    @unittest.skipUnless(os.name == "posix", "POSIX symlink semantics required")
     def test_map_symlink_or_loose_permissions_are_rejected(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
