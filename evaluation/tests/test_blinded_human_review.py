@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import tempfile
 import unittest
 import zipfile
@@ -103,7 +104,19 @@ class BlindedHumanReviewTests(unittest.TestCase):
         self.assertTrue(key_path.exists())
         key = json.loads(key_path.read_text(encoding="utf-8"))
         self.assertEqual(len(key["records"]), 4)
+        if os.name == "posix":
+            self.assertEqual(output.stat().st_mode & 0o777, 0o700)
+            self.assertEqual((output / "private").stat().st_mode & 0o777, 0o700)
+            self.assertEqual(key_path.stat().st_mode & 0o777, 0o600)
+            self.assertEqual((output / "build-summary.json").stat().st_mode & 0o777, 0o600)
+        with self.assertRaises(FileExistsError):
+            build_review_packages(
+                self.artifacts, [self.suite], output,
+                reviewer_count=2, expected_artifacts=2, expected_cases=2, workflow_run_id="test-run",
+            )
         for package in summary["reviewer_packages"]:
+            if os.name == "posix":
+                self.assertEqual((output / package["reviewer_package"]).stat().st_mode & 0o777, 0o600)
             with zipfile.ZipFile(output / package["reviewer_package"]) as archive:
                 self.assertNotIn("identity-key.json", archive.namelist())
                 raw = archive.read("review-items.jsonl").decode()
@@ -114,6 +127,23 @@ class BlindedHumanReviewTests(unittest.TestCase):
                 self.assertNotIn("run-secret", raw)
                 self.assertIn("Answer response", raw)
                 self.assertEqual(len(raw.splitlines()), 4)
+
+    def test_rejects_repository_output_and_existing_destination(self):
+        repo_root = Path(__file__).resolve().parents[2]
+        repo_output = repo_root / f".blind-review-security-test-{self.root.name}"
+        with self.assertRaises(ValueError):
+            build_review_packages(
+                self.artifacts, [self.suite], repo_output,
+                reviewer_count=2, expected_artifacts=2, expected_cases=2, workflow_run_id="test-run",
+            )
+        self.assertFalse(repo_output.exists())
+        existing = self.root / "existing-review"
+        existing.mkdir(mode=0o700)
+        with self.assertRaises(FileExistsError):
+            build_review_packages(
+                self.artifacts, [self.suite], existing,
+                reviewer_count=2, expected_artifacts=2, expected_cases=2, workflow_run_id="test-run",
+            )
 
     def test_accepts_multiple_runs_for_the_same_candidate_without_overwriting(self):
         first = self.artifacts[0]

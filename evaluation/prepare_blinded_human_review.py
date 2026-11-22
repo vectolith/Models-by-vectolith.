@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 import io
 import json
 import random
@@ -13,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 BLIND_SCHEMA = "vectolith-blind-review/1.0"
+ROOT = Path(__file__).resolve().parents[1]
 RUN40_ARTIFACTS = {
     "prime-teacher-granite-3.1-3b-a800m.zip": {
         "workflow_run_id": "43796213917", "artifact_id": 14199574383, "job_id": 133093491281,
@@ -168,6 +170,34 @@ def _identity(row: dict[str, Any]) -> tuple[str, str, str, str]:
     )
 
 
+def _write_private_file(path: Path, data: bytes) -> None:
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(path, flags, 0o600)
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "wb") as stream:
+            fd = None
+            stream.write(data)
+    finally:
+        if fd is not None:
+            os.close(fd)
+
+
+def _write_private_zip(path: Path, members: list[tuple[str, bytes]]) -> None:
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(path, flags, 0o600)
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "wb") as stream:
+            fd = None
+            with zipfile.ZipFile(stream, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+                for name, data in members:
+                    archive.writestr(name, data)
+    finally:
+        if fd is not None:
+            os.close(fd)
+
+
 def build_review_packages(
     evidence_paths: list[Path],
     suite_paths: list[Path],
@@ -307,9 +337,21 @@ def build_review_packages(
                 },
             })
 
-    output_dir.mkdir(parents=True, exist_ok=True)
+    requested_output = output_dir.expanduser()
+    resolved_output = requested_output.resolve()
+    if resolved_output == ROOT or ROOT in resolved_output.parents:
+        raise ValueError("review packages and identity key must be stored outside the repository")
+    if requested_output.is_symlink() or requested_output.exists():
+        raise FileExistsError("review output directory already exists; use a fresh private destination")
+    resolved_output.parent.mkdir(parents=True, exist_ok=True)
+    resolved_output.mkdir(mode=0o700)
+    if os.name == "posix":
+        os.chmod(resolved_output, 0o700)
+    output_dir = resolved_output
     private_dir = output_dir / "private"
-    private_dir.mkdir(exist_ok=True)
+    private_dir.mkdir(mode=0o700)
+    if os.name == "posix":
+        os.chmod(private_dir, 0o700)
     private_key = {
         "schema_version": "vectolith-blind-review-identity-key/1.0",
         "warning": "RESTRICTED: never distribute this file to reviewers. It reverses candidate blinding.",
@@ -317,8 +359,9 @@ def build_review_packages(
         "sources": source_register,
         "records": private_records,
     }
-    (private_dir / "identity-key.json").write_text(
-        json.dumps(private_key, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    _write_private_file(
+        private_dir / "identity-key.json",
+        (json.dumps(private_key, indent=2, ensure_ascii=False) + "\n").encode("utf-8"),
     )
 
     aliases = [f"Candidate {letter}" for letter in "ABCDEFGHJKLMNPQRSTUVWXYZ"]
@@ -387,15 +430,17 @@ def build_review_packages(
             "Do not grade entries marked not_gradeable_error. No package or score constitutes teacher qualification.\n"
         )
         zip_path = output_dir / f"{reviewer_id}-blind-review.zip"
-        with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-            archive.writestr("README.md", readme)
-            archive.writestr("review-items.jsonl", "\n".join(
+        zip_members = [
+            ("README.md", readme.encode("utf-8")),
+            ("review-items.jsonl", ("\n".join(
                 json.dumps(x, ensure_ascii=False, sort_keys=True) for x in items
-            ) + "\n")
-            archive.writestr("grade-template.jsonl", "\n".join(
+            ) + "\n").encode("utf-8")),
+            ("grade-template.jsonl", ("\n".join(
                 json.dumps(x, ensure_ascii=False, sort_keys=True) for x in grades
-            ) + ("\n" if grades else ""))
-            archive.writestr("manifest.json", json.dumps(package_manifest, indent=2) + "\n")
+            ) + ("\n" if grades else "")).encode("utf-8")),
+            ("manifest.json", (json.dumps(package_manifest, indent=2) + "\n").encode("utf-8")),
+        ]
+        _write_private_zip(zip_path, zip_members)
         package_register.append({
             "reviewer_package": zip_path.name,
             "item_count": len(items),
@@ -417,8 +462,9 @@ def build_review_packages(
         "private_identity_key": "private/identity-key.json",
         "qualification_decision": "not_made",
     }
-    (output_dir / "build-summary.json").write_text(
-        json.dumps(summary, indent=2) + "\n", encoding="utf-8"
+    _write_private_file(
+        output_dir / "build-summary.json",
+        (json.dumps(summary, indent=2) + "\n").encode("utf-8"),
     )
     return summary
 
