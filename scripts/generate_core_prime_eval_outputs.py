@@ -113,7 +113,7 @@ def main():
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--offline", action="store_true", help="Load only from local model cache/directory")
     p.add_argument("--character-prompt", type=Path, required=True, help="System prompt file for paired condition")
-    p.add_argument("--max-new-tokens", type=int, default=256)
+    p.add_argument("--max-new-tokens", type=int, required=True, help="Explicit per-run generation budget; no fixed default is imposed")
     args = p.parse_args()
     if args.max_new_tokens < 1:
         p.error("--max-new-tokens must be positive")
