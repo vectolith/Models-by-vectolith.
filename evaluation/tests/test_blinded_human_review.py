@@ -52,7 +52,9 @@ class BlindedHumanReviewTests(unittest.TestCase):
                     "run_id": run_id,
                     "started_at": f"2026-11-16T00:00:0{n}+00:00",
                     "category": case["category"],
-                    "prompt_sha256": hashlib.sha256(case["id"].encode()).hexdigest(),
+                    "prompt_sha256": hashlib.sha256(
+                        json.dumps(case["messages"], ensure_ascii=False, sort_keys=True).encode("utf-8")
+                    ).hexdigest(),
                     "rubric": case["rubric"],
                     "max_new_tokens": 256,
                     "generation_cap_reached": False,
@@ -79,6 +81,39 @@ class BlindedHumanReviewTests(unittest.TestCase):
 
     def tearDown(self):
         self.tmp.cleanup()
+
+    def _rewrite_artifact(self, source, destination, mutate):
+        with zipfile.ZipFile(source) as archive:
+            record_name = next(name for name in archive.namelist() if name.endswith(".json"))
+            jsonl_name = next(name for name in archive.namelist() if name.endswith(".jsonl"))
+            record = json.loads(archive.read(record_name))
+            rows = [dict(row) for row in record["results"]]
+        mutate(rows)
+        record["results"] = rows
+        with zipfile.ZipFile(destination, "w") as archive:
+            archive.writestr(record_name, json.dumps(record))
+            archive.writestr(jsonl_name, "\n".join(json.dumps(row) for row in rows) + "\n")
+        return destination
+
+    def test_build_rejects_prompt_hash_mismatch(self):
+        tampered = self.root / "tampered.zip"
+        with zipfile.ZipFile(self.artifacts[0]) as source:
+            record_name = next(name for name in source.namelist() if name.endswith(".json"))
+            jsonl_name = next(name for name in source.namelist() if name.endswith(".jsonl"))
+            record = json.loads(source.read(record_name))
+            rows = [dict(row) for row in record["results"]]
+            rows[0]["prompt_sha256"] = "0" * 64
+            record["results"] = rows
+            with zipfile.ZipFile(tampered, "w") as destination:
+                destination.writestr(record_name, json.dumps(record))
+                destination.writestr(jsonl_name, "\n".join(json.dumps(row) for row in rows) + "\n")
+        output = self.root / "review-output"
+        with self.assertRaisesRegex(ValueError, "prompt_sha256 does not match the original suite messages"):
+            build_review_packages(
+                [tampered, self.artifacts[1]], [self.suite], output,
+                reviewer_count=2, expected_artifacts=2, expected_cases=2, workflow_run_id="test-run",
+            )
+        self.assertFalse(output.exists())
 
     def test_private_writer_is_exclusive_and_restrictive(self):
         from evaluation.prepare_blinded_human_review import _write_private_file
@@ -163,6 +198,67 @@ class BlindedHumanReviewTests(unittest.TestCase):
             item["sha256"],
             "9b34e52ef661236741bae16b7de0ce9b04b065fdb223e2aec3bfb4d812cbac4c",
         )
+
+    def test_token_cap_unknown_cap_and_stopped_without_eos_are_not_gradeable(self):
+        capped = self.root / "source-alpha-incomplete.zip"
+        unverified = self.root / "source-beta-incomplete.zip"
+
+        def mutate_alpha(rows):
+            rows[0]["generation_cap_reached"] = True
+            rows[0]["generation_status"] = "token_limit_reached"
+            rows[0]["completion_status"] = "token_cap_truncated"
+            rows[0]["response_text"] = "CAP-TRUNCATED-PRIVATE-TEXT"
+            rows[1]["generation_cap_reached"] = False
+            rows[1]["completion_status"] = "stopped_without_eos"
+            rows[1]["response_text"] = "STOPPED-WITHOUT-EOS-PRIVATE-TEXT"
+
+        def mutate_beta(rows):
+            rows[0].pop("generation_cap_reached", None)
+            rows[0]["completion_status"] = "eos_completed"
+            rows[0]["response_text"] = "MISSING-CAP-FLAG-PRIVATE-TEXT"
+
+        self._rewrite_artifact(self.artifacts[0], capped, mutate_alpha)
+        self._rewrite_artifact(self.artifacts[1], unverified, mutate_beta)
+        output = self.root / "incomplete-review"
+        summary = build_review_packages(
+            [capped, unverified], [self.suite], output,
+            reviewer_count=2, expected_artifacts=2, expected_cases=2, workflow_run_id="test-run",
+        )
+
+        self.assertEqual(summary["response_count"], 4)
+        self.assertEqual(summary["gradeable_response_count"], 1)
+        self.assertEqual(summary["not_gradeable_response_count"], 3)
+        self.assertEqual(summary["error_response_count"], 0)
+        self.assertEqual(summary["token_cap_truncated_response_count"], 1)
+        self.assertEqual(summary["completion_status_blocked_response_count"], 1)
+        self.assertEqual(summary["unverified_cap_flag_response_count"], 1)
+
+        identity_key = json.loads((output / "private" / "identity-key.json").read_text(encoding="utf-8"))
+        records = identity_key["records"]
+        cap_record = next(record for record in records.values() if record["gradeability_disposition"] == "not_gradeable_token_cap")
+        missing_cap_record = next(record for record in records.values() if record["gradeability_disposition"] == "not_gradeable_cap_unverified")
+        self.assertFalse(cap_record["gradeable"])
+        self.assertEqual(cap_record["response_sha256"], hashlib.sha256("CAP-TRUNCATED-PRIVATE-TEXT".encode()).hexdigest())
+        self.assertIsNone(missing_cap_record["generation_cap_reached"])
+        self.assertEqual(len(records), 4)
+
+        for package in summary["reviewer_packages"]:
+            with zipfile.ZipFile(output / package["reviewer_package"]) as archive:
+                raw_items = archive.read("review-items.jsonl").decode()
+                items = [json.loads(line) for line in raw_items.splitlines()]
+                grades = [json.loads(line) for line in archive.read("grade-template.jsonl").decode().splitlines()]
+                manifest = json.loads(archive.read("manifest.json"))
+                readme = archive.read("README.md").decode()
+            self.assertEqual(len(items), 4)
+            self.assertEqual(len(grades), 1)
+            self.assertEqual(manifest["not_gradeable_count"], 3)
+            self.assertNotIn("not_gradeable_error_count", manifest)
+            self.assertIn("Do not grade entries marked not_gradeable", readme)
+            self.assertNotIn("CAP-TRUNCATED-PRIVATE-TEXT", raw_items)
+            self.assertNotIn("STOPPED-WITHOUT-EOS-PRIVATE-TEXT", raw_items)
+            self.assertNotIn("MISSING-CAP-FLAG-PRIVATE-TEXT", raw_items)
+            self.assertTrue(all(item["review_disposition"] in {"gradeable", "not_gradeable"} for item in items))
+            self.assertTrue(all(set(item["response_metadata"]) == {"gradeable"} for item in items))
 
     def test_builds_two_blinded_packages_and_keeps_identity_key_separate(self):
         output = self.root / "review"

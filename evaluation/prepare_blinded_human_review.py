@@ -134,6 +134,12 @@ def load_suites(paths: list[Path]) -> dict[str, dict[str, Any]]:
     return cases
 
 
+def prompt_messages_sha256(messages: list[dict[str, Any]]) -> str:
+    """Match run_eval.py's hash of the exact JSON chat-message payload."""
+    serialized = json.dumps(messages, ensure_ascii=False, sort_keys=True)
+    return sha256_bytes(serialized.encode("utf-8"))
+
+
 def load_evidence_archive(path: Path) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, str]]:
     archive_bytes = path.read_bytes()
     hashes = {"archive_sha256": sha256_bytes(archive_bytes)}
@@ -253,6 +259,9 @@ def build_review_packages(
                 raise ValueError(f"{path}:{case_id}: response rubric differs from original suite rubric")
             if row.get("category") != case.get("category"):
                 raise ValueError(f"{path}:{case_id}: response category differs from original suite")
+            expected_prompt_hash = prompt_messages_sha256(case["messages"])
+            if row.get("prompt_sha256") != expected_prompt_hash:
+                raise ValueError(f"{path}:{case_id}: prompt_sha256 does not match the original suite messages")
             if row.get("candidate_id") != candidate or row.get("model_revision") != revision or row.get("run_id") != run_id:
                 raise ValueError(f"{path}:{case_id}: per-response provenance disagrees with artifact metadata")
             if row.get("role") != "core_prime":
@@ -297,7 +306,35 @@ def build_review_packages(
             blind_id = "blind-" + hashlib.sha256((salt + "\0" + identity).encode()).hexdigest()[:24]
             response = row.get("response_text")
             error = row.get("error")
-            gradeable = not error and isinstance(response, str) and bool(response.strip())
+            cap_reached = row.get("generation_cap_reached")
+            completion_status = row.get("completion_status")
+            generation_status = row.get("generation_status")
+            if error:
+                gradeable = False
+                disposition = "not_gradeable_error"
+            elif not isinstance(response, str) or not response.strip():
+                gradeable = False
+                disposition = "not_gradeable_empty"
+            elif (
+                cap_reached is True
+                or generation_status == "token_limit_reached"
+                or completion_status == "token_cap_truncated"
+            ):
+                gradeable = False
+                disposition = "not_gradeable_token_cap"
+            elif cap_reached is not False:
+                gradeable = False
+                disposition = "not_gradeable_cap_unverified"
+            elif completion_status is not None and completion_status != "eos_completed":
+                gradeable = False
+                disposition = "not_gradeable_completion_status"
+            else:
+                gradeable = True
+                disposition = "gradeable"
+            response_sha256 = (
+                hashlib.sha256(response.encode("utf-8")).hexdigest()
+                if isinstance(response, str) else None
+            )
             private_records[blind_id] = {
                 "candidate_id": candidate,
                 "model_revision": record["immutable_revision"],
@@ -308,6 +345,9 @@ def build_review_packages(
                 "category": row["category"],
                 "rubric": list(suites[case_id]["rubric"]),
                 "gradeable": gradeable,
+                "gradeability_disposition": disposition,
+                "response_sha256": response_sha256,
+                "completion_status": completion_status,
                 "source_artifact": item["path"].name,
                 "source_artifact_sha256": item["hashes"]["archive_sha256"],
                 "workflow_run_id": source_run_id,
@@ -315,7 +355,7 @@ def build_review_packages(
                 "workflow_job_id": provenance.get("job_id") if provenance else None,
                 "prompt_sha256": row.get("prompt_sha256"),
                 "generation_status": row.get("generation_status"),
-                "generation_cap_reached": bool(row.get("generation_cap_reached")),
+                "generation_cap_reached": row.get("generation_cap_reached"),
                 "generated_tokens": row.get("generated_tokens"),
                 "max_new_tokens": row.get("max_new_tokens"),
                 "error": error,
@@ -326,16 +366,8 @@ def build_review_packages(
                 "category": row["category"],
                 "messages": suites[case_id]["messages"],
                 "rubric": list(suites[case_id]["rubric"]),
-                "response_text": response,
-                "response_metadata": {
-                    "generation_status": row.get("generation_status"),
-                    "token_cap_reached": bool(row.get("generation_cap_reached")),
-                    "generated_tokens": row.get("generated_tokens"),
-                    "max_new_tokens": row.get("max_new_tokens"),
-                    "error_present": bool(error),
-                    "error_class": str(error).split(":", 1)[0] if error else None,
-                    "gradeable": gradeable,
-                },
+                "response_text": response if gradeable else None,
+                "response_metadata": {"gradeable": gradeable},
             })
 
     requested_output = output_dir.expanduser()
@@ -389,7 +421,7 @@ def build_review_packages(
                 "rubric": row["rubric"],
                 "response_text": row["response_text"],
                 "response_metadata": row["response_metadata"],
-                "review_disposition": "gradeable" if private["gradeable"] else "not_gradeable_error",
+                "review_disposition": "gradeable" if private["gradeable"] else "not_gradeable",
             })
             if private["gradeable"]:
                 grades.append({
@@ -410,7 +442,7 @@ def build_review_packages(
             "package_id": reviewer_id,
             "item_count": len(items),
             "gradeable_count": len(grades),
-            "not_gradeable_error_count": len(items) - len(grades),
+            "not_gradeable_count": len(items) - len(grades),
             "review_items_sha256": sha256_bytes(
                 ("\n".join(json.dumps(x, sort_keys=True, ensure_ascii=False) for x in items) + "\n").encode()
             ),
@@ -428,7 +460,7 @@ def build_review_packages(
             + "\n".join(f"- **{score}** — {anchor}" for score, anchor in SCORE_ANCHORS.items())
             + "\n\n"
             "Preserve this package and the completed grade-template.jsonl unchanged. Record evaluator_id as a stable, unique human reviewer identifier. "
-            "Do not grade entries marked not_gradeable_error. No package or score constitutes teacher qualification.\n"
+            "Do not grade entries marked not_gradeable; their response text is withheld and source evidence is retained privately. No package or score constitutes teacher qualification.\n"
         )
         zip_path = output_dir / f"{reviewer_id}-blind-review.zip"
         zip_members = [
@@ -457,7 +489,12 @@ def build_review_packages(
         "suite_case_count": len(suites),
         "response_count": len(review_rows),
         "gradeable_response_count": sum(1 for x in private_records.values() if x["gradeable"]),
-        "error_response_count": sum(1 for x in private_records.values() if not x["gradeable"]),
+        "not_gradeable_response_count": sum(1 for x in private_records.values() if not x["gradeable"]),
+        "error_response_count": sum(1 for x in private_records.values() if x["gradeability_disposition"] == "not_gradeable_error"),
+        "token_cap_truncated_response_count": sum(1 for x in private_records.values() if x["gradeability_disposition"] == "not_gradeable_token_cap"),
+        "completion_status_blocked_response_count": sum(1 for x in private_records.values() if x["gradeability_disposition"] == "not_gradeable_completion_status"),
+        "unverified_cap_flag_response_count": sum(1 for x in private_records.values() if x["gradeability_disposition"] == "not_gradeable_cap_unverified"),
+        "empty_response_count": sum(1 for x in private_records.values() if x["gradeability_disposition"] == "not_gradeable_empty"),
         "reviewer_package_count": reviewer_count,
         "reviewer_packages": package_register,
         "private_identity_key": "private/identity-key.json",
