@@ -127,6 +127,18 @@ class EvalHarnessTests(unittest.TestCase):
             self.assertEqual(collision.read_text(encoding="utf-8"), "preserve")
             self.assertFalse((map_dir / "blind-label-map.json").exists())
 
+    @unittest.skipUnless(os.name == "posix", "POSIX secure path flags required")
+    def test_mapping_writer_fails_closed_when_required_flags_missing(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            for missing_flag in ("O_DIRECTORY", "O_NOFOLLOW"):
+                map_dir = root / missing_flag / "restricted"
+                with patch.object(ev.os, missing_flag, None):
+                    with self.assertRaisesRegex(OSError, "requires O_DIRECTORY and O_NOFOLLOW"):
+                        ev.write_restricted_mapping(map_dir, {"x": {"candidate_1": "base"}})
+                self.assertFalse(map_dir.exists())
+
+
     @unittest.skipUnless(os.name == "posix", "POSIX no-follow path traversal required")
     def test_mapping_writer_rejects_intermediate_symlink(self):
         with tempfile.TemporaryDirectory() as td:
