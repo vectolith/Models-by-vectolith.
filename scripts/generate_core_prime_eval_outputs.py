@@ -49,6 +49,21 @@ def _input_device(model):
         return model.device
 
 
+def _eos_token_ids(model, tokenizer):
+    token_ids = getattr(tokenizer, "eos_token_id", None)
+    if token_ids is None:
+        token_ids = getattr(getattr(model, "generation_config", None), "eos_token_id", None)
+    if token_ids is None:
+        raise RuntimeError("Cannot verify completion: no EOS token ID is configured")
+    if isinstance(token_ids, (list, tuple, set)):
+        normalized = {int(token_id) for token_id in token_ids}
+    else:
+        normalized = {int(token_ids)}
+    if not normalized:
+        raise RuntimeError("Cannot verify completion: EOS token ID set is empty")
+    return normalized
+
+
 def generate(model, tokenizer, torch, messages, max_new_tokens):
     if max_new_tokens < 1:
         raise ValueError("max_new_tokens must be positive")
@@ -70,7 +85,18 @@ def generate(model, tokenizer, torch, messages, max_new_tokens):
         generation_kwargs["attention_mask"] = attention_mask.to(_input_device(model))
     with torch.no_grad():
         generated = model.generate(input_ids, **generation_kwargs)
-    return tokenizer.decode(generated[0][input_ids.shape[-1]:], skip_special_tokens=True).strip()
+    sequences = getattr(generated, "sequences", generated)
+    new_tokens = sequences[0][input_ids.shape[-1]:]
+    token_ids = new_tokens.tolist() if hasattr(new_tokens, "tolist") else list(new_tokens)
+    eos_ids = _eos_token_ids(model, tokenizer)
+    eos_index = next((i for i, token_id in enumerate(token_ids) if int(token_id) in eos_ids), None)
+    if eos_index is None:
+        raise RuntimeError("Generation did not reach EOS within max_new_tokens; response rejected")
+    token_ids = token_ids[: eos_index + 1]
+    response = tokenizer.decode(token_ids, skip_special_tokens=True).strip()
+    if not response:
+        raise RuntimeError("Generation returned an empty response; response rejected")
+    return response
 
 
 def write_outputs(path, outputs):
@@ -87,7 +113,7 @@ def main():
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--offline", action="store_true", help="Load only from local model cache/directory")
     p.add_argument("--character-prompt", type=Path, required=True, help="System prompt file for paired condition")
-    p.add_argument("--max-new-tokens", type=int, default=256)
+    p.add_argument("--max-new-tokens", type=int, required=True, help="Explicit per-run generation budget; no fixed default is imposed")
     args = p.parse_args()
     if args.max_new_tokens < 1:
         p.error("--max-new-tokens must be positive")

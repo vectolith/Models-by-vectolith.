@@ -35,6 +35,7 @@ class FakeModel:
 
 class FakeTokenizer:
     chat_template = None
+    eos_token_id = 4
     def __init__(self): self.text = None; self.messages = None
     def __call__(self, text, return_tensors):
         self.text = text
@@ -69,6 +70,24 @@ class GenerationHelperTests(unittest.TestCase):
         self.assertEqual(model.received[1]["max_new_tokens"], 5)
         self.assertEqual(model.received[1]["do_sample"], False)
 
+    def test_generation_rejects_output_without_eos(self):
+        model, tokenizer = FakeModel(), FakeTokenizer()
+        model.generate = lambda inputs, **kwargs: [[1, 2, 3]]
+        with self.assertRaisesRegex(RuntimeError, "did not reach EOS"):
+            gen.generate(model, tokenizer, FakeTorch(), gen.build_messages({"prompt": "Question"}), 5)
+
+    def test_generation_rejects_empty_decoded_response(self):
+        model, tokenizer = FakeModel(), FakeTokenizer()
+        tokenizer.decode = lambda tokens, skip_special_tokens: "  "
+        with self.assertRaisesRegex(RuntimeError, "empty response"):
+            gen.generate(model, tokenizer, FakeTorch(), gen.build_messages({"prompt": "Question"}), 5)
+
+    def test_generation_fails_closed_when_eos_is_unconfigured(self):
+        model, tokenizer = FakeModel(), FakeTokenizer()
+        tokenizer.eos_token_id = None
+        with self.assertRaisesRegex(RuntimeError, "no EOS token ID is configured"):
+            gen.generate(model, tokenizer, FakeTorch(), gen.build_messages({"prompt": "Question"}), 5)
+
     def test_chat_template_path_and_embedding_device(self):
         model, tokenizer = FakeModel(), FakeTokenizer()
         tokenizer.chat_template = "fake-template"
@@ -95,7 +114,7 @@ class GenerationHelperTests(unittest.TestCase):
             cases.write_text(json.dumps({"id": "x", "prompt": "p"}) + "\n", encoding="utf-8")
             prompt.write_text("character", encoding="utf-8")
             output.write_text("existing", encoding="utf-8")
-            args = ["generator.py", "--model", "unused", "--cases", str(cases), "--character-prompt", str(prompt), "--output", str(output)]
+            args = ["generator.py", "--model", "unused", "--cases", str(cases), "--character-prompt", str(prompt), "--output", str(output), "--max-new-tokens", "4096"]
             with patch.object(sys, "argv", args):
                 with self.assertRaises(SystemExit):
                     gen.main()
