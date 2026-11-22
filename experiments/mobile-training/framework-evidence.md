@@ -1,20 +1,24 @@
-# Mobile framework evidence (initial research)
+# Mobile framework evidence (read-only research snapshot)
 
-Date: 2026-11-22
+Date: 2026-11-22. No device build, model download, inference or training performed.
 
-## Findings
-- **MLX Swift** is a credible investigation path: the upstream mlx-swift repository documents an iOS-compatible Swift API and examples including MNISTTrainer that runs on iOS and macOS.
-- The upstream examples list a **LoRATrainingExample for macOS**, not iOS. This is evidence that LoRA training examples exist, but not evidence that the LLM LoRA example can be run on iPhone.
-- MLX provides composable automatic differentiation and MLXOptimizers. iOS platform support is documented upstream, but the specific model, gradient path, adapter implementation and resource envelope still require an on-device proof.
-- **Qwen3.5-2B-Base** model card states Apache-2.0 and identifies the 2B model as pre-trained weights intended for fine-tuning/in-context experiments. It uses a hybrid Gated DeltaNet and attention architecture. That makes architecture-specific implementation and support validation a critical gate.
-- The 2B checkpoint in the Hugging Face repository is several GB even before considering training gradients, optimizer state, activations, temporary tensors and checkpoint copies. A phone's usable memory budget is therefore not determined by file size alone.
+## Verified upstream facts
 
-## Source links
-- MLX Swift upstream: https://github.com/ml-explore/mlx-swift/
-- MLX Swift examples: https://github.com/ml-explore/mlx-swift-examples
+- **MLX Swift** is an Apple-silicon array framework. Its upstream examples include MNIST training on iOS/macOS, which proves a general differentiable training example exists on iOS but does not prove LLM LoRA training is supported there.
+- The upstream **mlx-swift-examples** README currently lists `LoRATrainingExample` as a macOS example. Do not infer iOS LLM training from the package's iOS platform support or from MNIST.
+- **mlx-swift-lm** includes LoRA training code and its Swift package manifest declares iOS 17. However, the example app listed upstream is macOS-only. We still need a target-specific iOS app build and on-device gradient/update proof.
+- **Qwen3.5-2B-Base** model card declares Apache-2.0 and describes a 2B causal language model with a vision encoder and hybrid Gated DeltaNet/attention layout. The model card describes pretraining weights intended for research/fine-tuning, not an iOS/MLX training compatibility guarantee. Its exact immutable revision, tokenizer, conversion/layout and target-module compatibility remain unverified.
+- The candidate is multimodal and hybrid. A text-only conversion, quantization, adapter-target mapping or architecture substitution must not be silently assumed.
+- Checkpoint file size alone does not establish training feasibility: gradients, optimizer state, activations, temporaries, memory pressure, storage, thermals and iOS process limits must be measured on the target device.
+
+## Source references
+
+- MLX Swift: https://github.com/ml-explore/mlx-swift/
+- MLX Swift examples (official list of MNIST and macOS LoRA example): https://github.com/ml-explore/mlx-swift-examples
+- MLX Swift LM (LoRA training code; package/platform support is not device validation): https://github.com/ml-explore/mlx-swift-lm
+- MLX Swift LM LoRA reference: https://github.com/ml-explore/mlx-swift-lm/blob/main/skills/mlx-swift-lm/references/lora-adapters.md
 - Qwen3.5-2B-Base model card: https://huggingface.co/Qwen/Qwen3.5-2B-Base
-- Qwen3.5-2B model card: https://huggingface.co/Qwen/Qwen3.5-2B
 
 ## Decision
-Investigate MLX Swift for a small on-device differentiable prototype first. Do not claim iPhone Qwen LoRA training is already supported. The upstream LoRA LLM example is macOS-only as listed; porting, model support, memory feasibility and iOS execution must be proven. This research does not approve Qwen as Core Prime's foundation and does not authorize training.
 
+MLX Swift remains a research path, not a selected training stack. The package-level iOS support and LoRA code are promising, but the official LLM LoRA example is macOS-only. Qwen3.5-2B-Base remains an unapproved candidate: model-card license text is not independent legal review or written Core Prime output-training permission. Do not download weights, run inference, or train before the explicit gates.
