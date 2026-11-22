@@ -140,6 +140,24 @@ class EvalHarnessTests(unittest.TestCase):
             self.assertFalse((target / "restricted" / "blind-label-map.json").exists())
 
     @unittest.skipUnless(os.name == "posix", "POSIX atomic write semantics required")
+    def test_mapping_writer_rolls_back_publication_after_directory_fsync_failure(self):
+        with tempfile.TemporaryDirectory() as td:
+            map_dir = Path(td) / "restricted"
+            real_fsync = os.fsync
+            calls = 0
+            def fail_second_fsync(fd):
+                nonlocal calls
+                calls += 1
+                if calls == 2:
+                    raise OSError("simulated directory fsync failure")
+                return real_fsync(fd)
+            with patch.object(ev.os, "fsync", side_effect=fail_second_fsync):
+                with self.assertRaises(OSError):
+                    ev.write_restricted_mapping(map_dir, {"x": {"candidate_1": "base"}})
+            self.assertFalse((map_dir / "blind-label-map.json").exists())
+            self.assertEqual(list(map_dir.iterdir()), [])
+
+    @unittest.skipUnless(os.name == "posix", "POSIX atomic write semantics required")
     def test_mapping_writer_cleans_temp_file_after_fsync_failure(self):
         with tempfile.TemporaryDirectory() as td:
             map_dir = Path(td) / "restricted"
