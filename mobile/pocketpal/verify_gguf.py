@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -63,7 +64,20 @@ def main() -> int:
     except (OSError, ValueError) as exc:
         parser.error(str(exc))
     output = args.manifest or args.file.with_suffix(args.file.suffix + ".manifest.json")
-    output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    payload = (json.dumps(result, indent=2) + "\n").encode("utf-8")
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        fd = os.open(output, flags, 0o600)
+    except FileExistsError:
+        parser.error(f"Refusing to overwrite manifest: {output}")
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "wb") as stream:
+            fd = None
+            stream.write(payload)
+    finally:
+        if fd is not None:
+            os.close(fd)
     print(json.dumps(result, indent=2))
     print(f"Manifest written: {output}")
     return 0

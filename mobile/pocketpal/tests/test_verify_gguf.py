@@ -1,5 +1,6 @@
 import importlib.util
 import tempfile
+import os
 import unittest
 from pathlib import Path
 
@@ -20,6 +21,25 @@ class VerifyGGUFTests(unittest.TestCase):
             self.assertEqual(result["size_bytes"], 12)
             self.assertEqual(result["model_id"], "example/model")
             self.assertEqual(len(result["sha256"]), 64)
+
+    def test_manifest_creation_refuses_overwrite_and_is_private(self):
+        import sys
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "tiny.gguf"
+            path.write_bytes(b"GGUFpayload")
+            manifest = Path(directory) / "manifest.json"
+            argv = ["verify_gguf.py", str(path), "--manifest", str(manifest)]
+            with patch.object(sys, "argv", argv):
+                MODULE.main()
+            self.assertTrue(manifest.exists())
+            if os.name == "posix":
+                self.assertEqual(manifest.stat().st_mode & 0o777, 0o600)
+            original = manifest.read_bytes()
+            with patch.object(sys, "argv", argv):
+                with self.assertRaises(SystemExit):
+                    MODULE.main()
+            self.assertEqual(manifest.read_bytes(), original)
 
     def test_rejects_wrong_signature(self):
         with tempfile.TemporaryDirectory() as directory:
