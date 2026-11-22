@@ -92,7 +92,7 @@ class BlindedHumanReviewTests(unittest.TestCase):
         record["results"] = rows
         with zipfile.ZipFile(destination, "w") as archive:
             archive.writestr(record_name, json.dumps(record))
-            archive.writestr(jsonl_name, "\\n".join(json.dumps(row) for row in rows) + "\\n")
+            archive.writestr(jsonl_name, "\n".join(json.dumps(row) for row in rows) + "\n")
         return destination
 
     def test_build_rejects_prompt_hash_mismatch(self):
@@ -242,7 +242,8 @@ class BlindedHumanReviewTests(unittest.TestCase):
 
         for package in summary["reviewer_packages"]:
             with zipfile.ZipFile(output / package["reviewer_package"]) as archive:
-                items = [json.loads(line) for line in archive.read("review-items.jsonl").decode().splitlines()]
+                raw_items = archive.read("review-items.jsonl").decode()
+                items = [json.loads(line) for line in raw_items.splitlines()]
                 grades = [json.loads(line) for line in archive.read("grade-template.jsonl").decode().splitlines()]
                 manifest = json.loads(archive.read("manifest.json"))
                 readme = archive.read("README.md").decode()
@@ -251,9 +252,9 @@ class BlindedHumanReviewTests(unittest.TestCase):
             self.assertEqual(manifest["not_gradeable_count"], 3)
             self.assertNotIn("not_gradeable_error_count", manifest)
             self.assertIn("Do not grade entries marked not_gradeable", readme)
-            self.assertNotIn("CAP-TRUNCATED-PRIVATE-TEXT", archive.read("review-items.jsonl").decode())
-            self.assertNotIn("STOPPED-WITHOUT-EOS-PRIVATE-TEXT", archive.read("review-items.jsonl").decode())
-            self.assertNotIn("MISSING-CAP-FLAG-PRIVATE-TEXT", archive.read("review-items.jsonl").decode())
+            self.assertNotIn("CAP-TRUNCATED-PRIVATE-TEXT", raw_items)
+            self.assertNotIn("STOPPED-WITHOUT-EOS-PRIVATE-TEXT", raw_items)
+            self.assertNotIn("MISSING-CAP-FLAG-PRIVATE-TEXT", raw_items)
             self.assertTrue(all(item["review_disposition"] in {"gradeable", "not_gradeable"} for item in items))
             self.assertTrue(all(set(item["response_metadata"]) == {"gradeable"} for item in items))
 
