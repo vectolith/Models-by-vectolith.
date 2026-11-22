@@ -135,7 +135,7 @@ class BlindedHumanReviewTests(unittest.TestCase):
         private_dir.chmod(0o700)
         link_path = private_dir / "identity-key-link.json"
         link_path.symlink_to(key_path)
-        with self.assertRaises(PermissionError):
+        with self.assertRaises(OSError):
             _read_private_identity_key(link_path)
 
     def test_cli_unblind_refuses_output_outside_restricted_key_directory(self):
