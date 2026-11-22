@@ -76,6 +76,12 @@ class GenerationHelperTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "did not reach EOS"):
             gen.generate(model, tokenizer, FakeTorch(), gen.build_messages({"prompt": "Question"}), 5)
 
+    def test_generation_rejects_empty_decoded_response(self):
+        model, tokenizer = FakeModel(), FakeTokenizer()
+        tokenizer.decode = lambda tokens, skip_special_tokens: "  "
+        with self.assertRaisesRegex(RuntimeError, "empty response"):
+            gen.generate(model, tokenizer, FakeTorch(), gen.build_messages({"prompt": "Question"}), 5)
+
     def test_generation_fails_closed_when_eos_is_unconfigured(self):
         model, tokenizer = FakeModel(), FakeTokenizer()
         tokenizer.eos_token_id = None
