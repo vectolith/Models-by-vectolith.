@@ -44,3 +44,16 @@ FYR PRIMA is paused. ASH PRIME is the focus; we are not splitting effort across 
 ## Project
 
 This repository is for building, shaping, training, evaluating and releasing the model. Documentation and engineering exist to support that outcome—not to become the outcome themselves.
+
+## Model family status
+
+| Model | Foundation | Status |
+| --- | --- | --- |
+| ASH PRIME | Qwen/Qwen3-4B-Instruct-2507 | training pipeline in `training/`; adapter published per run |
+| FYR PRIMA | Qwen/Qwen3-1.7B | training pipeline in `training/`; adapter published per run |
+
+FYR PRIMA ("fyr" for fire) is the smaller, faster sibling: same character contract,
+leaner panel, lower latency. Both are produced by the same reproducible pipeline, with
+separate foundations, datasets and adapters. See `training/README.md` for the panel and
+`docs/serving.md` for how to run them.
+
