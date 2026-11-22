@@ -134,6 +134,12 @@ def load_suites(paths: list[Path]) -> dict[str, dict[str, Any]]:
     return cases
 
 
+def prompt_messages_sha256(messages: list[dict[str, Any]]) -> str:
+    """Match run_eval.py's hash of the exact JSON chat-message payload."""
+    serialized = json.dumps(messages, ensure_ascii=False, sort_keys=True)
+    return sha256_bytes(serialized.encode("utf-8"))
+
+
 def load_evidence_archive(path: Path) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, str]]:
     archive_bytes = path.read_bytes()
     hashes = {"archive_sha256": sha256_bytes(archive_bytes)}
@@ -253,6 +259,9 @@ def build_review_packages(
                 raise ValueError(f"{path}:{case_id}: response rubric differs from original suite rubric")
             if row.get("category") != case.get("category"):
                 raise ValueError(f"{path}:{case_id}: response category differs from original suite")
+            expected_prompt_hash = prompt_messages_sha256(case["messages"])
+            if row.get("prompt_sha256") != expected_prompt_hash:
+                raise ValueError(f"{path}:{case_id}: prompt_sha256 does not match the original suite messages")
             if row.get("candidate_id") != candidate or row.get("model_revision") != revision or row.get("run_id") != run_id:
                 raise ValueError(f"{path}:{case_id}: per-response provenance disagrees with artifact metadata")
             if row.get("role") != "core_prime":

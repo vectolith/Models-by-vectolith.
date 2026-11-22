@@ -52,7 +52,9 @@ class BlindedHumanReviewTests(unittest.TestCase):
                     "run_id": run_id,
                     "started_at": f"2026-11-16T00:00:0{n}+00:00",
                     "category": case["category"],
-                    "prompt_sha256": hashlib.sha256(case["id"].encode()).hexdigest(),
+                    "prompt_sha256": hashlib.sha256(
+                        json.dumps(case["messages"], ensure_ascii=False, sort_keys=True).encode("utf-8")
+                    ).hexdigest(),
                     "rubric": case["rubric"],
                     "max_new_tokens": 256,
                     "generation_cap_reached": False,
@@ -79,6 +81,26 @@ class BlindedHumanReviewTests(unittest.TestCase):
 
     def tearDown(self):
         self.tmp.cleanup()
+
+    def test_build_rejects_prompt_hash_mismatch(self):
+        tampered = self.root / "tampered.zip"
+        with zipfile.ZipFile(self.artifacts[0]) as source:
+            record_name = next(name for name in source.namelist() if name.endswith(".json"))
+            jsonl_name = next(name for name in source.namelist() if name.endswith(".jsonl"))
+            record = json.loads(source.read(record_name))
+            rows = [dict(row) for row in record["results"]]
+            rows[0]["prompt_sha256"] = "0" * 64
+            record["results"] = rows
+            with zipfile.ZipFile(tampered, "w") as destination:
+                destination.writestr(record_name, json.dumps(record))
+                destination.writestr(jsonl_name, "\n".join(json.dumps(row) for row in rows) + "\n")
+        output = self.root / "review-output"
+        with self.assertRaisesRegex(ValueError, "prompt_sha256 does not match the original suite messages"):
+            build_review_packages(
+                [tampered, self.artifacts[1]], [self.suite], output,
+                reviewer_count=2, expected_artifacts=2, expected_cases=2, workflow_run_id="test-run",
+            )
+        self.assertFalse(output.exists())
 
     def test_private_writer_is_exclusive_and_restrictive(self):
         from evaluation.prepare_blinded_human_review import _write_private_file
