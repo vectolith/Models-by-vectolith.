@@ -17,7 +17,9 @@ permissions:
 
 jobs:
   swift-package:
-    runs-on: macos-14
+    runs-on: ubuntu-latest
+    container:
+      image: swift:6.2
     defaults:
       run:
         working-directory: experiments/mobile-training/toy-lora
