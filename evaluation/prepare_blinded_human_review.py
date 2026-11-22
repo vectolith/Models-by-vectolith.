@@ -582,9 +582,9 @@ def main() -> int:
         return 0
     grades = unblind_grade_files(args.identity_key, args.grades)
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(
-        "\n".join(json.dumps(row, ensure_ascii=False, sort_keys=True) for row in grades) + "\n",
-        encoding="utf-8",
+    _write_private_file(
+        args.output,
+        ("\n".join(json.dumps(row, ensure_ascii=False, sort_keys=True) for row in grades) + "\n").encode("utf-8"),
     )
     print(json.dumps({
         "grade_records": len(grades),
