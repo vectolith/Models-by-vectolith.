@@ -50,6 +50,13 @@ class BlindScoreContractTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             unblind.validate_mapping({"x": {"candidate_1": "base", "candidate_2": "base"}, "y": mapping["y"]}, cases)
 
+    def test_unblind_rejects_missing_score_field(self):
+        row = scores()[0]
+        row.pop("score")
+        mapping = {"x": {"candidate_1": "base", "candidate_2": "character_prompt"}}
+        with self.assertRaises(ValueError):
+            unblind.build_summary([row], [case()], mapping)
+
     def test_unblind_aggregates_condition_means_and_paired_difference(self):
         cases = [case(), case("y")]
         mapping = {"x": {"candidate_1": "character_prompt", "candidate_2": "base"}, "y": {"candidate_1": "base", "candidate_2": "character_prompt"}}

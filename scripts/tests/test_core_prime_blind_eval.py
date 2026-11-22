@@ -143,6 +143,9 @@ class EvalHarnessTests(unittest.TestCase):
         with self.assertRaises(ValueError): ev.validate_scores([scored_row(label="base")], [case()])
         with self.assertRaises(ValueError): ev.validate_scores([scored_row(reviewer="")], [case()])
         with self.assertRaises(ValueError): ev.validate_scores([rows[0], rows[0]], [case()])
+        missing_score = dict(rows[0])
+        missing_score.pop("score")
+        with self.assertRaises(ValueError): ev.validate_scores([missing_score], [case()])
 
     def test_cli_refuses_to_overwrite_summary(self):
         with tempfile.TemporaryDirectory() as td:

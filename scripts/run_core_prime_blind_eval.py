@@ -124,6 +124,8 @@ def validate_scores(scores, cases):
             raise ValueError("Each score record must be an object")
         cid, label, dimension = row.get("case_id"), row.get("blind_label"), row.get("dimension")
         reviewer, score = row.get("reviewer_id"), row.get("score")
+        if "score" not in row:
+            raise ValueError("Each score record must include score (1-5 or null)")
         if not isinstance(cid, str) or cid not in case_dimensions:
             raise ValueError(f"Score record references unknown case_id: {cid}")
         if not isinstance(label, str) or label not in BLIND_LABELS:
@@ -152,6 +154,8 @@ def summarize(scores):
     for row in scores:
         cid, label, d, score = row.get("case_id"), row.get("blind_label"), row.get("dimension"), row.get("score")
         reviewer = row.get("reviewer_id")
+        if "score" not in row:
+            raise ValueError("Each score record must include score (1-5 or null)")
         if not isinstance(cid, str) or not cid.strip() or not isinstance(label, str) or label not in BLIND_LABELS or not isinstance(d, str) or d not in accum:
             raise ValueError("Score record requires case_id, blind_label and valid dimension")
         if not isinstance(reviewer, str) or not reviewer.strip():
