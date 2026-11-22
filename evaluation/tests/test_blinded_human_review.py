@@ -80,6 +80,18 @@ class BlindedHumanReviewTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
+    def test_private_writer_is_exclusive_and_restrictive(self):
+        from evaluation.prepare_blinded_human_review import _write_private_file
+
+        destination = self.root / "private-output.json"
+        _write_private_file(destination, b"private")
+        self.assertEqual(destination.read_bytes(), b"private")
+        if os.name == "posix":
+            self.assertEqual(destination.stat().st_mode & 0o777, 0o600)
+        with self.assertRaises(FileExistsError):
+            _write_private_file(destination, b"overwrite")
+        self.assertEqual(destination.read_bytes(), b"private")
+
     def test_historical_provenance_registry_covers_all_fifteen_artifacts(self):
         self.assertEqual(len(ARTIFACT_PROVENANCE), 15)
         item = ARTIFACT_PROVENANCE["run42-prime-phi-4-mini-instruct.zip"]
