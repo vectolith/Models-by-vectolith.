@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import tempfile
 import unittest
 import zipfile
@@ -79,6 +80,79 @@ class BlindedHumanReviewTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
+    def test_private_writer_is_exclusive_and_restrictive(self):
+        from evaluation.prepare_blinded_human_review import _write_private_file
+
+        destination = self.root / "private-output.json"
+        _write_private_file(destination, b"private")
+        self.assertEqual(destination.read_bytes(), b"private")
+        if os.name == "posix":
+            self.assertEqual(destination.stat().st_mode & 0o777, 0o600)
+        with self.assertRaises(FileExistsError):
+            _write_private_file(destination, b"overwrite")
+        self.assertEqual(destination.read_bytes(), b"private")
+
+    def test_cli_unblind_output_is_private_and_refuses_overwrite(self):
+        import sys
+        from unittest.mock import patch
+        from evaluation import prepare_blinded_human_review as module
+
+        private_dir = self.root / "private-output"
+        private_dir.mkdir(mode=0o700)
+        output = private_dir / "canonical-unblinded.jsonl"
+        identity_key = private_dir / "identity-key.json"
+        records = [{"evaluator_id": "reviewer-a", "candidate_id": "restricted"}]
+        argv = ["prepare_blinded_human_review.py", "unblind", "--identity-key", str(identity_key), "--grades", "grade-a.jsonl", "--grades", "grade-b.jsonl", "--output", str(output)]
+        with patch.object(sys, "argv", argv), patch.object(module, "unblind_grade_files", return_value=records):
+            module.main()
+        self.assertEqual(output.read_text(encoding="utf-8"), json.dumps(records[0], ensure_ascii=False, sort_keys=True) + "\n")
+        if os.name == "posix":
+            self.assertEqual(output.stat().st_mode & 0o777, 0o600)
+        with patch.object(sys, "argv", argv), patch.object(module, "unblind_grade_files", return_value=records):
+            with self.assertRaises(FileExistsError):
+                module.main()
+
+    def test_unblind_rejects_symlinked_or_permissive_identity_key(self):
+        import stat
+        from evaluation.prepare_blinded_human_review import _read_private_identity_key
+
+        if os.name != "posix":
+            self.skipTest("POSIX custody-mode checks are platform-specific")
+        output = self.root / "review"
+        build_review_packages(
+            self.artifacts, [self.suite], output,
+            reviewer_count=2, expected_artifacts=2, expected_cases=2, workflow_run_id="test-run",
+        )
+        private_dir = output / "private"
+        key_path = private_dir / "identity-key.json"
+        key_path.chmod(0o644)
+        with self.assertRaisesRegex(PermissionError, "0600"):
+            _read_private_identity_key(key_path)
+        key_path.chmod(0o600)
+        private_dir.chmod(0o755)
+        with self.assertRaisesRegex(PermissionError, "0700"):
+            _read_private_identity_key(key_path)
+        private_dir.chmod(0o700)
+        link_path = private_dir / "identity-key-link.json"
+        link_path.symlink_to(key_path)
+        with self.assertRaises(OSError):
+            _read_private_identity_key(link_path)
+
+    def test_cli_unblind_refuses_output_outside_restricted_key_directory(self):
+        import sys
+        from unittest.mock import patch
+        from evaluation import prepare_blinded_human_review as module
+
+        private_dir = self.root / "private-output"
+        private_dir.mkdir(mode=0o700)
+        identity_key = private_dir / "identity-key.json"
+        output = self.root / "outside-unblinded.jsonl"
+        argv = ["prepare_blinded_human_review.py", "unblind", "--identity-key", str(identity_key), "--grades", "grade-a.jsonl", "--grades", "grade-b.jsonl", "--output", str(output)]
+        with patch.object(sys, "argv", argv), patch.object(module, "unblind_grade_files", return_value=[]):
+            with self.assertRaisesRegex(ValueError, "beside the restricted identity key"):
+                module.main()
+        self.assertFalse(output.exists())
+
     def test_historical_provenance_registry_covers_all_fifteen_artifacts(self):
         self.assertEqual(len(ARTIFACT_PROVENANCE), 15)
         item = ARTIFACT_PROVENANCE["run42-prime-phi-4-mini-instruct.zip"]
@@ -103,7 +177,19 @@ class BlindedHumanReviewTests(unittest.TestCase):
         self.assertTrue(key_path.exists())
         key = json.loads(key_path.read_text(encoding="utf-8"))
         self.assertEqual(len(key["records"]), 4)
+        if os.name == "posix":
+            self.assertEqual(output.stat().st_mode & 0o777, 0o700)
+            self.assertEqual((output / "private").stat().st_mode & 0o777, 0o700)
+            self.assertEqual(key_path.stat().st_mode & 0o777, 0o600)
+            self.assertEqual((output / "build-summary.json").stat().st_mode & 0o777, 0o600)
+        with self.assertRaises(FileExistsError):
+            build_review_packages(
+                self.artifacts, [self.suite], output,
+                reviewer_count=2, expected_artifacts=2, expected_cases=2, workflow_run_id="test-run",
+            )
         for package in summary["reviewer_packages"]:
+            if os.name == "posix":
+                self.assertEqual((output / package["reviewer_package"]).stat().st_mode & 0o777, 0o600)
             with zipfile.ZipFile(output / package["reviewer_package"]) as archive:
                 self.assertNotIn("identity-key.json", archive.namelist())
                 raw = archive.read("review-items.jsonl").decode()
@@ -114,6 +200,23 @@ class BlindedHumanReviewTests(unittest.TestCase):
                 self.assertNotIn("run-secret", raw)
                 self.assertIn("Answer response", raw)
                 self.assertEqual(len(raw.splitlines()), 4)
+
+    def test_rejects_repository_output_and_existing_destination(self):
+        repo_root = Path(__file__).resolve().parents[2]
+        repo_output = repo_root / f".blind-review-security-test-{self.root.name}"
+        with self.assertRaises(ValueError):
+            build_review_packages(
+                self.artifacts, [self.suite], repo_output,
+                reviewer_count=2, expected_artifacts=2, expected_cases=2, workflow_run_id="test-run",
+            )
+        self.assertFalse(repo_output.exists())
+        existing = self.root / "existing-review"
+        existing.mkdir(mode=0o700)
+        with self.assertRaises(FileExistsError):
+            build_review_packages(
+                self.artifacts, [self.suite], existing,
+                reviewer_count=2, expected_artifacts=2, expected_cases=2, workflow_run_id="test-run",
+            )
 
     def test_accepts_multiple_runs_for_the_same_candidate_without_overwriting(self):
         first = self.artifacts[0]
