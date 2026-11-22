@@ -469,11 +469,37 @@ def build_review_packages(
     return summary
 
 
+def _read_private_identity_key(path: Path) -> dict[str, Any]:
+    requested = path.expanduser().absolute()
+    parent = requested.parent
+    for component in (parent, *parent.parents):
+        if component.is_symlink():
+            raise PermissionError("identity-key path contains a symlinked directory")
+    if os.name == "posix":
+        parent_stat = parent.stat()
+        if not os.path.isdir(parent) or parent_stat.st_mode & 0o777 != 0o700:
+            raise PermissionError("identity-key directory must be a private 0700 directory")
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(requested, flags)
+    try:
+        file_stat = os.fstat(fd)
+        if not os.path.isfile(requested) or not __import__("stat").S_ISREG(file_stat.st_mode):
+            raise PermissionError("identity key must be a regular file")
+        if os.name == "posix" and file_stat.st_mode & 0o777 != 0o600:
+            raise PermissionError("identity-key file must have private 0600 permissions")
+        with os.fdopen(fd, "r", encoding="utf-8") as stream:
+            fd = None
+            return json.load(stream)
+    finally:
+        if fd is not None:
+            os.close(fd)
+
+
 def unblind_grade_files(
     private_key_path: Path,
     grade_paths: list[Path],
 ) -> list[dict[str, Any]]:
-    key = json.loads(private_key_path.read_text(encoding="utf-8"))
+    key = _read_private_identity_key(private_key_path)
     if key.get("schema_version") != "vectolith-blind-review-identity-key/1.0":
         raise ValueError("unsupported or invalid private identity key")
     identity = key.get("records")
