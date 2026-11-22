@@ -470,16 +470,21 @@ def build_review_packages(
     return summary
 
 
+def _validate_private_directory(directory: Path) -> Path:
+    requested = directory.expanduser().absolute()
+    for component in (requested, *requested.parents):
+        if component.is_symlink():
+            raise PermissionError("private output path contains a symlinked directory")
+    if os.name == "posix":
+        directory_stat = requested.stat()
+        if not stat.S_ISDIR(directory_stat.st_mode) or directory_stat.st_mode & 0o777 != 0o700:
+            raise PermissionError("restricted output directory must have private 0700 permissions")
+    return requested
+
+
 def _read_private_identity_key(path: Path) -> dict[str, Any]:
     requested = path.expanduser().absolute()
-    parent = requested.parent
-    for component in (parent, *parent.parents):
-        if component.is_symlink():
-            raise PermissionError("identity-key path contains a symlinked directory")
-    if os.name == "posix":
-        parent_stat = parent.stat()
-        if not stat.S_ISDIR(parent_stat.st_mode) or parent_stat.st_mode & 0o777 != 0o700:
-            raise PermissionError("identity-key directory must be a private 0700 directory")
+    parent = _validate_private_directory(requested.parent)
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
     fd = os.open(requested, flags)
     try:
@@ -608,7 +613,10 @@ def main() -> int:
         print(json.dumps(result, indent=2))
         return 0
     grades = unblind_grade_files(args.identity_key, args.grades)
-    args.output.parent.mkdir(parents=True, exist_ok=True)
+    identity_parent = args.identity_key.expanduser().absolute().parent
+    output_parent = _validate_private_directory(args.output.parent)
+    if output_parent != identity_parent:
+        raise ValueError("unblinded output must be stored beside the restricted identity key")
     _write_private_file(
         args.output,
         ("\n".join(json.dumps(row, ensure_ascii=False, sort_keys=True) for row in grades) + "\n").encode("utf-8"),
