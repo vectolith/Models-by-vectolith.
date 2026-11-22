@@ -114,6 +114,19 @@ class EvalHarnessTests(unittest.TestCase):
             self.assertFalse(output.exists())
 
 
+    @unittest.skipUnless(os.name == "posix", "POSIX exclusive temp creation required")
+    def test_mapping_writer_does_not_delete_colliding_temp_file(self):
+        with tempfile.TemporaryDirectory() as td:
+            map_dir = Path(td) / "restricted"
+            map_dir.mkdir(mode=0o700)
+            collision = map_dir / ".blind-label-map.json.tmp-collision"
+            collision.write_text("preserve", encoding="utf-8")
+            with patch.object(ev.secrets, "token_hex", return_value="collision"):
+                with self.assertRaises(FileExistsError):
+                    ev.write_restricted_mapping(map_dir, {"x": {"candidate_1": "base"}})
+            self.assertEqual(collision.read_text(encoding="utf-8"), "preserve")
+            self.assertFalse((map_dir / "blind-label-map.json").exists())
+
     @unittest.skipUnless(os.name == "posix", "POSIX no-follow path traversal required")
     def test_mapping_writer_rejects_intermediate_symlink(self):
         with tempfile.TemporaryDirectory() as td:

@@ -122,6 +122,7 @@ def write_restricted_mapping(map_dir, mapping):
     if os.name == "posix":
         dir_fd = _open_private_directory_chain(map_dir)
         temp_name = None
+        created_temp = False
         fd = None
         try:
             file_flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
@@ -129,6 +130,7 @@ def write_restricted_mapping(map_dir, mapping):
                 temp_name = f".{map_file.name}.tmp-{secrets.token_hex(8)}"
                 try:
                     fd = os.open(temp_name, file_flags, 0o600, dir_fd=dir_fd)
+                    created_temp = True
                     break
                 except FileExistsError:
                     continue
@@ -148,7 +150,7 @@ def write_restricted_mapping(map_dir, mapping):
         except BaseException:
             if fd is not None:
                 os.close(fd)
-            if temp_name is not None:
+            if created_temp and temp_name is not None:
                 try:
                     os.unlink(temp_name, dir_fd=dir_fd)
                 except FileNotFoundError:
