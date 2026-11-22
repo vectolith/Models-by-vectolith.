@@ -9,10 +9,11 @@ This is an exploratory experiment, not a Core Prime training approval. Qwen is a
 
 ## Reality check
 - iOS inference support is not proof that training is supported.
-- Full-model training is out of scope for this device.
-- Adapter-only training (LoRA) is the sole initial target.
-- A custom iOS app/runtime may be needed; PocketPal is currently an inference/import target, not assumed to expose training.
-- Memory, thermal throttling, compute kernels, gradient support, storage, and iOS background execution may be limiting.
+- Upstream MLX Swift has an iOS/macOS MNIST training example and an iOS 17 package declaration in MLX Swift LM; its listed LLM LoRA training example is macOS-only. A target-device LLM training proof is still missing.
+- Full-model training is out of scope for this device. Adapter-only training (LoRA) is the sole initial target.
+- Qwen3.5-2B-Base is a multimodal/hybrid candidate (vision encoder plus Gated DeltaNet/attention); conversion, text-only variant, adapter-target mapping and architecture support must not be assumed.
+- A custom iOS app/runtime may be needed; PocketPal is an inference/import target, not assumed to expose training.
+- Memory, thermal throttling, compute kernels, gradient support, storage and iOS background execution may be limiting.
 - Do not use private/compromised evaluation data or claim model quality from a tiny feasibility set.
 
 ## Proposed stages and hard gates
@@ -55,8 +56,8 @@ This is an exploratory experiment, not a Core Prime training approval. Qwen is a
 - Test script or repeatable device procedure, hashes and environment details are documented.
 - Limitations and failures are disclosed.
 
-## Immediate work items
-1. Validate current Qwen 3.5 releases, model card, license and tokenizer/architecture details.
-2. Research current mobile autodiff/training capabilities for iOS/Metal, using authoritative sources.
-3. Create a minimal architecture and resource-budget prototype plan before committing to app implementation.
-4. Do not start training or downloading weights until candidate/licensing gate is satisfied.
+## Research completed in this read-only pass
+1. Model-card and architecture information reviewed; immutable revision, tokenizer, conversion/layout and target modules remain unverified.
+2. Upstream MLX Swift and MLX Swift LM support reviewed; package support is not iPhone LLM training proof.
+3. The minimal architecture and resource-budget prototype plan remains the next engineering deliverable.
+4. Do not start training or downloading weights until candidate/licensing gate is satisfied and explicit authorization is given.
