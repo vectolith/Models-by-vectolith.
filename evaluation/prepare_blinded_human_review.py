@@ -315,15 +315,16 @@ def build_review_packages(
             elif not isinstance(response, str) or not response.strip():
                 gradeable = False
                 disposition = "not_gradeable_empty"
-            elif cap_reached is not False:
-                gradeable = False
-                disposition = "not_gradeable_cap_unverified"
             elif (
-                generation_status == "token_limit_reached"
+                cap_reached is True
+                or generation_status == "token_limit_reached"
                 or completion_status == "token_cap_truncated"
             ):
                 gradeable = False
                 disposition = "not_gradeable_token_cap"
+            elif cap_reached is not False:
+                gradeable = False
+                disposition = "not_gradeable_cap_unverified"
             elif completion_status is not None and completion_status != "eos_completed":
                 gradeable = False
                 disposition = "not_gradeable_completion_status"
