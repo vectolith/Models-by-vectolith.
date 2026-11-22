@@ -8,6 +8,7 @@ from pathlib import Path
 
 DIMENSIONS = ["judgment", "naturalness", "situational_fit", "independence", "humor_timing", "useful_originality", "restraint", "grounding_calibration", "task_craft", "relational_intelligence", "long_context_consistency", "repair"]
 CONDITIONS = {"base", "character_prompt"}
+BLIND_LABELS = {"candidate_1", "candidate_2"}
 ALLOWED_FLAGS = {"safety_regression", "factuality_regression", "calibration_regression", "intent_following_regression", "capability_regression"}
 
 
@@ -117,40 +118,71 @@ def write_restricted_mapping(map_dir, mapping):
 
 def validate_scores(scores, cases):
     case_dimensions = {case["id"]: case["dimension"] for case in validate_cases(cases)}
+    seen = set()
     for row in scores:
-        cid = row.get("case_id") if isinstance(row, dict) else None
-        if cid not in case_dimensions:
+        if not isinstance(row, dict):
+            raise ValueError("Each score record must be an object")
+        cid, label, dimension = row.get("case_id"), row.get("blind_label"), row.get("dimension")
+        reviewer, score = row.get("reviewer_id"), row.get("score")
+        if "score" not in row:
+            raise ValueError("Each score record must include score (1-5 or null)")
+        if not isinstance(cid, str) or cid not in case_dimensions:
             raise ValueError(f"Score record references unknown case_id: {cid}")
-        if row.get("dimension") != case_dimensions[cid]:
+        if not isinstance(label, str) or label not in BLIND_LABELS:
+            raise ValueError(f"{cid}: blind_label must be candidate_1 or candidate_2")
+        if not isinstance(dimension, str) or dimension != case_dimensions[cid]:
             raise ValueError(f"{cid}: score dimension does not match evaluation case")
+        if not isinstance(reviewer, str) or not reviewer.strip():
+            raise ValueError("Each score record requires a nonempty pseudonymous reviewer_id")
+        if score is not None and (type(score) is not int or not 1 <= score <= 5):
+            raise ValueError("Scores must be integer 1-5 or null")
+        flags = row.get("gate_flags", [])
+        if not isinstance(flags, list) or any(not isinstance(flag, str) or flag not in ALLOWED_FLAGS for flag in flags):
+            raise ValueError("Invalid gate_flags")
+        key = (reviewer, cid, label, dimension)
+        if key in seen:
+            raise ValueError("Duplicate reviewer/case/blind-label/dimension score record")
+        seen.add(key)
     return scores
 
 
 def summarize(scores):
     accum = {d: [] for d in DIMENSIONS}
-    seen = set()
-    flags = []
+    seen, flags = set(), []
+    label_counts = {label: 0 for label in BLIND_LABELS}
+    reviewers, case_labels, reviewer_case_labels = set(), set(), {}
     for row in scores:
-        cid, d, score = row.get("case_id"), row.get("dimension"), row.get("score")
-        if not isinstance(cid, str) or not cid.strip():
-            raise ValueError("Each score record requires a nonempty case_id")
-        if d not in accum:
-            raise ValueError(f"Unknown dimension: {d}")
-        key = (cid, d)
+        cid, label, d, score = row.get("case_id"), row.get("blind_label"), row.get("dimension"), row.get("score")
+        reviewer = row.get("reviewer_id")
+        if "score" not in row:
+            raise ValueError("Each score record must include score (1-5 or null)")
+        if not isinstance(cid, str) or not cid.strip() or not isinstance(label, str) or label not in BLIND_LABELS or not isinstance(d, str) or d not in accum:
+            raise ValueError("Score record requires case_id, blind_label and valid dimension")
+        if not isinstance(reviewer, str) or not reviewer.strip():
+            raise ValueError("Each score record requires reviewer_id")
+        key = (reviewer, cid, label, d)
         if key in seen:
-            raise ValueError("Duplicate score case_id/dimension pair")
+            raise ValueError("Duplicate reviewer/case/blind-label/dimension score record")
         seen.add(key)
         if score is not None and (type(score) is not int or not 1 <= score <= 5):
             raise ValueError("Scores must be integer 1-5 or null")
         row_flags = row.get("gate_flags", [])
-        if not isinstance(row_flags, list) or any(flag not in ALLOWED_FLAGS for flag in row_flags):
+        if not isinstance(row_flags, list) or any(not isinstance(flag, str) or flag not in ALLOWED_FLAGS for flag in row_flags):
             raise ValueError("Invalid gate_flags")
         if score is not None:
             accum[d].append(score)
         flags.extend(row_flags)
+        label_counts[label] += 1
+        reviewers.add(reviewer)
+        case_labels.add((cid, label))
+        reviewer_case_labels.setdefault((reviewer, cid), set()).add(label)
+    complete_pairs = sum(1 for labels in reviewer_case_labels.values() if labels == BLIND_LABELS)
     return {"dimension_means": {d: (round(sum(v)/len(v), 3) if v else None) for d, v in accum.items()},
-            "dimension_counts": {d: len(v) for d, v in accum.items()}, "gate_flags": sorted(set(flags)),
-            "scored_records": len(scores), "note": "Descriptive summary only; does not establish statistical significance or model quality."}
+            "dimension_counts": {d: len(v) for d, v in accum.items()},
+            "blind_label_record_counts": label_counts, "gate_flags": sorted(set(flags)),
+            "scored_records": len(scores), "unique_reviewers": len(reviewers),
+            "case_label_coverage": len(case_labels), "complete_reviewer_case_pairs": complete_pairs,
+            "note": "Pooled blinded descriptive summary only; labels are randomized per case and this report does not compare conditions."}
 
 
 def main():
