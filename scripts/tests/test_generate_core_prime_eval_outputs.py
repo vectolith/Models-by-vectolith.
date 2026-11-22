@@ -114,7 +114,7 @@ class GenerationHelperTests(unittest.TestCase):
             cases.write_text(json.dumps({"id": "x", "prompt": "p"}) + "\n", encoding="utf-8")
             prompt.write_text("character", encoding="utf-8")
             output.write_text("existing", encoding="utf-8")
-            args = ["generator.py", "--model", "unused", "--cases", str(cases), "--character-prompt", str(prompt), "--output", str(output)]
+            args = ["generator.py", "--model", "unused", "--cases", str(cases), "--character-prompt", str(prompt), "--output", str(output), "--max-new-tokens", "4096"]
             with patch.object(sys, "argv", args):
                 with self.assertRaises(SystemExit):
                     gen.main()
