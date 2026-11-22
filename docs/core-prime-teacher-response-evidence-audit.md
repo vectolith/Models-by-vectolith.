@@ -35,12 +35,16 @@ The hashes below are SHA-256 values captured from the downloaded existing GitHub
 | Candidate | JSON SHA-256 | JSONL SHA-256 |
 |---|---|---|
 | Granite 3.1 3B-A800M | \`26fd01c55b75feb0124bc9920848d816cf03794827e456ebe30c9a4190515910\` | \`2d85b40e41baf8d8a3954e9e891fdb08cd3a22898b777dc5e0edf34696cdc044\` |
-| Granite 4.2 3B | \`219e935601b7ac1a2321fc713a1c0e8808afbfc6395fb3e360ac94c4abbc74a8\` | \`ae886d8aef2cb01269f2f62d936930bdf74f3006a851513f85e141947ec94563\` |
+| Granite 4.2 3B | \`219e935601b7ac1a2321fc713a1c0e8808afbfc6395fb3e360ac94c4abbc74a8\` | \`ae886d8aef2cb01269f2f62e936930bdf74f3006a851513f85e141947ec94563\` |
 | MiniCPM5 2B | \`0e499654f8aed9de2b30fbdfb870304e2835e8c5688518de5b7f8fef41d49948\` | \`b7c6f7a3fb190bae7bb530f41e7757b245df7936c112a0f0e8537a99d2ee0836\` |
 | LFM2.5 2.6B | \`943105f753bb3aa16233a4bf56094af69abf898ea57e75bce5395412761acd2a\` | \`cd554a0cf6a5ed02c4460eaab21abc93e939f9830e8c898b8b96cf15906665db\` |
 | Phi-4 mini instruct | \`03eda0c3ecb4c923f4aae35c6081634bce55997be3f3b85b85eaf028a1a39b1d\` | \`aae7cb4c6862cf0eaa795b8cd538020214be5f2f97b37416e77035b687b633c8\` |
 
 Artifacts were retained by GitHub until **14 February 2027** at the time of this audit. The report contains hashes and metadata only; no raw response text is copied into this document.
+
+## Independent re-verification — 22 November 2026
+
+All five preserved artifact ZIP digests and embedded JSON digests were reverified against the original GitHub artifacts. Each JSON result array exactly matches its paired JSONL file; all five candidates have 180 unique case IDs, identical case-ID sets and identical prompt SHA-256 values per case, with zero generation errors. The Granite 4.2 JSONL digest in the table above was corrected to the value computed from artifact 14213985732.
 
 ## Generation-cap audit
 
