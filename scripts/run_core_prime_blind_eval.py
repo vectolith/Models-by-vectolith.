@@ -90,8 +90,11 @@ def validate_output_directories(sheet_dir, map_dir):
 
 def _open_private_directory_chain(path):
     """Open/create every path component without following symlinks (POSIX)."""
+    # Fail closed: silently omitting either flag would weaken traversal checks.
+    if getattr(os, "O_DIRECTORY", None) is None or getattr(os, "O_NOFOLLOW", None) is None:
+        raise OSError("Secure condition-map publication requires O_DIRECTORY and O_NOFOLLOW")
     absolute = Path(os.path.abspath(os.fspath(path)))
-    dir_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    dir_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
     fd = os.open(absolute.anchor, dir_flags)
     try:
         for component in absolute.parts[1:]:
