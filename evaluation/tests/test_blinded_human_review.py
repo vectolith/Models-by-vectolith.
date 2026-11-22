@@ -102,7 +102,7 @@ class BlindedHumanReviewTests(unittest.TestCase):
         argv = ["prepare_blinded_human_review.py", "unblind", "--identity-key", "key.json", "--grades", "grade-a.jsonl", "--grades", "grade-b.jsonl", "--output", str(output)]
         with patch.object(sys, "argv", argv), patch.object(module, "unblind_grade_files", return_value=records):
             module.main()
-        self.assertEqual(output.read_text(encoding="utf-8"), json.dumps(records[0], ensure_ascii=False, sort_keys=True) + "\\n")
+        self.assertEqual(output.read_text(encoding="utf-8"), json.dumps(records[0], ensure_ascii=False, sort_keys=True) + "\n")
         if os.name == "posix":
             self.assertEqual(output.stat().st_mode & 0o777, 0o600)
         with patch.object(sys, "argv", argv), patch.object(module, "unblind_grade_files", return_value=records):
