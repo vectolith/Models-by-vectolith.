@@ -8,6 +8,7 @@ import os
 import io
 import json
 import random
+import stat
 import secrets
 import zipfile
 from pathlib import Path
@@ -477,13 +478,13 @@ def _read_private_identity_key(path: Path) -> dict[str, Any]:
             raise PermissionError("identity-key path contains a symlinked directory")
     if os.name == "posix":
         parent_stat = parent.stat()
-        if not os.path.isdir(parent) or parent_stat.st_mode & 0o777 != 0o700:
+        if not stat.S_ISDIR(parent_stat.st_mode) or parent_stat.st_mode & 0o777 != 0o700:
             raise PermissionError("identity-key directory must be a private 0700 directory")
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
     fd = os.open(requested, flags)
     try:
         file_stat = os.fstat(fd)
-        if not os.path.isfile(requested) or not __import__("stat").S_ISREG(file_stat.st_mode):
+        if not stat.S_ISREG(file_stat.st_mode):
             raise PermissionError("identity key must be a regular file")
         if os.name == "posix" and file_stat.st_mode & 0o777 != 0o600:
             raise PermissionError("identity-key file must have private 0600 permissions")
