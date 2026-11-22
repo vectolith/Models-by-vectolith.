@@ -1,1 +1,0 @@
-"""Foundation model evaluation utilities."""
