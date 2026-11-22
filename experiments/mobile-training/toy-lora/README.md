@@ -1,7 +1,9 @@
 # Local toy LoRA training proof
 
-This Swift package is a small, executable proof of adapter-only optimization on synthetic data. It is deliberately not Qwen, Core Prime, or an iOS device validation.
+This small Swift package demonstrates adapter-only optimization on a synthetic scalar example. It is deliberately **not** Qwen, Core Prime, a pretrained-model adapter, or an iPhone/device validation.
 
 Run from this directory with `swift test` and `swift run`.
 
-It demonstrates a frozen scalar base weight and trained low-rank factors, loss reduction, and unit tests. No cloud services or pretrained weights are used.
+The test suite demonstrates synthetic loss reduction, deterministic results, a frozen scalar base value, bounded step behavior, and invalid learning-rate rejection. No cloud services or pretrained weights are used.
+
+The GitHub workflow uses a Linux Swift container to validate the package. That test does not prove iOS, Metal, MLX Swift, model architecture, memory, thermal, or on-device gradient support. Those require a separate device proof.
