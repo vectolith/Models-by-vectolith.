@@ -37,6 +37,8 @@ def _open_directory_without_symlink_ancestors(path):
 
 
 def load_restricted_mapping(path):
+    if path.is_symlink():
+        raise ValueError("Condition-map file must not be a symlink")
     if os.name == "posix":
         dir_fd = _open_directory_without_symlink_ancestors(path.parent)
         try:
