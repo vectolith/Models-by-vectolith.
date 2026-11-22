@@ -97,9 +97,12 @@ class BlindedHumanReviewTests(unittest.TestCase):
         from unittest.mock import patch
         from evaluation import prepare_blinded_human_review as module
 
-        output = self.root / "canonical-unblinded.jsonl"
+        private_dir = self.root / "private-output"
+        private_dir.mkdir(mode=0o700)
+        output = private_dir / "canonical-unblinded.jsonl"
+        identity_key = private_dir / "identity-key.json"
         records = [{"evaluator_id": "reviewer-a", "candidate_id": "restricted"}]
-        argv = ["prepare_blinded_human_review.py", "unblind", "--identity-key", "key.json", "--grades", "grade-a.jsonl", "--grades", "grade-b.jsonl", "--output", str(output)]
+        argv = ["prepare_blinded_human_review.py", "unblind", "--identity-key", str(identity_key), "--grades", "grade-a.jsonl", "--grades", "grade-b.jsonl", "--output", str(output)]
         with patch.object(sys, "argv", argv), patch.object(module, "unblind_grade_files", return_value=records):
             module.main()
         self.assertEqual(output.read_text(encoding="utf-8"), json.dumps(records[0], ensure_ascii=False, sort_keys=True) + "\n")
@@ -134,6 +137,21 @@ class BlindedHumanReviewTests(unittest.TestCase):
         link_path.symlink_to(key_path)
         with self.assertRaises(PermissionError):
             _read_private_identity_key(link_path)
+
+    def test_cli_unblind_refuses_output_outside_restricted_key_directory(self):
+        import sys
+        from unittest.mock import patch
+        from evaluation import prepare_blinded_human_review as module
+
+        private_dir = self.root / "private-output"
+        private_dir.mkdir(mode=0o700)
+        identity_key = private_dir / "identity-key.json"
+        output = self.root / "outside-unblinded.jsonl"
+        argv = ["prepare_blinded_human_review.py", "unblind", "--identity-key", str(identity_key), "--grades", "grade-a.jsonl", "--grades", "grade-b.jsonl", "--output", str(output)]
+        with patch.object(sys, "argv", argv), patch.object(module, "unblind_grade_files", return_value=[]):
+            with self.assertRaisesRegex(ValueError, "beside the restricted identity key"):
+                module.main()
+        self.assertFalse(output.exists())
 
     def test_historical_provenance_registry_covers_all_fifteen_artifacts(self):
         self.assertEqual(len(ARTIFACT_PROVENANCE), 15)
