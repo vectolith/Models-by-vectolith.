@@ -109,6 +109,32 @@ class BlindedHumanReviewTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 module.main()
 
+    def test_unblind_rejects_symlinked_or_permissive_identity_key(self):
+        import stat
+        from evaluation.prepare_blinded_human_review import _read_private_identity_key
+
+        if os.name != "posix":
+            self.skipTest("POSIX custody-mode checks are platform-specific")
+        output = self.root / "review"
+        build_review_packages(
+            self.artifacts, [self.suite], output,
+            reviewer_count=2, expected_artifacts=2, expected_cases=2, workflow_run_id="test-run",
+        )
+        private_dir = output / "private"
+        key_path = private_dir / "identity-key.json"
+        key_path.chmod(0o644)
+        with self.assertRaisesRegex(PermissionError, "0600"):
+            _read_private_identity_key(key_path)
+        key_path.chmod(0o600)
+        private_dir.chmod(0o755)
+        with self.assertRaisesRegex(PermissionError, "0700"):
+            _read_private_identity_key(key_path)
+        private_dir.chmod(0o700)
+        link_path = private_dir / "identity-key-link.json"
+        link_path.symlink_to(key_path)
+        with self.assertRaises(PermissionError):
+            _read_private_identity_key(link_path)
+
     def test_historical_provenance_registry_covers_all_fifteen_artifacts(self):
         self.assertEqual(len(ARTIFACT_PROVENANCE), 15)
         item = ARTIFACT_PROVENANCE["run42-prime-phi-4-mini-instruct.zip"]
