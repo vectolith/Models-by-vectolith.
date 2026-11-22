@@ -236,8 +236,10 @@ class BlindedHumanReviewTests(unittest.TestCase):
         identity_key = json.loads((output / "private" / "identity-key.json").read_text(encoding="utf-8"))
         records = identity_key["records"]
         cap_record = next(record for record in records.values() if record["gradeability_disposition"] == "not_gradeable_token_cap")
+        missing_cap_record = next(record for record in records.values() if record["gradeability_disposition"] == "not_gradeable_cap_unverified")
         self.assertFalse(cap_record["gradeable"])
         self.assertEqual(cap_record["response_sha256"], hashlib.sha256("CAP-TRUNCATED-PRIVATE-TEXT".encode()).hexdigest())
+        self.assertIsNone(missing_cap_record["generation_cap_reached"])
         self.assertEqual(len(records), 4)
 
         for package in summary["reviewer_packages"]:
