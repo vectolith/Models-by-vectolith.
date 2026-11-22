@@ -39,6 +39,43 @@ class PrimeTeacherComparisonTests(unittest.TestCase):
         self.assertEqual(normalized_completion_status({
             "generation_status":"error","response_text":None,"error":"RuntimeError"
         }),"error")
+    def test_contradictory_completion_metadata_is_never_accepted(self):
+        cases = [
+            {
+                "completion_status": "eos_completed",
+                "generation_cap_reached": True,
+                "generation_status": "token_limit_reached",
+                "response_text": "partial",
+            },
+            {
+                "completion_status": "eos_completed",
+                "generation_cap_reached": False,
+                "generation_status": "token_limit_reached",
+                "response_text": "partial",
+            },
+            {
+                "completion_status": "token_cap_truncated",
+                "generation_cap_reached": False,
+                "generation_status": None,
+                "response_text": "partial",
+            },
+        ]
+        for row in cases:
+            with self.subTest(row=row):
+                self.assertEqual(normalized_completion_status(row), "metadata_conflict")
+
+        self.assertEqual(normalized_completion_status({
+            "generation_cap_reached": True,
+            "generation_status": "token_limit_reached",
+            "response_text": "partial",
+        }), "token_cap_truncated")
+        self.assertEqual(normalized_completion_status({
+            "completion_status": "eos_completed",
+            "generation_cap_reached": False,
+            "generation_status": "eos_or_early_stop",
+            "response_text": "complete answer",
+        }), "eos_completed")
+
     def test_revision_mismatch_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp); a=self._artifact(root,"teacher-a","alpha")
