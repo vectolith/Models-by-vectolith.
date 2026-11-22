@@ -20,18 +20,35 @@ def digest(path: Path) -> str:
     return h.hexdigest()
 
 def normalized_completion_status(row: dict) -> str:
-    """Normalize current and legacy runner status fields without mutating source rows."""
-    explicit=row.get("completion_status")
-    if isinstance(explicit,str) and explicit:
-        return explicit
+    """Fail closed when completion fields contradict one another."""
     if row.get("error"):
         return "error"
-    if row.get("generation_cap_reached") or row.get("generation_status")=="token_limit_reached":
+
+    explicit = row.get("completion_status")
+    cap_flag = row.get("generation_cap_reached")
+    generation_status = row.get("generation_status")
+    cap_status = generation_status == "token_limit_reached"
+    explicit_cap = explicit == "token_cap_truncated"
+    cap_signal = cap_flag is True or cap_status or explicit_cap
+
+    # Contradictory metadata must never be summarized as a completed response.
+    if cap_flag is False and (cap_status or explicit_cap):
+        return "metadata_conflict"
+    if explicit_cap and generation_status not in (None, "token_limit_reached"):
+        return "metadata_conflict"
+    if cap_signal and explicit in {
+        "eos_completed", "stopped_without_eos", "completed_without_token_cap"
+    }:
+        return "metadata_conflict"
+    if cap_signal:
         return "token_cap_truncated"
-    response=row.get("response_text")
-    if not isinstance(response,str) or not response.strip():
+
+    response = row.get("response_text")
+    if not isinstance(response, str) or not response.strip():
         return "empty_output"
-    if row.get("generation_status")=="eos_or_early_stop":
+    if isinstance(explicit, str) and explicit:
+        return explicit
+    if generation_status == "eos_or_early_stop":
         return "completed_without_token_cap"
     return "unclassified"
 
