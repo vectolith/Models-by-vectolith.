@@ -18,7 +18,7 @@ class VerifyGGUFTests(unittest.TestCase):
             path.write_bytes(b"GGUF" + b"test payload")
             result = MODULE.verify(path, "example/model", "a" * 40, "Q4_K_M")
             self.assertEqual(result["format"], "GGUF")
-            self.assertEqual(result["size_bytes"], 12)
+            self.assertEqual(result["size_bytes"], 16)
             self.assertEqual(result["model_id"], "example/model")
             self.assertEqual(len(result["sha256"]), 64)
 
