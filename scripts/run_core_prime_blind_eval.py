@@ -123,6 +123,7 @@ def write_restricted_mapping(map_dir, mapping):
         dir_fd = _open_private_directory_chain(map_dir)
         temp_name = None
         created_temp = False
+        published = False
         fd = None
         try:
             file_flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
@@ -145,7 +146,9 @@ def write_restricted_mapping(map_dir, mapping):
                 os.fsync(stream.fileno())
             # Atomically publish the complete mapping without replacing a prior one.
             os.link(temp_name, map_file.name, src_dir_fd=dir_fd, dst_dir_fd=dir_fd, follow_symlinks=False)
+            published = True
             os.unlink(temp_name, dir_fd=dir_fd)
+            created_temp = False
             os.fsync(dir_fd)
         except BaseException:
             if fd is not None:
@@ -154,6 +157,12 @@ def write_restricted_mapping(map_dir, mapping):
                 try:
                     os.unlink(temp_name, dir_fd=dir_fd)
                 except FileNotFoundError:
+                    pass
+            if published:
+                try:
+                    os.unlink(map_file.name, dir_fd=dir_fd)
+                    os.fsync(dir_fd)
+                except OSError:
                     pass
             raise
         finally:
