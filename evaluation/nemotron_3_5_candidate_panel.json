@@ -1,10 +1,10 @@
 {
   "schema_version": "vectolith-nemotron-3-5-candidate-panel/1.0",
   "target_panels": [
-    "core_prime",
-    "core_prima"
+    "ash_prime",
+    "fyr_prima"
   ],
-  "core_prima_execution_status": "paused",
+  "fyr_prima_execution_status": "paused",
   "training_started": false,
   "policy": "Candidates are independently registered; no inference or training is permitted until candidate-specific legal authorization, a compatible runtime, and hardware qualification are recorded.",
   "candidates": [

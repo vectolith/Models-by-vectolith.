@@ -8,8 +8,8 @@ This document consolidates the training contracts already implemented across `ru
 
 ## 1. Current product and model scope
 
-- **Core Prime** is the active unified model. It owns the complete user task lifecycle, including reasoning, research, planning, software engineering, tool use, execution, and evidence-backed completion.
-- **Core Prima** is paused. Do not launch a Prima foundation search, teacher qualification campaign, training run, or duplicate execution pipeline while the pause remains in force. Its existing candidate and qualification material is retained as historical/re-activation planning. Reconsider Prima only when a distinct specialist role is justified by measured Prime limitations and a separate release case.
+- **ASH PRIME** is the active unified model. It owns the complete user task lifecycle, including reasoning, research, planning, software engineering, tool use, execution, and evidence-backed completion.
+- **FYR PRIMA** is paused. Do not launch a Prima foundation search, teacher qualification campaign, training run, or duplicate execution pipeline while the pause remains in force. Its existing candidate and qualification material is retained as historical/re-activation planning. Reconsider Prima only when a distinct specialist role is justified by measured Prime limitations and a separate release case.
 - Future family members may use different architectures and tokenizers. They must implement the shared identity, task, safety, and interoperability contracts at the boundary.
 
 Teacher models are training-time resources only. A released student must run without teacher endpoints, credentials, weights, or inference dependencies. The registry is not a weight store, inference server, safety certification, or permission grant.
@@ -64,7 +64,7 @@ Teacher selection is competency coverage, not popularity or model count. For any
 
 **Qualification limitation:** the current built-in keyword/rubric score is a screening signal only. Appointment requires retained raw outputs, grading report completion, factuality review, executable verification for objective tasks, license/terms review, and measured resource evidence. Provider-hosted APIs and self-hosted weights must be assessed separately for data handling and output-training permission.
 
-Current state: no teacher is presumed qualified merely because it appears in a candidate manifest. Core Prima's qualification activity remains dormant while the model is paused.
+Current state: no teacher is presumed qualified merely because it appears in a candidate manifest. FYR PRIMA's qualification activity remains dormant while the model is paused.
 
 ### 3.3 Teaching example and dataset contract
 
@@ -143,9 +143,9 @@ The canonical state progression is:
 
 Terminal alternatives are `blocked`, `failed`, `cancelled`, `rejected` and `rolled_back`. State changes must be auditable and monotonic except for an explicit new run or rollback event. A failed run is not silently resumed under the same identity; resumed work records a parent run and new run ID.
 
-For the active Core Prime track: foundation comparison and selection precede expensive training; then data preparation, baseline evaluation, teacher qualification, accepted corpus generation, SFT, optional RL/post-training, distillation experiments, independent evaluation and promotion. Do not schedule a run until the execution environment and compute capacity have been verified.
+For the active ASH PRIME track: foundation comparison and selection precede expensive training; then data preparation, baseline evaluation, teacher qualification, accepted corpus generation, SFT, optional RL/post-training, distillation experiments, independent evaluation and promotion. Do not schedule a run until the execution environment and compute capacity have been verified.
 
-Core Prima remains paused and is excluded from active scheduling. If reactivated, it receives a separate role justification, foundation decision, curriculum, teacher panel, dataset, run lineage, evaluation and release gate.
+FYR PRIMA remains paused and is excluded from active scheduling. If reactivated, it receives a separate role justification, foundation decision, curriculum, teacher panel, dataset, run lineage, evaluation and release gate.
 
 ## 5. Teacher infrastructure contributions
 
@@ -187,4 +187,4 @@ P0 and P1 work must not launch expensive training. The first implementation mile
 - No automatic appointment based on candidate lists, public benchmark claims or keyword scores.
 - No teacher at student inference; no teacher endpoint or key in release runtime configuration.
 - No model release without independent held-out evaluation, safety gates, reproducibility and rollback evidence.
-- Preserve the current Core Prima pause and all existing foundation-selection and execution-environment constraints.
+- Preserve the current FYR PRIMA pause and all existing foundation-selection and execution-environment constraints.

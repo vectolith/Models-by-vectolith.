@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run a same-runner, same-suite Core Prime output-budget comparison."""
+"""Run a same-runner, same-suite ASH PRIME output-budget comparison."""
 from __future__ import annotations
 
 import argparse
@@ -154,7 +154,7 @@ def main() -> int:
         "schema_version": "vectolith-prime-completion-study/1.0",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "workflow_run_id": __import__("os").environ.get("GITHUB_RUN_ID"),
-        "role": "core_prime",
+        "role": "ash_prime",
         "suite_set": [str(path) for path in args.suite],
         "max_new_tokens": args.max_new_tokens,
         "candidate_selection": args.candidate,

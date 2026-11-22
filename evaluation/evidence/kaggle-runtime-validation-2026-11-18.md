@@ -39,7 +39,7 @@ Result:
 
 This followed the root `pytest.ini` import-path correction (commit `3a1759191c8525964f886c3dd7d141d5146a1fa5`). The subsequent compute-attestation commit `3479a4ade59fa95555994c500af849ee4c5eac75` has two successful GitHub Actions runs associated with it:
 - Vectolith Runtime: run 44268744772 — success
-- Core Prime runtime and evaluation tests: run 44268744726 — success
+- ASH PRIME runtime and evaluation tests: run 44268744726 — success
 
 ## Safety boundary
 

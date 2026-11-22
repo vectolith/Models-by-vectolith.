@@ -15,8 +15,8 @@ from vectolith_runtime import (
 def request(task_id="task-1", *, allowed=frozenset(), approval=frozenset()):
     return TaskRequest(
         task_id=task_id,
-        requester_model=ModelRole.CORE_PRIME,
-        assigned_model=ModelRole.CORE_PRIMA,
+        requester_model=ModelRole.ASH_PRIME,
+        assigned_model=ModelRole.FYR_PRIMA,
         user_request="Build a small application",
         objective="Implement the requested application",
         requirements=("Preserve the user requirements",),
@@ -34,7 +34,7 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         async def prime_review(task, result):
             return True
 
-        runtime = VectolithRuntime({ModelRole.CORE_PRIMA: prima}, prime_review)
+        runtime = VectolithRuntime({ModelRole.FYR_PRIMA: prima}, prime_review)
         result = await runtime.delegate(request())
         self.assertEqual(result.status, TaskStatus.COMPLETED)
         record = await runtime.store.get("task-1")
@@ -48,7 +48,7 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         async def review(task, result):
             return True
 
-        runtime = VectolithRuntime({ModelRole.CORE_PRIMA: prima}, review)
+        runtime = VectolithRuntime({ModelRole.FYR_PRIMA: prima}, review)
         result = await runtime.delegate(request())
         self.assertEqual(result.status, TaskStatus.PARTIALLY_COMPLETED)
         self.assertIn("verification evidence missing", result.unresolved_issues)
@@ -60,7 +60,7 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         async def review(task, result):
             return False
 
-        runtime = VectolithRuntime({ModelRole.CORE_PRIMA: prima}, review)
+        runtime = VectolithRuntime({ModelRole.FYR_PRIMA: prima}, review)
         result = await runtime.delegate(request())
         self.assertEqual(result.status, TaskStatus.PARTIALLY_COMPLETED)
 
@@ -71,7 +71,7 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         async def review(task, result):
             return True
 
-        runtime = VectolithRuntime({ModelRole.CORE_PRIMA: prima}, review)
+        runtime = VectolithRuntime({ModelRole.FYR_PRIMA: prima}, review)
         result = await runtime.delegate(request())
         self.assertEqual(result.status, TaskStatus.FAILED)
         self.assertIn("compiler failed", result.unresolved_issues[0])
@@ -83,7 +83,7 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         async def review(task, result):
             raise RuntimeError("review service unavailable")
 
-        runtime = VectolithRuntime({ModelRole.CORE_PRIMA: prima}, review)
+        runtime = VectolithRuntime({ModelRole.FYR_PRIMA: prima}, review)
         result = await runtime.delegate(request())
         self.assertEqual(result.status, TaskStatus.PARTIALLY_COMPLETED)
         self.assertIn("review service unavailable", result.unresolved_issues[0])
@@ -138,7 +138,7 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
             return TaskResult(task.task_id, TaskStatus.COMPLETED, "done", evidence=("build log",))
         async def review(task, result):
             return 1  # truthy, but not an explicit boolean approval
-        runtime = VectolithRuntime({ModelRole.CORE_PRIMA: prima}, review)
+        runtime = VectolithRuntime({ModelRole.FYR_PRIMA: prima}, review)
         result = await runtime.delegate(request())
         self.assertEqual(result.status, TaskStatus.PARTIALLY_COMPLETED)
 
@@ -164,7 +164,7 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         async def review(task, result):
             return False
 
-        runtime = VectolithRuntime({ModelRole.CORE_PRIMA: prima}, review)
+        runtime = VectolithRuntime({ModelRole.FYR_PRIMA: prima}, review)
         await runtime.store.create(request())
         with self.assertRaises(ValueError):
             await runtime.delegate(request())

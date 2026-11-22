@@ -51,7 +51,7 @@ class RunnerTests(unittest.TestCase):
         self.config = RunConfig(
             base_url="http://localhost:8000/v1",
             model="served-name",
-            role="core_prime",
+            role="ash_prime",
             candidate_id="test/candidate",
             revision="a" * 40,
         )

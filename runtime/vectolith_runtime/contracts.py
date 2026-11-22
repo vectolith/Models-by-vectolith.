@@ -10,8 +10,8 @@ CONTRACT_VERSION = "1.0"
 
 
 class ModelRole(StrEnum):
-    CORE_PRIME = "core_prime"
-    CORE_PRIMA = "core_prima"
+    ASH_PRIME = "ash_prime"
+    FYR_PRIMA = "fyr_prima"
 
 
 class TaskStatus(StrEnum):

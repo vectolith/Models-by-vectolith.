@@ -1,4 +1,4 @@
-# Independent Core Prime candidate inference
+# Independent ASH PRIME candidate inference
 
 This workflow adds four independent teacher jobs for Qwen3.5-2B, Gemma 4 E2B IT, NVIDIA Nemotron 3 Nano 4B and Liquid AI LFM2.5-2.6B. It supplements the historical sequential multi-teacher workflow; each new candidate has its own job, failure boundary, snapshot manifest, loader smoke, full Prime v1-v4 response files and artifact.
 
@@ -34,9 +34,9 @@ These are declared loader paths, not claims that compatibility has already been 
 
 ## Full curriculum and preservation
 
-Each approved candidate runs the same public Core Prime v1, v2, v3 and v4 fixtures with deterministic decoding and a 256-token cap, matching the existing evidence protocol. The cap is explicitly recorded; capped responses are retained and not treated as complete. Every job uploads its snapshot manifest, resource probe, loader-smoke response, JSON record, JSONL per-case responses and logs even after failure.
+Each approved candidate runs the same public ASH PRIME v1, v2, v3 and v4 fixtures with deterministic decoding and a 256-token cap, matching the existing evidence protocol. The cap is explicitly recorded; capped responses are retained and not treated as complete. Every job uploads its snapshot manifest, resource probe, loader-smoke response, JSON record, JSONL per-case responses and logs even after failure.
 
-The aggregator verifies that all five named historical teacher artifacts exist in each of preserved runs 40, 42 and 43 before downloading; missing historical evidence fails the aggregation job instead of being silently skipped. Historical downloads remain isolated by run directory, and the original JSON/JSONL files are not rewritten. The shared runner schema is compatible with the comparator, including legacy `*-core_prime.json` filenames. The aggregator downloads artifacts without overwriting names and runs `compare_prime_teacher_responses.py`. The manual workflow has two independent inputs: `historical_only=true` with `run_candidates=false` rebuilds and uploads a historical-only report from runs 40, 42 and 43 without entering the candidate matrix; `run_candidates=true` runs only candidates whose individual legal gates approve, then produces a combined report containing the historical executions plus any available new candidate response artifacts. If both inputs are true, candidate execution is explicitly requested and all candidate policy gates still apply. The aggregator excludes loader-smoke files from the comparison set and uploads the resulting JSON report as `prime-teacher-comparison-report`. In historical-only mode it requires historical response artifacts. In candidate mode it refuses to label a report combined unless all four independently completed candidate response JSON files are present; partial candidate failures remain preserved as individual artifacts but do not produce a misleading combined report. It verifies JSON/JSONL case-count parity, unique case IDs, candidate/revision/run provenance, full immutable revision format, 64-character prompt SHA-256 values, response field types, and (when embedded) field-by-field parity between the JSON summary results and raw JSONL rows. It rejects duplicate candidate/run artifacts and computes SHA-256 digests of both source files. It reports per-teacher completion/error/empty-output/truncation counts, prompt-hash coverage, common and missing case coverage, exact response-match ratios and descriptive character-level disagreement. The report schema is `vectolith-prime-teacher-disagreement/1.1`; integrity must pass before a report is emitted. It does not grade quality, rank models, select a winner, discard outputs or authorize training.
+The aggregator verifies that all five named historical teacher artifacts exist in each of preserved runs 40, 42 and 43 before downloading; missing historical evidence fails the aggregation job instead of being silently skipped. Historical downloads remain isolated by run directory, and the original JSON/JSONL files are not rewritten. The shared runner schema is compatible with the comparator, including legacy `*-ash_prime.json` filenames. The aggregator downloads artifacts without overwriting names and runs `compare_prime_teacher_responses.py`. The manual workflow has two independent inputs: `historical_only=true` with `run_candidates=false` rebuilds and uploads a historical-only report from runs 40, 42 and 43 without entering the candidate matrix; `run_candidates=true` runs only candidates whose individual legal gates approve, then produces a combined report containing the historical executions plus any available new candidate response artifacts. If both inputs are true, candidate execution is explicitly requested and all candidate policy gates still apply. The aggregator excludes loader-smoke files from the comparison set and uploads the resulting JSON report as `prime-teacher-comparison-report`. In historical-only mode it requires historical response artifacts. In candidate mode it refuses to label a report combined unless all four independently completed candidate response JSON files are present; partial candidate failures remain preserved as individual artifacts but do not produce a misleading combined report. It verifies JSON/JSONL case-count parity, unique case IDs, candidate/revision/run provenance, full immutable revision format, 64-character prompt SHA-256 values, response field types, and (when embedded) field-by-field parity between the JSON summary results and raw JSONL rows. It rejects duplicate candidate/run artifacts and computes SHA-256 digests of both source files. It reports per-teacher completion/error/empty-output/truncation counts, prompt-hash coverage, common and missing case coverage, exact response-match ratios and descriptive character-level disagreement. The report schema is `vectolith-prime-teacher-disagreement/1.1`; integrity must pass before a report is emitted. It does not grade quality, rank models, select a winner, discard outputs or authorize training.
 
 ## Historical-only integrity evidence
 
@@ -52,17 +52,17 @@ The JSON evidence records source workflow/artifact IDs, archive and response-fil
 
 ## Operating boundary
 
-- All outputs are Core Prime evaluation evidence only.
+- All outputs are ASH PRIME evaluation evidence only.
 - Existing Granite 3.1, Granite 4.2 and MiniCPM5 contributions remain additive and untouched.
 - LFM2.5 and Phi-4 remain active additional contributors with their prior real artifacts.
 - New candidates contribute only after their individual local-inference gates pass.
 - Inference participation is separate from teacher qualification and separate from training-output permission.
 - Legal review, independent human grading/adjudication, safety, protected holdout, corpus integrity and the four-qualified-teacher requirement remain mandatory.
-- Core Prima remains paused. No training or distillation is implemented or invoked here.
+- FYR PRIMA remains paused. No training or distillation is implemented or invoked here.
 
 ## Dispatch
 
-After the candidate-specific legal-review records are complete, dispatch **Core Prime independent additive teacher inference** with `run_candidates=true`. The workflow verifies repository and runner eligibility before proceeding. Do not dispatch while candidate rights gates are unresolved. Runner availability and hardware capacity are not guaranteed; each candidate's resource probe and loader smoke remain mandatory.
+After the candidate-specific legal-review records are complete, dispatch **ASH PRIME independent additive teacher inference** with `run_candidates=true`. The workflow verifies repository and runner eligibility before proceeding. Do not dispatch while candidate rights gates are unresolved. Runner availability and hardware capacity are not guaranteed; each candidate's resource probe and loader smoke remain mandatory.
 
 
 ### Candidate-specific license issue
@@ -72,7 +72,7 @@ Nemotron 3 Nano 4B has an unresolved license-scope question: the selected BF16 H
 
 ## Rebuilding reports without running models
 
-To verify the reporting pipeline using preserved evidence only, manually dispatch **Core Prime independent additive teacher inference** with:
+To verify the reporting pipeline using preserved evidence only, manually dispatch **ASH PRIME independent additive teacher inference** with:
 - `historical_only=true`
 - `run_candidates=false`
 
@@ -88,7 +88,7 @@ LFM2.5-2.6B is now an independent new-run candidate in the registry and four-way
 
 ## Nemotron 3.5 candidate panel
 
-The independently tracked Nemotron 3.5 candidates are recorded in `evaluation/nemotron_3_5_candidate_panel.json` for both Core Prime and Core Prima panels. Core Prima execution remains paused. Each variant has its own repository, license evidence, hardware/runtime requirement, legal-inference gate, training-output permission and qualification status:
+The independently tracked Nemotron 3.5 candidates are recorded in `evaluation/nemotron_3_5_candidate_panel.json` for both ASH PRIME and FYR PRIMA panels. FYR PRIMA execution remains paused. Each variant has its own repository, license evidence, hardware/runtime requirement, legal-inference gate, training-output permission and qualification status:
 
 - **Nemotron 3.5 Lightning 30B-A3B:** 30B total / 3B active; published BF16 deployment requires H100 80GB or newer compatible NVIDIA GPU. It is registered but blocked from the standard CPU runner.
 - **Nemotron 3.5 Super VL 120B-A12B:** 120B total / 12B active; published BF16 deployment requires 4x H100 or 2x GB200. It is registered but blocked from the standard free CPU runner.

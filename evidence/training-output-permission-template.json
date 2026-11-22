@@ -3,9 +3,9 @@
   "status": "pending",
   "model_id": "",
   "immutable_revision": "",
-  "authorized_use": "Use of outputs generated from this exact model revision as synthetic teacher data for Core Prime supervised distillation/training.",
+  "authorized_use": "Use of outputs generated from this exact model revision as synthetic teacher data for ASH PRIME supervised distillation/training.",
   "scope": {
-    "student": "Core Prime",
+    "student": "ASH PRIME",
     "allowed_training_methods": [
       "supervised fine-tuning",
       "distillation"

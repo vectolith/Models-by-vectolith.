@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Integrity-check and compare real Core Prime teacher JSON/JSONL artifacts.
+"""Integrity-check and compare real ASH PRIME teacher JSON/JSONL artifacts.
 
 Reports coverage, completion and pairwise response disagreement. It does not
 score, rank, select, grade, or discard any teacher or response.

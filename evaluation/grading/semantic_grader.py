@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 from typing import Any
 
-PROMPT_VERSION = "core-prime-semantic-grader-v2-local"
+PROMPT_VERSION = "ash-prime-semantic-grader-v2-local"
 
 def build_grading_request(*, candidate_alias: str, case_id: str, response: str, rubric: list[Any], response_sha256: str) -> dict[str, Any]:
     if not all(isinstance(x, str) and x.strip() for x in (candidate_alias, case_id, response)):
@@ -66,7 +66,7 @@ def assemble_grade_record(*, inference_run_id: str, candidate_id: str, candidate
                           "rationale": chosen["rationale"], "method": chosen["method"],
                           "confidence": chosen.get("confidence")})
     counts = Counter(row["status"] for row in criteria)
-    record = {"schema_version": "vectolith-core-prime-grade/1.0",
+    record = {"schema_version": "vectolith-ash-prime-grade/1.0",
         "inference_run_id": inference_run_id, "candidate_id": candidate_id,
         "candidate_revision": candidate_revision, "source_artifact_sha256": source_artifact_sha256,
         "case_id": case_id, "response_sha256": response_sha, "rubric_sha256": rubric_sha, "rubric_version": rubric_version,

@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vectolith.dev/schemas/ash-prime-experiment-candidate-record.json",
+  "title": "ASH PRIME Experiment candidate record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "record_version",
+    "candidate_id",
+    "repository_id",
+    "revision",
+    "status",
+    "model_snapshot_path"
+  ],
+  "properties": {
+    "record_version": {
+      "type": "string"
+    },
+    "candidate_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "repository_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "publisher": {
+      "type": "string"
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "status": {
+      "enum": [
+        "pending",
+        "verified",
+        "blocked",
+        "measured",
+        "not_applicable"
+      ]
+    },
+    "license_identifier": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "license_evidence_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "license_evidence_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "output_training_permission": {
+      "enum": [
+        "pending",
+        "verified",
+        "denied",
+        "unclear"
+      ]
+    },
+    "output_training_permission_evidence_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "output_training_permission_evidence_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "human_legal_review_evidence_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "human_legal_review_evidence_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "human_legal_review": {
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ]
+    },
+    "model_config_evidence_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "model_config_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "tokenizer_revision": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "chat_template_evidence_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "chat_template_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "weight_inventory": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "architecture": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "parameter_count": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "context_length": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "compatibility_status": {
+      "enum": [
+        "pending",
+        "compatible",
+        "incompatible",
+        "blocked"
+      ]
+    },
+    "compute_evidence": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "notes": {
+      "type": "string"
+    },
+    "model_snapshot_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

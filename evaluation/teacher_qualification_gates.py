@@ -155,7 +155,7 @@ def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
 
 def evaluate_cohort(manifests: list[dict[str, Any]], required_teachers: int = 4) -> dict[str, Any]:
     if required_teachers < 4:
-        raise ValueError("Core Prime cohort qualification requires at least four teachers")
+        raise ValueError("ASH PRIME cohort qualification requires at least four teachers")
     results = [evaluate_candidate(manifest) for manifest in manifests]
     candidate_ids = [row.get("candidate_id") for row in results]
     duplicates = len(candidate_ids) != len(set(candidate_ids))

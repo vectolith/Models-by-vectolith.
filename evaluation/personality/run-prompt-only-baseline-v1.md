@@ -1,10 +1,10 @@
-# Running the Core Prime prompt-only baseline
+# Running the ASH PRIME prompt-only baseline
 
-This experiment compares the same locally available foundation model with and without the Core Prime character system prompt. It is a prompt-only comparison—not fine-tuning, and not a trained-model claim.
+This experiment compares the same locally available foundation model with and without the ASH PRIME character system prompt. It is a prompt-only comparison—not fine-tuning, and not a trained-model claim.
 
 ## Conditions
 - `base`: model chat template, user prompt and case context only.
-- `character_prompt`: identical model and generation settings, plus `evaluation/personality/core-prime-character-system-prompt-v1.txt` as the system message.
+- `character_prompt`: identical model and generation settings, plus `evaluation/personality/ash-prime-character-system-prompt-v1.txt` as the system message.
 
 The generation helper requires a tokenizer chat template; it intentionally refuses fallback formats that could silently alter condition parity.
 
@@ -13,18 +13,18 @@ Run in a free local or genuinely free compute environment with the model already
 
 Example (from repo root, model must already be cached):
 ```bash
-python scripts/generate_core_prime_eval_outputs.py \
+python scripts/generate_ash_prime_eval_outputs.py \
   --model /path/to/local/model \
   --offline \
-  --character-prompt evaluation/personality/core-prime-character-system-prompt-v1.txt \
-  --output /tmp/core-prime-paired-outputs.json
+  --character-prompt evaluation/personality/ash-prime-character-system-prompt-v1.txt \
+  --output /tmp/ash-prime-paired-outputs.json
 ```
 
 ## Blinding
 ```bash
-python scripts/run_core_prime_blind_eval.py \
-  --outputs /tmp/core-prime-paired-outputs.json \
-  --output /tmp/core-prime-blind
+python scripts/run_ash_prime_blind_eval.py \
+  --outputs /tmp/ash-prime-paired-outputs.json \
+  --output /tmp/ash-prime-blind
 ```
 The harness writes a blinded response sheet and a separate label map. Keep the mapping inaccessible to evaluators until scoring is complete. Record the model revision, generation settings, case-set revision, environment, and run date alongside results. Never include holdout cases in training.
 

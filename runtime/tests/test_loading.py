@@ -13,8 +13,8 @@ def manifest(model_id="test-model", lifecycle=ModelLifecycle.RELEASED):
 
 def task():
     return TaskRequest(
-        task_id="load-1", requester_model=ModelRole.CORE_PRIME,
-        assigned_model=ModelRole.CORE_PRIMA, user_request="run",
+        task_id="load-1", requester_model=ModelRole.ASH_PRIME,
+        assigned_model=ModelRole.FYR_PRIMA, user_request="run",
         objective="execute test task",
     )
 

@@ -203,7 +203,7 @@ class VectolithRuntime:
             reviewed = False
             review_issue = f"reviewer raised {type(exc).__name__}: {exc}"
         else:
-            review_issue = "Core Prime review did not approve completion"
+            review_issue = "ASH PRIME review did not approve completion"
         if reviewed is not True:
             rejected = TaskResult(
                 request.task_id, TaskStatus.PARTIALLY_COMPLETED,

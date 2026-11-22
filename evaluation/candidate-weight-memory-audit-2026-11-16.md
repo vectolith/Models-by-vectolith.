@@ -76,4 +76,4 @@ All sizes are decimal GB unless explicitly marked GiB. BF16 planning ranges for 
 5. Run the same fixed prompt and concurrency profile at explicit context lengths (at minimum 4K and 16K; larger contexts only where capacity allows). Preserve OOM and load failures as evidence.
 6. Keep all candidates unqualified until legal/output-training permission, role-specific quality evaluation, independent grading, contribution-shard validation and leave-one-teacher-out ablation are complete.
 
-**Current qualification state remains unchanged: zero qualified teachers for Core Prime and zero for Core Prima.** This audit is storage/memory planning evidence only; it does not authorize student training or appoint any teacher.
+**Current qualification state remains unchanged: zero qualified teachers for ASH PRIME and zero for FYR PRIMA.** This audit is storage/memory planning evidence only; it does not authorize student training or appoint any teacher.

@@ -1,4 +1,4 @@
-# Core Prime active teacher contribution program
+# ASH PRIME active teacher contribution program
 
 **Status: active implementation track.** Models listed here are contributors to the evaluation program, not a replacement shortlist and not a ranking. A candidate may contribute raw inference and evaluation evidence before it is qualified for any training use.
 
@@ -23,7 +23,7 @@
 2. Resolve a full immutable 40-character model revision before downloading weights. Preserve model card, config, tokenizer, license/NOTICE text, complete file inventory, byte sizes and SHA-256 digests.
 3. Do not infer license permission from a Hub tag. Missing or ambiguous terms block weight execution until human legal review resolves the applicable terms. Model-weight licensing and permission to use generated outputs for training are separate decisions.
 4. Validate the candidate's actual architecture and tokenizer/chat template. Never force multimodal or hybrid checkpoints through a text-only loader. Do not enable `trust_remote_code` without a separately pinned and reviewed source.
-5. Run a deterministic smoke suite first. If loading and generation succeed, run the same public Core Prime benchmark v1 and qualification v2/v3/v4 suites with identical prompt revisions and decoding settings. Keep model-specific dependency pins where required.
+5. Run a deterministic smoke suite first. If loading and generation succeed, run the same public ASH PRIME benchmark v1 and qualification v2/v3/v4 suites with identical prompt revisions and decoding settings. Keep model-specific dependency pins where required.
 6. Capture raw JSON and JSONL responses, logs, job/run IDs, exact revisions, suite and case IDs, prompt hashes, completion/truncation/error counts, latency, throughput, download/load time, CPU/GPU details, peak RSS/VRAM, dtype, quantization and runtime versions.
 7. Preserve every real response, including partial, capped, refused, empty and failed cases. Never overwrite or silently drop an earlier run. Keep candidate/run/revision identities unique.
 8. Analyse response coverage, completion and cross-teacher disagreement. Do not produce a winner ranking or discard any teacher response. Independent human graders remain responsible for quality judgements.
@@ -34,9 +34,9 @@
 
 Before dispatch, verify that the selected execution environment is accessible, the intended workload is permitted, and its actual CPU/GPU, memory, storage, session and concurrency limits can accommodate the candidate. Record measured capacity and runtime observations. Do not infer availability from public claims or model-download access. If a candidate cannot run within the verified environment, preserve the measured blocker and keep its intake work active; never bypass platform limits or silently substitute an unverified execution path.
 
-## Core Prime scope and safeguards
+## ASH PRIME scope and safeguards
 
-- All contributors target Core Prime only. Core Prima remains paused.
+- All contributors target ASH PRIME only. FYR PRIMA remains paused.
 - This program is evaluation/inference only. It does not start training, authorize distillation, or add outputs to a corpus.
 - Existing Granite 3.1, Granite 4.2 and MiniCPM5 contributions remain additive and immutable.
 - New candidates join alongside them; none is a replacement.

@@ -12,7 +12,7 @@
     "qualification_status_default": "not_qualified"
   },
   "students": {
-    "core_prime": {
+    "ash_prime": {
       "specialization": "general reasoning, knowledge, writing, instruction following, multilingual comprehension, planning, synthesis, calibration",
       "candidates": [
         {
@@ -173,7 +173,7 @@
       "lifecycle": "active",
       "qualification_campaign_status": "active"
     },
-    "core_prima": {
+    "fyr_prima": {
       "specialization": "software engineering, coding, debugging, mathematics, code review, secure coding, structured tool use, execution recovery, repository-level completion",
       "candidates": [
         {
@@ -333,14 +333,14 @@
       ],
       "lifecycle": "paused",
       "qualification_campaign_status": "dormant_not_scheduled",
-      "notes": "Historical candidate pool retained for possible reactivation only. No current foundation evaluation, teacher inference, qualification, ranking, or training is authorized for Core Prima while paused."
+      "notes": "Historical candidate pool retained for possible reactivation only. No current foundation evaluation, teacher inference, qualification, ranking, or training is authorized for FYR PRIMA while paused."
     }
   },
   "active_students": [
-    "core_prime"
+    "ash_prime"
   ],
   "paused_students": [
-    "core_prima"
+    "fyr_prima"
   ],
   "required_qualified_teachers_per_active_student": 4
 }

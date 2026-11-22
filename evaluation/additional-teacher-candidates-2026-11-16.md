@@ -38,7 +38,7 @@ Publisher benchmark, latency and memory figures are discovery leads only. Vectol
 
 ## Current status
 
-As of Core Prime workflow run 43796213917 on 2026-11-16, the candidates in this register remain discovery-only and no new teacher has been admitted or qualified.
+As of ASH PRIME workflow run 43796213917 on 2026-11-16, the candidates in this register remain discovery-only and no new teacher has been admitted or qualified.
 
 - SmolLM3-3B: the snapshot attempt stopped because the downloaded repository snapshot had no LICENSE file. The model-card tag alone was not accepted as complete license evidence. No response artifact was produced.
 - LFM2.5-2.6B: immutable revision 7141b56cd4650af95c7c7b86983443aed050c96a was snapshotted and loaded with Lfm2ForCausalLM / Transformers 5.0.0. It produced 180/180 Prime v1-v4 records with zero inference errors, but 162/180 reached the 256-token cap. License review, independent human grading and separate training-output permission remain outstanding. It is still discovery-only.
@@ -46,9 +46,9 @@ As of Core Prime workflow run 43796213917 on 2026-11-16, the candidates in this 
 - Qwen3.5-2B and Gemma 4 E2B IT remain discovery-only; this run produced no snapshot or inference artifacts for them.
 - Nemotron 3 Nano 4B remains deferred pending license and loader review.
 
-No human grades were created. No candidate has passed teacher qualification or received training-output authorization. The three existing Granite 3.1, Granite 4.2 and MiniCPM5 contributors remain intact and additive. Full artifact identities and measured resources are recorded in evaluation/core-prime-multi-teacher-run-40-evidence-2026-11-16.md.
+No human grades were created. No candidate has passed teacher qualification or received training-output authorization. The three existing Granite 3.1, Granite 4.2 and MiniCPM5 contributors remain intact and additive. Full artifact identities and measured resources are recorded in evaluation/ash-prime-multi-teacher-run-40-evidence-2026-11-16.md.
 
-## Additional Core Prime teacher pipeline — implementation status
+## Additional ASH PRIME teacher pipeline — implementation status
 
 The sequential GitHub Actions workflow is now manually dispatched and requires the explicit run_qualification=true input. It retains the three existing Prime contributors first, followed by the additional discovery candidates:
 
@@ -61,7 +61,7 @@ The sequential GitHub Actions workflow is now manually dispatched and requires t
 
 Run 43796213917 completed on 2026-11-16. The first three existing contributors each produced 180 real responses across Prime v1-v4. LFM2.5 and Phi-4 also produced 180 responses each. SmolLM3 stopped at the snapshot/license-file gate and did not run inference. The overall workflow conclusion is failure because of SmolLM3, despite the successful later jobs.
 
-The evidence record includes immutable revisions, per-case provenance checks, suite counts, token-cap counts, resource measurements, artifact IDs, archive SHA-256 values and raw JSON/JSONL hashes. See evaluation/core-prime-multi-teacher-run-40-evidence-2026-11-16.md.
+The evidence record includes immutable revisions, per-case provenance checks, suite counts, token-cap counts, resource measurements, artifact IDs, archive SHA-256 values and raw JSON/JSONL hashes. See evaluation/ash-prime-multi-teacher-run-40-evidence-2026-11-16.md.
 
 The snapshot tool continues to require an exact model-card license tag and a license file before it allows inference. A follow-up correction preserves the immutable revision, full file inventory and hashes in a manifest even when the license file is missing, while still returning failure and blocking inference. It does not weaken the legal gate or treat model-card metadata as a substitute for license text.
 
@@ -74,7 +74,7 @@ PR #33 has been merged on GitHub and cannot be updated in place. Follow-up evide
 
 ## Status correction — active contribution program (2026-11-18)
 
-This section supersedes the earlier "discovery-only" and "deferred" dispositions above. The candidates are now active contributors to the Core Prime evaluation program, with concrete intake and inference work assigned; they are not being considered only as catalog discoveries. This status is not a claim that every candidate has already produced a real teacher response.
+This section supersedes the earlier "discovery-only" and "deferred" dispositions above. The candidates are now active contributors to the ASH PRIME evaluation program, with concrete intake and inference work assigned; they are not being considered only as catalog discoveries. This status is not a claim that every candidate has already produced a real teacher response.
 
 - **LFM2.5-2.6B and Phi-4-mini-instruct:** active additional contributors with existing real Prime v1-v4 inference artifacts. Continue repeated matched runs and preserve the high truncation/cap-hit evidence for human review.
 - **Qwen3.5-2B:** active intake contributor. The previously recorded single-case semantic-grader smoke is not teacher inference. Next: immutable teacher snapshot, license-file evidence, actual loader/template smoke, resource measurement and full Prime v1-v4 inference when gates pass.
@@ -83,6 +83,6 @@ This section supersedes the earlier "discovery-only" and "deferred" dispositions
 
 Every candidate runs independently so one candidate's failure cannot block another. Verify execution access, workload permissions and resource limits before dispatch. Preserve measured blockers and all real outputs, including truncations and failures; never bypass platform limits. No candidate is ranked or selected, and no teacher response is discarded.
 
-Inference participation remains separate from qualification and training authorization. Legal review, independent human grading/adjudication, safety, protected holdout, corpus integrity and the four-qualified-teacher gate remain mandatory. Written permission for generated-output training use must be separately recorded. Core Prima remains paused; no training is authorized or started.
+Inference participation remains separate from qualification and training authorization. Legal review, independent human grading/adjudication, safety, protected holdout, corpus integrity and the four-qualified-teacher gate remain mandatory. Written permission for generated-output training use must be separately recorded. FYR PRIMA remains paused; no training is authorized or started.
 
 See [the active teacher contribution program](active-teacher-contribution-program.md) for the current operating contract. Earlier paragraphs in this historical register describe the previous intake state and must not be used as the current disposition after this correction.

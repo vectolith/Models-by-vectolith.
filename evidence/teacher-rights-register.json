@@ -209,7 +209,7 @@
   "required_completion": [
     "Preserve exact-revision model-card and repository-supplied LICENSE, NOTICE/COPYING files; where no repository license file exists, preserve a canonical SPDX text reference tied to the declared model-card identifier and explicitly mark it as not repository-supplied. Record exact byte lengths, SHA-256 digests and immutable source URLs.",
     "Have an authorized legal reviewer record the applicable license, notices, model-specific terms, jurisdiction, intended commercial/non-commercial use and any upstream data/output caveats.",
-    "Obtain a separate written permission record for use of outputs from that exact model revision in Core Prime training, or document the legal basis and have the authorized rights reviewer approve it.",
+    "Obtain a separate written permission record for use of outputs from that exact model revision in ASH PRIME training, or document the legal basis and have the authorized rights reviewer approve it.",
     "Do not set any gate to approved/granted until the supporting documents are present and verified."
   ],
   "capture_evidence": {

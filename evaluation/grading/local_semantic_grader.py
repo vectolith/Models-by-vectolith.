@@ -40,7 +40,7 @@ def load_lock() -> dict[str, Any]:
     required = {
         "model_id": "Qwen/Qwen3.5-2B",
         "immutable_revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
-        "prompt_version": "core-prime-semantic-grader-v2-local",
+        "prompt_version": "ash-prime-semantic-grader-v2-local",
         "execution_mode": "local_open_weight_cpu",
         "remote_api": False,
         "credentials_required": False,

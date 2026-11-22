@@ -6,9 +6,9 @@ from threading import RLock
 
 IDENTITY_CONTRACT_VERSION = "1.0"
 
-# Target capability profile for the unified Core Prime model. These identifiers
+# Target capability profile for the unified ASH PRIME model. These identifiers
 # describe intended scope, not proof that a checkpoint has passed evaluation.
-CORE_PRIME_TARGET_CAPABILITIES = frozenset({
+ASH_PRIME_TARGET_CAPABILITIES = frozenset({
     "conversation.dialogue",
     "instruction.following",
     "reasoning.general",

@@ -24,7 +24,7 @@ def summarize(record: dict) -> dict:
       "median_case_latency_seconds":round(statistics.median(latencies),3),
       "role_case_counts":{
         role:sum(1 for item in results if item.get("role")==role)
-        for role in ("core_prime","core_prima")
+        for role in ("ash_prime","fyr_prima")
       },
       "grading":"human_review_required","teacher_qualification":"not_qualified",
       "license_review":record.get("license_review","pending_human_legal_review"),

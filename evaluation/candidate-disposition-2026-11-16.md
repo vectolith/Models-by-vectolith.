@@ -8,7 +8,7 @@ Execution conditions were the same for all candidates: CPU-only GitHub Actions r
 
 ## Active shortlist decision
 
-| Candidate | Core Prime | Core Prima | Disposition |
+| Candidate | ASH PRIME | FYR PRIMA | Disposition |
 |---|---|---|---|
 | IBM Granite 3.1 3B-A800M | Retain | Retain | Lead candidate for further blinded review; not qualified |
 | Qwen3 0.6B | Remove | Retain provisionally | Exclude from Prime shortlist due to two observed reasoning failures; retain for Prima review because it is substantially more efficient, pending human assessment of coding/engineering quality |
@@ -21,7 +21,7 @@ Execution conditions were the same for all candidates: CPU-only GitHub Actions r
 
 Mean per-case latency, token-cap hits, and maximum resident set size (RSS) were read from each candidate's actual JSON metadata and JSONL records.
 
-### Core Prime
+### ASH PRIME
 
 | Candidate | Cases | Mean latency (s/case) | Cap hits | Cap-hit rate | Peak RSS |
 |---|---:|---:|---:|---:|---:|
@@ -30,7 +30,7 @@ Mean per-case latency, token-cap hits, and maximum resident set size (RSS) were 
 | Granite 3.1 3B-A800M | 124 | 26.71 | 47 | 37.9% | 6.77 GiB |
 | Qwen2.5 7B Instruct | 124 | 107.86 | 44 | 35.5% | 13.94 GiB |
 
-### Core Prima
+### FYR PRIMA
 
 | Candidate | Cases | Mean latency (s/case) | Cap hits | Cap-hit rate | Peak RSS |
 |---|---:|---:|---:|---:|---:|
@@ -41,7 +41,7 @@ Mean per-case latency, token-cap hits, and maximum resident set size (RSS) were 
 
 Token-cap hits indicate responses were cut off at the configured generation limit. They are a response-completeness concern, not automatically a correctness grade. In Prima, all three larger candidates hit the cap on roughly 85–88% of cases; Qwen3 0.6B had a lower cap-hit rate but still hit it on 31% of cases.
 
-## Directly inspected Core Prime examples
+## Directly inspected ASH PRIME examples
 
 - `prime-reasoning-001`: the rubric requires 126. Qwen3 0.6B returned 24. Granite returned 126. Qwen3 4B and Qwen2.5 7B reached the 256-token cap before stating the final answer.
 - `prime-reasoning-002`: the rubric requires “no” because the commenters are not necessarily panel members. Granite answered no. Qwen3 0.6B, Qwen3 4B and Qwen2.5 7B answered yes.

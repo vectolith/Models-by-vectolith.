@@ -44,7 +44,7 @@ class BlindedHumanReviewTests(unittest.TestCase):
             for n, case in enumerate(self.cases):
                 rows.append({
                     "suite": "evaluation/fixtures/prime_qualification_v4.jsonl",
-                    "role": "core_prime",
+                    "role": "ash_prime",
                     "case_id": case["id"],
                     "benchmark_case_id": case["id"],
                     "candidate_id": candidate,

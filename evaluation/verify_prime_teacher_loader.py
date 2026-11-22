@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Candidate-specific real loader and one-case generation smoke for Core Prime."""
+"""Candidate-specific real loader and one-case generation smoke for ASH PRIME."""
 from __future__ import annotations
 import argparse, json, resource, time, uuid
 from datetime import datetime, timezone
@@ -11,7 +11,7 @@ from completion import classify_completion
 
 REGISTRY=Path(__file__).with_name("prime_teacher_candidate_registry.json")
 MESSAGES=[
- {"role":"system","content":"You are evaluated as Core Prime. Be accurate, respect constraints and never claim unperformed actions."},
+ {"role":"system","content":"You are evaluated as ASH PRIME. Be accurate, respect constraints and never claim unperformed actions."},
  {"role":"user","content":"Explain the difference between a process and a thread in an operating system in three concise points."}
 ]
 def main():

@@ -27,7 +27,7 @@ from .infrastructure import (
     ProviderState, QualificationState, TrainingAdapter, qualification_blockers,
 )
 from .registry import (
-    CORE_PRIME_TARGET_CAPABILITIES, IDENTITY_CONTRACT_VERSION, FamilyIdentity, ModelLifecycle, ModelManifest, ModelRegistry,
+    ASH_PRIME_TARGET_CAPABILITIES, IDENTITY_CONTRACT_VERSION, FamilyIdentity, ModelLifecycle, ModelManifest, ModelRegistry,
 )
 
 __all__ = [
@@ -39,7 +39,7 @@ __all__ = [
     "ComputeJob", "ComputeRequest", "ContributionClass", "InfrastructureContribution",
     "InfrastructureProvider", "InfrastructureRegistry", "SQLiteInfrastructureRegistry", "MockComputeAdapter",
     "ProviderState", "QualificationState", "TrainingAdapter", "qualification_blockers", "validate_infrastructure_record", "LoadedModel", "ModelLoader", "ModelLoaderRegistry", "ModelRuntime",
-    "CORE_PRIME_TARGET_CAPABILITIES",
+    "ASH_PRIME_TARGET_CAPABILITIES",
     "IndependenceEvidence", "TeacherContribution", "TeacherPanel", "validate_panels",
     "OpenAICompatibleTeacher", "QualifiedTeacher", "TeacherAssignmentPanel",
     "TeacherEndpoint", "TeacherQualification", "TeachingTask",

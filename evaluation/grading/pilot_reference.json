@@ -1,6 +1,6 @@
 {
-  "schema_version": "vectolith-core-prime-grading-pilot-reference/1.0",
-  "source_report": "evaluation/core-prime-run-42-grading-pilot-2026-11-17.md",
+  "schema_version": "vectolith-ash-prime-grading-pilot-reference/1.0",
+  "source_report": "evaluation/ash-prime-run-42-grading-pilot-2026-11-17.md",
   "scope": {"candidate_count": 5, "responses_per_candidate": 6, "response_count": 30, "rubric_criteria_per_candidate": 22},
   "candidate_order": ["granite-4.2-3b", "lfm2.5-2.6b", "phi-4-mini-instruct", "granite-3.1-3b-a800m", "minicpm5-2b"],
   "candidate_totals": {

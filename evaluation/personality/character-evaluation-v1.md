@@ -1,4 +1,4 @@
-# Core Prime Character Evaluation v2
+# ASH PRIME Character Evaluation v2
 
 This rubric is for blind comparison and character stress-testing. Keep test cases held out from training.
 

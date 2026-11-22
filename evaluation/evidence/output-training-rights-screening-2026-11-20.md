@@ -2,7 +2,7 @@
 
 **Status: research only. No legal review, output-training permission, teacher qualification, or inference authorization is approved.**
 
-This note records current public-source corroboration for the pinned teacher candidates and distinguishes model-weight licenses from permission to train Core Prime on generated outputs. It is not legal advice and does not substitute for an authorized reviewer.
+This note records current public-source corroboration for the pinned teacher candidates and distinguishes model-weight licenses from permission to train ASH PRIME on generated outputs. It is not legal advice and does not substitute for an authorized reviewer.
 
 ## Existing five teacher candidates
 
@@ -38,7 +38,7 @@ The Qwen3.5-2B local evaluation grader is a separate role and revision (`15852e8
 
 ## License-source observations
 
-- Apache-2.0 and MIT are permissive weight/artifact licenses, but this screening did not locate a separate written permission record specifically authorizing generated teacher outputs to be used as Core Prime training targets. The intended use, underlying data, applicable law and output rights remain for authorized review.
+- Apache-2.0 and MIT are permissive weight/artifact licenses, but this screening did not locate a separate written permission record specifically authorizing generated teacher outputs to be used as ASH PRIME training targets. The intended use, underlying data, applicable law and output rights remain for authorized review.
 - The [LFM Open License](https://www.liquid.ai/lfm-license) is Apache-based with a commercial-use threshold. It is not interchangeable with Apache-2.0. The actual project entity, revenue and use must be reviewed against the complete terms.
 - The [NVIDIA Nemotron Open Model License (12-12-25)](https://www.nvidia.com/content/dam/en-zz/Solutions/license-agreements/enterprise-software/NVIDIA-Nemotron-Open-Model-License-12-12-25.pdf) states that NVIDIA does not claim ownership of outputs generated using its Works or Derivative Works. This clause is noted, not treated as a completed legal review or as a blanket clearance of third-party rights.
 - OpenMDW-1.1 is a distinct license. Its terms must not be substituted for the recorded license of Nemotron 3 Nano 4B or transferred across model revisions/families without verifying the exact model's governing terms.

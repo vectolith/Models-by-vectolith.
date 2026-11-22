@@ -1,8 +1,8 @@
-# Core Prime and Core Prima capability contracts
+# ASH PRIME and FYR PRIMA capability contracts
 
 These profiles define intended capability contracts, not a claim that weights, inference services, or deployment are available. The runtime may route only to implementations that are explicitly verified and available.
 
-## Core Prime — general intelligence and orchestration
+## ASH PRIME — general intelligence and orchestration
 
 **Role:** task-level orchestrator and integrator.
 
@@ -26,7 +26,7 @@ Operating sequence:
 
 Prime is not a blanket authorization authority; delegation, external actions and access remain policy- and user-permission-bound.
 
-## Core Prima — engineering and implementation orchestrator
+## FYR PRIMA — engineering and implementation orchestrator
 
 **Role:** engineering execution lead and implementation verifier.
 

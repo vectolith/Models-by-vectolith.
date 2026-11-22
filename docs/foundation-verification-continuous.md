@@ -1,6 +1,6 @@
 # Foundation verification — continuous execution standard
 
-**Applies to:** Core Prime and Core Prima foundation-model research.
+**Applies to:** ASH PRIME and FYR PRIMA foundation-model research.
 **Decision state:** Open. No foundation is approved.
 **Execution principle:** Verification is continuous and concurrent, not a sequence of approval gates.
 

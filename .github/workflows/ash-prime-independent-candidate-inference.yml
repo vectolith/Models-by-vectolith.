@@ -1,0 +1,219 @@
+name: ASH PRIME independent additive teacher inference
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_candidates:
+        description: "Run the four new independent Prime teacher jobs (requires each candidate's legal authorization)"
+        required: true
+        type: boolean
+        default: false
+      historical_only:
+        description: "Rebuild the historical-only report from preserved runs 40, 42 and 43; does not run models"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  teacher:
+    name: ${{ matrix.candidate_id }} / independent Prime v1-v4
+    if: ${{ inputs.run_candidates == true }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 720
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - candidate_id: qwen3.5-2b
+            loader: multimodal
+            artifact: prime-teacher-qwen3.5-2b
+          - candidate_id: gemma-4-e2b-it
+            loader: multimodal
+            artifact: prime-teacher-gemma-4-e2b-it
+          - candidate_id: nemotron-3-nano-4b
+            loader: causal
+            artifact: prime-teacher-nemotron-3-nano-4b
+          - candidate_id: lfm2.5-2.6b
+            loader: causal
+            artifact: prime-teacher-lfm2.5-2.6b
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify public-repository runner policy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PRIVATE=$(gh api "repos/${GITHUB_REPOSITORY}" --jq '.private')
+          if [ "$PRIVATE" != "false" ]; then
+            echo "Refusing execution: this inference workflow is restricted to the public product repository."
+            exit 1
+          fi
+          echo "Confirmed public repository; using the standard ubuntu-24.04 hosted runner."
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Check candidate-specific inference authorization
+        id: policy
+        run: python evaluation/prime_candidate_policy_gate.py --candidate-id "${{ matrix.candidate_id }}" --github-output "$GITHUB_OUTPUT"
+      - name: Install pinned CPU inference dependencies
+        if: ${{ steps.policy.outputs.approved == 'true' }}
+        run: |
+          python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==5.5.0 accelerate==1.10.1 safetensors==0.6.2 huggingface_hub==1.3.0
+      - name: Resolve immutable revision, verify license/config and hash complete snapshot
+        if: ${{ steps.policy.outputs.approved == 'true' }}
+        run: python evaluation/snapshot_prime_teacher.py --candidate-id "${{ matrix.candidate_id }}" --output "artifacts/snapshots/${{ matrix.candidate_id }}.json" --cache-dir "$RUNNER_TEMP/hf-cache"
+      - name: Record runner resources
+        if: ${{ steps.policy.outputs.approved == 'true' }}
+        run: python evaluation/probe_compute.py --output "artifacts/compute/${{ matrix.candidate_id }}-runner.json"
+      - name: Verify candidate-specific loader and preserve real smoke response
+        if: ${{ steps.policy.outputs.approved == 'true' }}
+        run: python evaluation/verify_prime_teacher_loader.py --candidate-id "${{ matrix.candidate_id }}" --manifest "artifacts/snapshots/${{ matrix.candidate_id }}.json" --output "artifacts/evaluations/${{ matrix.candidate_id }}-loader-smoke.json"
+      - name: Run complete public ASH PRIME v1-v4 curriculum
+        if: ${{ steps.policy.outputs.approved == 'true' }}
+        env:
+          CANDIDATE_ID: ${{ matrix.candidate_id }}
+          LOADER: ${{ matrix.loader }}
+        run: |
+          set -o pipefail
+          mkdir -p artifacts/evaluations
+          REVISION=$(python -c "import json; print(json.load(open('artifacts/snapshots/${CANDIDATE_ID}.json'))['immutable_revision'])")
+          case "$CANDIDATE_ID" in
+            qwen3.5-2b) REPO="Qwen/Qwen3.5-2B"; FAMILY="Qwen 3.5" ;;
+            gemma-4-e2b-it) REPO="google/gemma-4-E2B-it"; FAMILY="Google Gemma 4" ;;
+            nemotron-3-nano-4b) REPO="nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16"; FAMILY="NVIDIA Nemotron 3" ;;
+            lfm2.5-2.6b) REPO="LiquidAI/LFM2.5-2.6B"; FAMILY="Liquid AI LFM2.5" ;;
+            *) echo "Unknown candidate"; exit 2 ;;
+          esac
+          python evaluation/run_real_candidate_eval.py \
+            --repo "$REPO" --revision "$REVISION" --family "$FAMILY" \
+            --candidate-id "$CANDIDATE_ID" --loader "$LOADER" \
+            --suite evaluation/fixtures/prime_benchmark_v1.jsonl \
+            --suite evaluation/fixtures/prime_qualification_v2.jsonl \
+            --suite evaluation/fixtures/prime_qualification_v3.jsonl \
+            --suite evaluation/fixtures/prime_qualification_v4.jsonl \
+            --dtype bfloat16 --max-new-tokens 256 \
+            --cache-dir "$RUNNER_TEMP/hf-cache" \
+            --output "artifacts/evaluations/${CANDIDATE_ID}-ash-prime.json" \
+            2>&1 | tee "artifacts/evaluations/${CANDIDATE_ID}-ash-prime.log"
+      - name: Preserve snapshot, compute and every raw response
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            artifacts/snapshots/${{ matrix.candidate_id }}.json
+            artifacts/compute/${{ matrix.candidate_id }}-runner.json
+            artifacts/evaluations/${{ matrix.candidate_id }}-ash-prime.json
+            artifacts/evaluations/${{ matrix.candidate_id }}-ash-prime.jsonl
+            artifacts/evaluations/${{ matrix.candidate_id }}-ash-prime.log
+            artifacts/evaluations/${{ matrix.candidate_id }}-loader-smoke.json
+            artifacts/evaluations/${{ matrix.candidate_id }}-loader-smoke.jsonl
+          if-no-files-found: warn
+          retention-days: 90
+
+  disagreement:
+    name: Integrity and disagreement report
+    if: ${{ always() && (inputs.run_candidates == true || inputs.historical_only == true) }}
+    needs: [teacher]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify all preserved historical teacher artifacts exist
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          expected=(
+            prime-teacher-granite-3.1-3b-a800m
+            prime-teacher-granite-4.2-3b
+            prime-teacher-minicpm5-2b
+            prime-teacher-lfm2.5-2.6b
+            prime-teacher-phi-4-mini-instruct
+          )
+          for run_id in 43796213917 43820188813 43821046671; do
+            names="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts" --jq '.artifacts[].name')"
+            for artifact in "${expected[@]}"; do
+              if ! grep -Fxq "${artifact}" <<< "${names}"; then
+                echo "Missing required historical artifact ${artifact} in workflow run ${run_id}" >&2
+                exit 1
+              fi
+            done
+            echo "Verified all five historical teacher artifacts in run ${run_id}"
+          done
+      - name: Download current-run candidate artifacts
+        if: ${{ inputs.run_candidates == true }}
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/prime-teachers/new-run
+          pattern: prime-teacher-*
+          merge-multiple: true
+        continue-on-error: true
+      - name: Download historical Prime run 40 artifacts
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: 43796213917
+          path: artifacts/prime-teachers/historical-run-40
+          pattern: prime-teacher-*
+          merge-multiple: true
+      - name: Download historical Prime run 42 artifacts
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: 43820188813
+          path: artifacts/prime-teachers/historical-run-42
+          pattern: prime-teacher-*
+          merge-multiple: true
+      - name: Download historical Prime run 43 artifacts
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: 43821046671
+          path: artifacts/prime-teachers/historical-run-43
+          pattern: prime-teacher-*
+          merge-multiple: true
+      - name: Generate historical-only or combined integrity and disagreement report
+        env:
+          HISTORICAL_ONLY: ${{ inputs.historical_only }}
+          RUN_CANDIDATES: ${{ inputs.run_candidates }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/reports
+          if [ "$RUN_CANDIDATES" = "true" ]; then
+            candidate_count=$(find artifacts/prime-teachers/new-run -type f -name '*-ash-prime.json' 2>/dev/null | wc -l | tr -d ' ')
+            if [ "$candidate_count" -ne 4 ]; then
+              echo "Refusing to label a report combined: expected four independently completed candidate response JSON files, found $candidate_count." >&2
+              exit 1
+            fi
+          fi
+          ARGS=()
+          while IFS= read -r file; do ARGS+=(--artifact "$file"); done < <(find artifacts/prime-teachers -type f \( -name '*-ash-prime.json' -o -name '*-ash_prime.json' \) | sort)
+          if [ "$HISTORICAL_ONLY" = "true" ] && [ "$RUN_CANDIDATES" != "true" ]; then
+            OUT=artifacts/reports/historical-prime-teacher-integrity.json
+          else
+            OUT=artifacts/reports/prime-teacher-disagreement.json
+          fi
+          if [ "${#ARGS[@]}" -eq 0 ]; then
+            echo "No real inference response artifacts were found; refusing to emit an empty report."
+            exit 1
+          fi
+          python evaluation/compare_prime_teacher_responses.py "${ARGS[@]}" --output "$OUT"
+      - name: Preserve disagreement report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prime-teacher-comparison-report
+          path: artifacts/reports/*.json
+          if-no-files-found: warn
+          retention-days: 90

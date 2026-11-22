@@ -1,6 +1,6 @@
 # Foundation Candidate Research — 2026-11-15
 
-**Decision state:** Research shortlist only. No candidate is selected for Core Prime or Core Prima.
+**Decision state:** Research shortlist only. No candidate is selected for ASH PRIME or FYR PRIMA.
 **Evidence rule:** Provider-published claims are discovery evidence, not independent proof. The capability scores remain unscored until the same pinned evaluation suite is executed against the exact checkpoint revisions.
 
 ## Executive result
@@ -35,7 +35,7 @@ These are candidate hypotheses, not rankings. No model has been benchmarked by v
 
 ## Role-specific shortlist — provisional
 
-### Core Prime
+### ASH PRIME
 
 1. Qwen3.5-9B — first candidate for global-language breadth and general capability.
 2. Gemma 4 E4B — first efficiency and multimodal candidate.
@@ -44,7 +44,7 @@ These are candidate hypotheses, not rankings. No model has been benchmarked by v
 
 Prime must be evaluated on global-English quality, general reasoning, instruction following, writing, synthesis, long-context tasks, multilingual comprehension, calibration, and safe everyday assistance. Vendor language coverage is not a substitute for testing World Englishes and regional registers.
 
-### Core Prima
+### FYR PRIMA
 
 1. Granite 4.2 8B — first candidate for dense reasoning, coding, and tool-use workflows.
 2. Qwen3.5-9B — first candidate for agentic coding, structured tool use, and broad language coverage.

@@ -19,7 +19,7 @@ Store a JSON manifest beside the private JSONL suite, outside the repository:
   "sha256": "64-character-sha256-of-the-jsonl-file",
   "case_count": 100,
   "access_control": "restricted",
-  "authorized_roles": ["core_prime", "core_prima"]
+  "authorized_roles": ["ash_prime", "fyr_prima"]
 }
 ```
 
@@ -39,12 +39,12 @@ Then run the private runner for each role and candidate:
 
 ```bash
 python evaluation/run_private_holdout.py \
-  --output /secure/evaluation/core-prime-candidate-a.jsonl \
+  --output /secure/evaluation/ash-prime-candidate-a.jsonl \
   --base-url http://127.0.0.1:8000/v1 \
   --model served-model-name \
   --candidate-id provider/model \
   --revision IMMUTABLE_REVISION \
-  --role core_prime
+  --role ash_prime
 ```
 
 Use a separate owner-only output directory. Do not upload raw holdout output to public CI artifacts. Preserve the holdout hash, version, exact model revision, tokenizer/server/quantization details, decoding parameters, hardware and run timestamp in a restricted experiment record.

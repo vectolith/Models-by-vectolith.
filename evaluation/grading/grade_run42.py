@@ -229,7 +229,7 @@ def main() -> int:
         batch_path = batch_dir / f"batch-{batch_count:03d}.jsonl"
         request_sha = write_jsonl(batch_path, batch_rows)
         manifest_path = batch_dir / f"batch-{batch_count:03d}.report.json"
-        manifest = {"schema_version": "vectolith-core-prime-grading-batch/1.0",
+        manifest = {"schema_version": "vectolith-ash-prime-grading-batch/1.0",
                     "phase": args.phase, "batch_id": f"batch-{batch_count:03d}",
                     "request_count": len(batch_rows),
                     "candidate_alias_counts": {name: sum(1 for row in batch_rows if row["candidate_alias"] == name)
@@ -239,7 +239,7 @@ def main() -> int:
         manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
         batch_manifests.append((manifest_path, batch_rows, manifest))
 
-    report = {"schema_version": "vectolith-core-prime-grading-population/1.0",
+    report = {"schema_version": "vectolith-ash-prime-grading-population/1.0",
         "inference_run_id": "43820188813", "phase": args.phase,
         "population_count": len(population), "expected_grading_count": len(eligible),
         "phase_excluded_count": len(population) - len(eligible),
@@ -357,7 +357,7 @@ def main() -> int:
         "complete": overall_graded == 900 and report["status"] in {"grading_complete", "pilot_compared"}}
     report_path = phase_dir / "run42-grading-population-report.json"
     report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    final_summary = {"schema_version": "vectolith-core-prime-grading-summary/1.0",
+    final_summary = {"schema_version": "vectolith-ash-prime-grading-summary/1.0",
         "inference_run_id": "43820188813", "phase": args.phase,
         "phase_expected_responses": len(eligible),
         "phase_graded_responses": current_graded,

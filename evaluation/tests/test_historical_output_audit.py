@@ -46,12 +46,12 @@ class HistoricalOutputAuditTests(unittest.TestCase):
             "response_text": "A complete answer.", "error": None,
         }
         with tempfile.TemporaryDirectory() as directory:
-            archive_path = Path(directory) / "core-prime-test.zip"
+            archive_path = Path(directory) / "ash-prime-test.zip"
             with zipfile.ZipFile(archive_path, "w") as archive:
                 archive.writestr("evaluations/sample.jsonl", json.dumps(row) + "\n")
             loaded = load_rows([str(archive_path)])
         self.assertEqual(len(loaded), 1)
-        self.assertEqual(loaded[0]["_artifact"], "core-prime-test.zip")
+        self.assertEqual(loaded[0]["_artifact"], "ash-prime-test.zip")
         self.assertEqual(loaded[0]["response_text"], "A complete answer.")
 
 

@@ -1,8 +1,8 @@
-# Training Core Prime
+# Training ASH PRIME
 
 ## Objective
 
-Train and shape Core Prime to improve general capability and establish its distinctive personality as learned behaviour. The personality should not be merely a thin prompt wrapper.
+Train and shape ASH PRIME to improve general capability and establish its distinctive personality as learned behaviour. The personality should not be merely a thin prompt wrapper.
 
 ## Training focus
 

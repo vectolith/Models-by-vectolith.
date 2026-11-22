@@ -4,7 +4,7 @@
 
 Expand the candidate pool around the current provisional Granite 3.1 3B-A800M lead. The four newly discovered candidates below have not yet been run in the Vectolith Prime/Prima public suites. Qwen2.5-7B-Instruct is also recorded as a **historical comparator** because it already has preserved Prime and Prima inference evidence; it is not a newly discovered candidate or an active-shortlist reinstatement. No candidate is qualified by this intake record.
 
-The comparison remains role-specific: Core Prime prioritizes general reasoning, factual reliability, instruction following, synthesis and multilingual competence; Core Prima prioritizes coding, debugging, mathematics, structured tool use and reliable task completion.
+The comparison remains role-specific: ASH PRIME prioritizes general reasoning, factual reliability, instruction following, synthesis and multilingual competence; FYR PRIMA prioritizes coding, debugging, mathematics, structured tool use and reliable task completion.
 
 ## Candidates to snapshot and compatibility-test
 
@@ -19,7 +19,7 @@ The comparison remains role-specific: Core Prime prioritizes general reasoning, 
 
 | Candidate ID | Exact Hub repository | Immutable revision | Prior Vectolith evidence | Current disposition |
 |---|---|---|---|---|
-| qwen2.5-7b-instruct | `Qwen/Qwen2.5-7B-Instruct` | `a09a35458c702b33eeacc393d103063234e8bc28` | Preserved real inference runs: 124 Core Prime cases and 113 Core Prima cases. Mean latency was 107.86 s/case (Prime) and 155.45 s/case (Prima); peak RSS was 13.94 GiB and 13.96 GiB respectively. | Retain as a historical comparison/reference only. The 2026-11-16 disposition removed it from both active shortlists because the measured resource cost was high and the inspected evidence did not establish a sufficient quality advantage. Re-entry requires an explicit new evaluation decision; do not erase or replace prior results. |
+| qwen2.5-7b-instruct | `Qwen/Qwen2.5-7B-Instruct` | `a09a35458c702b33eeacc393d103063234e8bc28` | Preserved real inference runs: 124 ASH PRIME cases and 113 FYR PRIMA cases. Mean latency was 107.86 s/case (Prime) and 155.45 s/case (Prima); peak RSS was 13.94 GiB and 13.96 GiB respectively. | Retain as a historical comparison/reference only. The 2026-11-16 disposition removed it from both active shortlists because the measured resource cost was high and the inspected evidence did not establish a sufficient quality advantage. Re-entry requires an explicit new evaluation decision; do not erase or replace prior results. |
 
 ## Evidence sources
 

@@ -344,7 +344,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output", required=True, type=Path, help="JSONL evidence output (must not already exist)")
     parser.add_argument("--base-url", default="http://localhost:8000/v1")
     parser.add_argument("--model", required=True)
-    parser.add_argument("--role", choices=("core_prime", "core_prima"), required=True)
+    parser.add_argument("--role", choices=("ash_prime", "fyr_prima"), required=True)
     parser.add_argument("--candidate-id", required=True)
     parser.add_argument("--revision", required=True, help="Immutable 40- or 64-character model revision SHA")
     parser.add_argument("--api-key-env", default="VECTOLITH_INFERENCE_API_KEY")

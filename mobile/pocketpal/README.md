@@ -1,6 +1,6 @@
-# Core Prime — PocketPal AI packaging (mobile)
+# ASH PRIME — PocketPal AI packaging (mobile)
 
-This package prepares a **GGUF artifact** for PocketPal AI on iOS. It does not claim that Core Prime has trained weights or that a foundation model has been selected. Until the model-selection decision is approved, the export is a reproducible packaging workflow, not an export of Core Prime.
+This package prepares a **GGUF artifact** for PocketPal AI on iOS. It does not claim that ASH PRIME has trained weights or that a foundation model has been selected. Until the model-selection decision is approved, the export is a reproducible packaging workflow, not an export of ASH PRIME.
 
 ## Acceptance criteria
 
@@ -9,7 +9,7 @@ This package prepares a **GGUF artifact** for PocketPal AI on iOS. It does not c
 - A GGUF export has been produced using a compatible llama.cpp conversion path and quantization.
 - `verify_gguf.py` validates the file signature and records SHA-256, file size and provenance.
 - The file has been imported into PocketPal and inference has been manually verified on the target iPhone.
-- Test conversations and failures are recorded. A GGUF file alone is not evidence of trained Core Prime capability.
+- Test conversations and failures are recorded. A GGUF file alone is not evidence of trained ASH PRIME capability.
 
 ## Export workflow (once the foundation and weights are approved)
 
@@ -23,9 +23,9 @@ This package prepares a **GGUF artifact** for PocketPal AI on iOS. It does not c
 Example commands (placeholders; do not run until the approved checkpoint is available):
 
 ```bash
-python llama.cpp/convert_hf_to_gguf.py /path/to/approved-checkpoint --outfile core-prime-f16.gguf
-llama-quantize core-prime-f16.gguf core-prime-q4_k_m.gguf Q4_K_M
-python mobile/pocketpal/verify_gguf.py core-prime-q4_k_m.gguf --model-id APPROVED_MODEL_ID --revision APPROVED_REVISION --quantization Q4_K_M
+python llama.cpp/convert_hf_to_gguf.py /path/to/approved-checkpoint --outfile ash-prime-f16.gguf
+llama-quantize ash-prime-f16.gguf ash-prime-q4_k_m.gguf Q4_K_M
+python mobile/pocketpal/verify_gguf.py ash-prime-q4_k_m.gguf --model-id APPROVED_MODEL_ID --revision APPROVED_REVISION --quantization Q4_K_M
 ```
 
 The conversion flags may differ for the selected architecture; follow the converter's pinned version help and model-specific instructions. These are illustrative commands, not a validated conversion.

@@ -3,7 +3,7 @@
 Sub-commands:
 
   selfcheck   Verify the installed package: schemas compile, every evaluation
-              fixture parses, the Core Prime manifest registers and is
+              fixture parses, the ASH PRIME manifest registers and is
               discoverable. Exit code 1 on any failure.
   preflight   Validate a training dataset and its evidence manifests without
               loading model weights (delegates to training_preflight).
@@ -47,7 +47,7 @@ def selfcheck() -> dict[str, Any]:
     """Return a report of what the installed runtime can actually do."""
     from jsonschema import Draft202012Validator
 
-    from .registry import CORE_PRIME_TARGET_CAPABILITIES, ModelManifest, ModelRegistry
+    from .registry import ASH_PRIME_TARGET_CAPABILITIES, ModelManifest, ModelRegistry
 
     report: dict[str, Any] = {"ok": True, "checks": [], "problems": []}
 
@@ -99,22 +99,22 @@ def selfcheck() -> dict[str, Any]:
     try:
         registry = ModelRegistry()
         manifest = ModelManifest(
-            model_id="core-prime",
-            display_name="Core Prime",
+            model_id="ash-prime",
+            display_name="ASH PRIME",
             version="0.0.0-unreleased",
             specialization="unified general intelligence",
-            capabilities=CORE_PRIME_TARGET_CAPABILITIES,
+            capabilities=ASH_PRIME_TARGET_CAPABILITIES,
         )
         registry.register(manifest)
-        found = registry.discover(CORE_PRIME_TARGET_CAPABILITIES)
+        found = registry.discover(ASH_PRIME_TARGET_CAPABILITIES)
         record(
-            "registry.core-prime",
-            len(found) == 1 and found[0].model_id == "core-prime",
-            f"manifest registered, {len(CORE_PRIME_TARGET_CAPABILITIES)} target capabilities discoverable",
+            "registry.ash-prime",
+            len(found) == 1 and found[0].model_id == "ash-prime",
+            f"manifest registered, {len(ASH_PRIME_TARGET_CAPABILITIES)} target capabilities discoverable",
         )
-        report["core_prime_capabilities"] = len(CORE_PRIME_TARGET_CAPABILITIES)
+        report["ash_prime_capabilities"] = len(ASH_PRIME_TARGET_CAPABILITIES)
     except Exception as exc:  # noqa: BLE001
-        record("registry.core-prime", False, f"{type(exc).__name__}: {exc}")
+        record("registry.ash-prime", False, f"{type(exc).__name__}: {exc}")
 
     return report
 
@@ -123,7 +123,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="vectolith-runtime", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("selfcheck", help="verify schemas, fixtures and the Core Prime manifest")
+    sub.add_parser("selfcheck", help="verify schemas, fixtures and the ASH PRIME manifest")
 
     preflight = sub.add_parser("preflight", help="validate training data and evidence manifests")
     preflight.add_argument("--dataset", required=True)

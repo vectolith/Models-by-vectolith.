@@ -4,7 +4,7 @@
 
 - **Models by vectolith** is the canonical model-development source.
 - Other Vectolith repositories are separate products. None is a downstream requirement, deployment target, or runtime dependency of this model product.
-- **Core Prime** and **Core Prima** are the first independently trained, versioned, evaluated, and released family members. They are not the only permitted models.
+- **ASH PRIME** and **FYR PRIMA** are the first independently trained, versioned, evaluated, and released family members. They are not the only permitted models.
 
 ## Extensible family
 
@@ -20,15 +20,15 @@ Interoperability is validated at interface and behavioural levels. Identical arc
 
 ## Initial specializations
 
-**Core Prime:** unified general intelligence and end-to-end task ownership: conversation, instruction following, reasoning, research, evidence synthesis, planning, writing, mathematics, data analysis, coding, software engineering, architecture, debugging, technical design, testing, structured tool use, agentic execution, and verification.
+**ASH PRIME:** unified general intelligence and end-to-end task ownership: conversation, instruction following, reasoning, research, evidence synthesis, planning, writing, mathematics, data analysis, coding, software engineering, architecture, debugging, technical design, testing, structured tool use, agentic execution, and verification.
 
-**Core Prima:** paused. The former Prima engineering capability set is being absorbed into Prime. A future Prima would need a distinct specialization and independent evidence; it is not currently a required delegate.
+**FYR PRIMA:** paused. The former Prima engineering capability set is being absorbed into Prime. A future Prima would need a distinct specialization and independent evidence; it is not currently a required delegate.
 
 These are initial roles, not an exhaustive model catalogue. Future specializations are unrestricted subject to the family contract and release gates.
 
 ## Model-family delegation and interoperability
 
-Core Prime is expected to own software delivery end to end: preserve the original request, define requirements and acceptance criteria, design, implement, test, debug, verify, and report evidence. It may use approved external tools or optional future specialist models when available, but must not depend on Core Prima to perform engineering work. Any delegation is an optimization, not a capability prerequisite.
+ASH PRIME is expected to own software delivery end to end: preserve the original request, define requirements and acceptance criteria, design, implement, test, debug, verify, and report evidence. It may use approved external tools or optional future specialist models when available, but must not depend on FYR PRIMA to perform engineering work. Any delegation is an optimization, not a capability prerequisite.
 
 Every handoff uses a versioned task envelope containing task identity, requester and assignee, original intent, requirements, constraints, acceptance criteria, context references, permission scope, and resource limits. Results carry explicit status, deliverables, tests, verification evidence, limitations, and unresolved issues.
 

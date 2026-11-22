@@ -18,12 +18,12 @@ python evaluation/run_eval.py \
   --output artifacts/evaluations/prime-candidate-a.jsonl \
   --base-url http://localhost:8000/v1 \
   --model served-model-name \
-  --role core_prime \
+  --role ash_prime \
   --candidate-id provider/model-name \
   --revision IMMUTABLE_MODEL_REVISION
 ```
 
-For Prima, change the suite and role to `core_prima`. If the endpoint requires authentication, set the key in an environment variable; the runner reads `VECTOLITH_INFERENCE_API_KEY` by default. Never put API keys in command-line arguments, fixture files, or repository files.
+For Prima, change the suite and role to `fyr_prima`. If the endpoint requires authentication, set the key in an environment variable; the runner reads `VECTOLITH_INFERENCE_API_KEY` by default. Never put API keys in command-line arguments, fixture files, or repository files.
 
 The output records raw response text, tool calls, refusal, finish reason, token usage, latency, prompt hash, candidate/revision metadata, and the human-evaluation rubric. It deliberately does not assign a model-quality score. Reviewers must grade outputs against the rubric, record evaluator identity/version, and retain the raw JSONL evidence.
 
@@ -45,7 +45,7 @@ The output records raw response text, tool calls, refusal, finish reason, token 
 
 See [automated discovery and qualification](FOUNDATION_DISCOVERY.md) for immutable Hugging Face metadata snapshots, compute evidence, benchmark methodology, and teacher gates.
 
-## Active Core Prime teacher contributions
+## Active ASH PRIME teacher contributions
 
 The teacher pool is an additive evaluation ecosystem, not a three-model shortlist. LFM2.5 and Phi-4 already have real Prime inference evidence; Qwen3.5-2B, Gemma 4 E2B IT and NVIDIA Nemotron 3 Nano 4B are active intake contributors with owned snapshot, compatibility, resource and inference work paths. They are not catalog-only discovery items. Their actual responses must be produced by real, independently recorded inference runs after immutable revision, applicable license/access, loader and execution-environment checks pass. See [the active teacher contribution program](active-teacher-contribution-program.md) for the execution contract, per-candidate next steps and safeguards. No candidate is ranked or selected, and no response is discarded.
 
@@ -106,8 +106,8 @@ Raw outputs are never automatically treated as quality scores. Use [`docs/indepe
 
 ## Expanded competency suites and private holdout
 
-- `fixtures/prime_qualification_v2.jsonl`: 20 additional Core Prime public cases with explicit competency rubrics.
-- `fixtures/prima_qualification_v2.jsonl`: 21 additional Core Prima public cases with explicit competency rubrics.
+- `fixtures/prime_qualification_v2.jsonl`: 20 additional ASH PRIME public cases with explicit competency rubrics.
+- `fixtures/prima_qualification_v2.jsonl`: 21 additional FYR PRIMA public cases with explicit competency rubrics.
 - Public fixtures are not hidden holdouts and do not qualify teachers by themselves.
 - `run_private_holdout.py` runs an externally mounted, hash-pinned, access-restricted suite and writes raw outputs outside the public checkout. See [private holdout operations](../docs/private-holdout-operations.md).
 - No private prompts, answer keys or holdout data are committed to this public repository.
@@ -117,19 +117,19 @@ Raw outputs are never automatically treated as quality scores. Use [`docs/indepe
 
 The v3 public suites add four independently worded cases per competency category. Combined with benchmark v1 and qualification v2, the validator requires at least five cases in every category and globally unique case IDs:
 
-- `fixtures/prime_qualification_v3.jsonl`: 92 additional Core Prime cases across 23 competencies.
-- `fixtures/prima_qualification_v3.jsonl`: 80 additional Core Prima cases across 20 competencies.
+- `fixtures/prime_qualification_v3.jsonl`: 92 additional ASH PRIME cases across 23 competencies.
+- `fixtures/prima_qualification_v3.jsonl`: 80 additional FYR PRIMA cases across 20 competencies.
 - Run `python -m unittest evaluation.tests.test_balanced_qualification_v3 -v` to validate category coverage and fixture integrity.
 
 These are public development/evaluation fixtures, not a secret holdout. The v3 suites have now been executed against four pinned CPU candidates in both roles (eight candidate/role runs); raw outputs and resource records are preserved as workflow artifacts. The outputs have not been independently human-graded. Fixture validation establishes schema and coverage only; successful inference establishes execution, not model qualification.
 
 
-## Unified Core Prime curriculum v4
+## Unified ASH PRIME curriculum v4
 
 - `fixtures/prime_qualification_v4.jsonl`: 56 additional public cases across 14 competencies covering coding generation, debugging, code review, software architecture, testing, algorithms, data analysis, technical mathematics, tool calling, agentic planning, state recovery, research evidence, long-context retrieval, multilingual translation, security/privacy, safety policy, adversarial robustness, reliability calibration and technical documentation.
-- `tests/test_core_prime_qualification_v4.py` validates category counts, rubric presence and unique IDs.
+- `tests/test_ash_prime_qualification_v4.py` validates category counts, rubric presence and unique IDs.
 - The Prime multi-teacher inference workflow now includes v4 for every active teacher. All raw outputs, including failures and truncated answers, remain preserved.
-- See [the v4 curriculum and proposed gates](core-prime-evaluation-curriculum-v4.md) and [additional teacher discovery register](additional-teacher-candidates-2026-11-16.md).
+- See [the v4 curriculum and proposed gates](ash-prime-evaluation-curriculum-v4.md) and [additional teacher discovery register](additional-teacher-candidates-2026-11-16.md).
 - The new teacher candidates are discovery-only until exact snapshots, compatibility tests, resource measurements, grading report completion and separate training-output permission review are complete.
 - v4 is a public development suite, not a private holdout. No v4 responses or answers may be used for training.
 
@@ -151,12 +151,12 @@ python -m unittest evaluation.tests.test_additional_teacher_snapshots -v
 A passing unit test validates registry guardrails only. Actual loader compatibility, model generation, revision pinning and file hashes are established only by the real workflow artifacts.
 
 
-## Verified Core Prime multi-teacher run 40 evidence
+## Verified ASH PRIME multi-teacher run 40 evidence
 
-The 2026-11-16 run 40 evidence record contains the five successful real-response artifacts, the SmolLM3 snapshot-gate failure, exact immutable revisions, per-case provenance checks, suite counts, token-cap counts, hardware observations and SHA-256 digests. These artifacts are execution evidence only; no model is qualified and no generated output is authorized for training. See [Core Prime multi-teacher run 40 evidence](core-prime-multi-teacher-run-40-evidence-2026-11-16.md).
+The 2026-11-16 run 40 evidence record contains the five successful real-response artifacts, the SmolLM3 snapshot-gate failure, exact immutable revisions, per-case provenance checks, suite counts, token-cap counts, hardware observations and SHA-256 digests. These artifacts are execution evidence only; no model is qualified and no generated output is authorized for training. See [ASH PRIME multi-teacher run 40 evidence](ash-prime-multi-teacher-run-40-evidence-2026-11-16.md).
 
 
-## Blinded Core Prime human review
+## Blinded ASH PRIME human review
 
 The run 40 five-artifact evidence set contains 900 raw responses across the three existing additive teachers and two discovery-only candidates, including 56 v4 prompts per candidate. The historical blinded-review tooling remains optional; it is not part of the current Grading qualification gate.
 
@@ -165,12 +165,12 @@ python evaluation/prepare_blinded_human_review.py build --help
 python evaluation/prepare_blinded_human_review.py unblind --help
 \`\`\`
 
-The builder verifies immutable artifact ZIPs, JSON/JSONL parity, provenance, exact suite coverage, and original rubric integrity. It writes separate reviewer ZIPs and a restricted private identity key that must never be shared with reviewers. Independent human grading is mandatory for teacher qualification: two distinct reviewers, complete coverage, rubric/report digest, independence attestation, agreement report, and adjudication evidence. See [Core Prime blinded human-review operations](../docs/core-prime-blinded-human-review.md).
+The builder verifies immutable artifact ZIPs, JSON/JSONL parity, provenance, exact suite coverage, and original rubric integrity. It writes separate reviewer ZIPs and a restricted private identity key that must never be shared with reviewers. Independent human grading is mandatory for teacher qualification: two distinct reviewers, complete coverage, rubric/report digest, independence attestation, agreement report, and adjudication evidence. See [ASH PRIME blinded human-review operations](../docs/ash-prime-blinded-human-review.md).
 
 
-Additional verified follow-up artifacts from Core Prime runs 42 and 43 are recorded in [run 42/43 evidence](core-prime-multi-teacher-runs-42-43-evidence-2026-11-16.md). The blinded review builder supports repeated inference runs for the same candidate without overwriting or collapsing their provenance.
+Additional verified follow-up artifacts from ASH PRIME runs 42 and 43 are recorded in [run 42/43 evidence](ash-prime-multi-teacher-runs-42-43-evidence-2026-11-16.md). The blinded review builder supports repeated inference runs for the same candidate without overwriting or collapsing their provenance.
 
-The later run 42 Phi-4 completion and the 2026-11-17 PR #73 local-grader/teacher-rights intake evidence are recorded in [Core Prime intake run 44110893414 evidence](core-prime-intake-run-44110893414-evidence-2026-11-17.md). The Qwen3.5-2B smoke was performed in the local grader role only; the rights capture does not grant legal approval or training-output permission.
+The later run 42 Phi-4 completion and the 2026-11-17 PR #73 local-grader/teacher-rights intake evidence are recorded in [ASH PRIME intake run 44110893414 evidence](ash-prime-intake-run-44110893414-evidence-2026-11-17.md). The Qwen3.5-2B smoke was performed in the local grader role only; the rights capture does not grant legal approval or training-output permission.
 
 
 The legacy disagreement/adjudication utilities remain available for historical analysis only. They are optional and are not part of the current Grading qualification gate.
@@ -178,12 +178,12 @@ The legacy disagreement/adjudication utilities remain available for historical a
 
 ## Fail-closed teacher qualification
 
-Use `teacher_qualification_gates.py` to validate candidate evidence against ten independent gates and enforce the minimum four-teacher Core Prime cohort. Inference success is not qualification. Legal permission to use generated outputs for training is separate from the model-weight license. Grading requires two independent human reviewers, complete response coverage, independence attestation, agreement and adjudication evidence, a grading report digest and rubric version; protected-holdout evidence, corpus integrity, safety, and resource evidence remain mandatory. The template is intentionally empty and no candidate is approved by default. See [Core Prime teacher qualification gates](../docs/core-prime-four-teacher-qualification.md).
+Use `teacher_qualification_gates.py` to validate candidate evidence against ten independent gates and enforce the minimum four-teacher ASH PRIME cohort. Inference success is not qualification. Legal permission to use generated outputs for training is separate from the model-weight license. Grading requires two independent human reviewers, complete response coverage, independence attestation, agreement and adjudication evidence, a grading report digest and rubric version; protected-holdout evidence, corpus integrity, safety, and resource evidence remain mandatory. The template is intentionally empty and no candidate is approved by default. See [ASH PRIME teacher qualification gates](../docs/ash-prime-four-teacher-qualification.md).
 
 
 ## Controlled completion-budget study
 
-The manual-only Core Prime completion study evaluates the same immutable candidates at 512, 768, or 1024 generated tokens while preserving per-response completion state (EOS, token-cap truncation, stopped-without-EOS, empty output, or error). It records one candidate per job, separate hardware observations, workflow provenance, raw outputs and hashes. It does not grade quality, rank candidates, or authorize training. Dispatch requires the workflow's explicit `confirm_study=true` input. See [completion-budget study protocol](../docs/core-prime-completion-budget-study.md).
+The manual-only ASH PRIME completion study evaluates the same immutable candidates at 512, 768, or 1024 generated tokens while preserving per-response completion state (EOS, token-cap truncation, stopped-without-EOS, empty output, or error). It records one candidate per job, separate hardware observations, workflow provenance, raw outputs and hashes. It does not grade quality, rank candidates, or authorize training. Dispatch requires the workflow's explicit `confirm_study=true` input. See [completion-budget study protocol](../docs/ash-prime-completion-budget-study.md).
 
 
 ## Criterion-specific verification and protected holdout operations
@@ -191,6 +191,6 @@ The manual-only Core Prime completion study evaluates the same immutable candida
 See [criterion verification and protected holdout operations](../docs/criterion-verification-and-protected-holdout.md) for the exact-answer, decimal, signed sandbox-attestation, and source-backed factuality verifier interfaces, plus the required external custody and evaluator isolation evidence. These verifiers do not replace blinded human grading for open-ended reasoning, and a deployment manifest does not provision a private holdout.
 
 
-## Evidence-bound Core Prime grading engine
+## Evidence-bound ASH PRIME grading engine
 
 The repeatable Run 42 grading engine is in [grading/](grading/README.md). It verifies the five pinned artifact ZIP digests, extracts and binds all 900 response records, prepares blinded candidate-balanced semantic grading requests, applies explicitly declared deterministic rubric checks, validates structured grade records, and fails closed on missing, duplicate or unexpected response coverage. By default it excludes the six-case-per-candidate pilot and prepares the remaining 870 outputs in 29 batches of 30. The historical pilot supports aggregate reconciliation only because criterion-level records were not retained. See [Run 42 grading status](reports/run-42/grading-status.json). All raw outputs and generated grading ledgers must remain in restricted storage, not Git or public CI.

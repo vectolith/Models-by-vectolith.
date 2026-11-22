@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from vectolith_runtime import FamilyIdentity, ModelLifecycle, ModelManifest, SQLiteModelRegistry
 
-def manifest(model_id="core-prime", **kwargs):
+def manifest(model_id="ash-prime", **kwargs):
     values = {
         "display_name": model_id,
         "version": "1.2.0",
@@ -40,7 +40,7 @@ class SQLiteRegistryTests(unittest.TestCase):
             registry.register(replacement, replace=True)
             registry.close()
             reopened = SQLiteModelRegistry(database)
-            self.assertEqual(reopened.get("core-prime").version, "2.0.0")
+            self.assertEqual(reopened.get("ash-prime").version, "2.0.0")
             reopened.close()
 
     def test_unregister_persists(self):
@@ -48,7 +48,7 @@ class SQLiteRegistryTests(unittest.TestCase):
             database = Path(directory) / "models.sqlite3"
             registry = SQLiteModelRegistry(database)
             registry.register(manifest())
-            registry.unregister("core-prime")
+            registry.unregister("ash-prime")
             registry.close()
             reopened = SQLiteModelRegistry(database)
             self.assertEqual(reopened.list_models(), ())

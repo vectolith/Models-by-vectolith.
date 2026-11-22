@@ -30,7 +30,7 @@ def teacher(index: int, *, delta: float = 0.02) -> TeacherContribution:
 
 
 def panel(*teachers: TeacherContribution) -> TeacherPanel:
-    return TeacherPanel("core_prime", REVISION, tuple(teachers), "run-001")
+    return TeacherPanel("ash_prime", REVISION, tuple(teachers), "run-001")
 
 
 class DistillationValidationTests(unittest.TestCase):

@@ -3,8 +3,8 @@
   "identity": "vectolith",
   "models": [
     {
-      "id": "core-prime",
-      "display_name": "Core Prime",
+      "id": "ash-prime",
+      "display_name": "ASH PRIME",
       "role": "generalist_orchestrator",
       "status": "planned",
       "capabilities": [
@@ -77,8 +77,8 @@
       }
     },
     {
-      "id": "core-prima",
-      "display_name": "Core Prima",
+      "id": "fyr-prima",
+      "display_name": "FYR PRIMA",
       "role": "engineering_orchestrator",
       "status": "planned",
       "capabilities": [

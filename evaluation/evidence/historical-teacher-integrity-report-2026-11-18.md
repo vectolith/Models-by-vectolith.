@@ -1,4 +1,4 @@
-# Historical Core Prime Teacher Integrity Report
+# Historical ASH PRIME Teacher Integrity Report
 
 **Scope:** historical artifacts only. No new model inference, model-weight downloads, grading, training, or distillation were performed.
 

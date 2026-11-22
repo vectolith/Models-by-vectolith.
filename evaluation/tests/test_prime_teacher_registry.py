@@ -8,7 +8,7 @@ class PrimeTeacherRegistryTests(unittest.TestCase):
         data=json.loads((ROOT/"prime_teacher_candidate_registry.json").read_text())
         rows={x["candidate_id"]:x for x in data["contributors"]}
         self.assertEqual(set(rows),{"qwen3.5-2b","gemma-4-e2b-it","nemotron-3-nano-4b","lfm2.5-2.6b"})
-        self.assertEqual(data["role"],"core_prime")
+        self.assertEqual(data["role"],"ash_prime")
         for row in rows.values():
             self.assertFalse(row["local_inference_authorized"])
             self.assertEqual(row["license_review"],"pending_human_legal_review")
@@ -26,7 +26,7 @@ class PrimeTeacherRegistryTests(unittest.TestCase):
         self.assertEqual(rows["lfm2.5-2.6b"]["license_tag"],"lfm1.0")
         self.assertEqual(rows["lfm2.5-2.6b"]["revision"], "7141b56cd4650af95c7c7b86983443aed050c96a")
         self.assertFalse(rows["lfm2.5-2.6b"]["local_inference_authorized"])
-        workflow=(ROOT.parent/".github"/"workflows"/"core-prime-independent-candidate-inference.yml").read_text()
+        workflow=(ROOT.parent/".github"/"workflows"/"ash-prime-independent-candidate-inference.yml").read_text()
         self.assertIn("candidate_id: qwen3.5-2b",workflow)
         self.assertIn("candidate_id: lfm2.5-2.6b",workflow)
         self.assertIn("artifact: prime-teacher-lfm2.5-2.6b",workflow)
@@ -39,7 +39,7 @@ class PrimeTeacherRegistryTests(unittest.TestCase):
                 self.assertEqual(len(revision),40)
                 self.assertRegex(revision,r"^[0-9a-f]{40}$")
     def test_independent_workflow_is_fail_closed_and_covers_v1_to_v4(self):
-        workflow=(ROOT.parent/".github"/"workflows"/"core-prime-independent-candidate-inference.yml").read_text()
+        workflow=(ROOT.parent/".github"/"workflows"/"ash-prime-independent-candidate-inference.yml").read_text()
         self.assertIn("fail-fast: false",workflow)
         self.assertIn("runs-on: ubuntu-24.04",workflow)
         self.assertIn("Verify public-repository runner policy",workflow)
@@ -50,7 +50,7 @@ class PrimeTeacherRegistryTests(unittest.TestCase):
         self.assertIn("if: always()",workflow)
         self.assertIn("prime-teacher-comparison-report",workflow)
     def test_historical_only_mode_skips_candidate_matrix_and_reuses_same_comparator(self):
-        workflow=(ROOT.parent/".github"/"workflows"/"core-prime-independent-candidate-inference.yml").read_text()
+        workflow=(ROOT.parent/".github"/"workflows"/"ash-prime-independent-candidate-inference.yml").read_text()
         self.assertIn("historical_only:",workflow)
         self.assertIn("if: ${{ inputs.run_candidates == true }}",workflow)
         self.assertIn("inputs.run_candidates == true || inputs.historical_only == true",workflow)
@@ -64,7 +64,7 @@ class PrimeTeacherRegistryTests(unittest.TestCase):
         self.assertIn("expected four independently completed candidate response JSON files",workflow)
         self.assertIn('"$candidate_count" -ne 4',workflow)
     def test_historical_teacher_artifacts_are_required_per_preserved_run(self):
-        workflow=(ROOT.parent/".github"/"workflows"/"core-prime-independent-candidate-inference.yml").read_text()
+        workflow=(ROOT.parent/".github"/"workflows"/"ash-prime-independent-candidate-inference.yml").read_text()
         for run_id in ("43796213917","43820188813","43821046671"):
             self.assertIn(run_id,workflow)
         for artifact in (
@@ -81,7 +81,7 @@ class PrimeTeacherRegistryTests(unittest.TestCase):
         self.assertEqual(len(historical),4)
         for block in historical[1:]:
             self.assertNotIn("continue-on-error: true",block.split("      - name:",1)[0])
-    def test_historical_core_prime_jsonl_schema_is_accepted_without_rewriting(self):
+    def test_historical_ash_prime_jsonl_schema_is_accepted_without_rewriting(self):
         sys.path.insert(0,str(ROOT))
         from compare_prime_teacher_responses import load_artifact
         revision="a"*40
@@ -99,13 +99,13 @@ class PrimeTeacherRegistryTests(unittest.TestCase):
             "case_count":1,"results":[row]
         }
         with tempfile.TemporaryDirectory() as tmp:
-            path=Path(tmp)/"granite-3.1-3b-a800m-core_prime.json"
+            path=Path(tmp)/"granite-3.1-3b-a800m-ash_prime.json"
             path.write_text(json.dumps(record),encoding="utf-8")
             path.with_suffix(".jsonl").write_text(json.dumps(row)+chr(10),encoding="utf-8")
             loaded,rows=load_artifact(path)
             self.assertEqual(loaded["candidate_id"],record["candidate_id"])
             self.assertEqual(rows["historical-case-001"]["response_text"],"historical response")
-            self.assertEqual(path.name,"granite-3.1-3b-a800m-core_prime.json")
+            self.assertEqual(path.name,"granite-3.1-3b-a800m-ash_prime.json")
     def test_comparator_rejects_json_jsonl_response_mismatch(self):
         sys.path.insert(0,str(ROOT))
         from compare_prime_teacher_responses import load_artifact
@@ -116,7 +116,7 @@ class PrimeTeacherRegistryTests(unittest.TestCase):
         record={"candidate_id":"teacher-a","repo_id":"org/model","immutable_revision":revision,
                 "run_id":"run-1","case_count":1,"results":[dict(row,response_text="different summary")]}
         with tempfile.TemporaryDirectory() as tmp:
-            path=Path(tmp)/"teacher-core_prime.json"
+            path=Path(tmp)/"teacher-ash_prime.json"
             path.write_text(json.dumps(record),encoding="utf-8")
             path.with_suffix(".jsonl").write_text(json.dumps(row)+chr(10),encoding="utf-8")
             with self.assertRaisesRegex(ValueError,"embedded JSON/JSONL mismatch"):
@@ -131,7 +131,7 @@ class PrimeTeacherRegistryTests(unittest.TestCase):
         record={"candidate_id":"teacher-a","repo_id":"org/model","immutable_revision":revision,
                 "run_id":"run-1","case_count":1}
         with tempfile.TemporaryDirectory() as tmp:
-            path=Path(tmp)/"teacher-core_prime.json"
+            path=Path(tmp)/"teacher-ash_prime.json"
             path.write_text(json.dumps(record),encoding="utf-8")
             path.with_suffix(".jsonl").write_text(json.dumps(row)+chr(10),encoding="utf-8")
             with self.assertRaisesRegex(ValueError,"invalid or missing prompt_sha256"):
@@ -140,8 +140,8 @@ class PrimeTeacherRegistryTests(unittest.TestCase):
         panel=json.loads((ROOT/"nemotron_3_5_candidate_panel.json").read_text())
         rows={x["candidate_id"]:x for x in panel["candidates"]}
         self.assertEqual(set(rows),{"nemotron-3.5-lightning-30b-a3b","nemotron-3.5-super-vl-120b-a12b","nemotron-3.5-bolt-e4b"})
-        self.assertEqual(set(panel["target_panels"]),{"core_prime","core_prima"})
-        self.assertEqual(panel["core_prima_execution_status"],"paused")
+        self.assertEqual(set(panel["target_panels"]),{"ash_prime","fyr_prima"})
+        self.assertEqual(panel["fyr_prima_execution_status"],"paused")
         for row in rows.values():
             self.assertFalse(row["local_inference_authorized"])
             self.assertEqual(row["license_review"],"pending_human_legal_review")

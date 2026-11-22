@@ -85,21 +85,21 @@ def write_holdout_evidence(root, teacher_ids):
 def write_execution_approval(root, dataset_path):
     manifest = {
         "schema_version": "vectolith-training-execution-approval/1.0",
-        "status": "approved", "run_id": "core-prime-test-run-001",
-        "student_model_id": "core-prime", "foundation_model": "publisher/model",
+        "status": "approved", "run_id": "ash-prime-test-run-001",
+        "student_model_id": "ash-prime", "foundation_model": "publisher/model",
         "foundation_revision": REV,
         "dataset_sha256": hashlib.sha256(dataset_path.read_bytes()).hexdigest(),
         "training_code_revision": CODE_REV,
         "approved_by": "training-approver", "approved_at": "2026-11-17T00:00:00Z",
-        "approval_reference": "approval://core-prime/test-run-001",
+        "approval_reference": "approval://ash-prime/test-run-001",
         "approval_document_sha256": SHA,
         "approved_configuration": TRAIN_CONFIG,
         "compute": {"provider": "test-provider", "account_or_project": "test-project",
             "region": "local", "runner_type": "isolated-test-runner",
             "accelerator_type": "test-gpu", "accelerator_count": 1,
-            "runtime_image": "vectolith/core-prime-trainer:test",
+            "runtime_image": "vectolith/ash-prime-trainer:test",
             "runtime_image_sha256": SHA,
-            "execution_environment_reference": "environment://core-prime/test-run-001",
+            "execution_environment_reference": "environment://ash-prime/test-run-001",
             "maximum_runtime_seconds": 3600,
             "environment_approval_sha256": SHA,
             "software_versions": {"python": "3.11", "torch": "2.8",
@@ -144,7 +144,7 @@ class TrainingPreflightTests(unittest.TestCase):
             rows=[]
             for i in range(4):
                 prompt=f"prompt-{i}"; response=f"response-{i}"
-                rows.append({"schema_version":"1.0","student_model_id":"core-prime","run_id":"corpus-run-001",
+                rows.append({"schema_version":"1.0","student_model_id":"ash-prime","run_id":"corpus-run-001",
                     "task_id":f"task-{i}","competency":"reasoning","accepted":True,
                     "teacher_id":f"teacher-{i}","teacher_revision":REV,"reviewer_id":f"teacher-{(i+1)%4}",
                     "review":{"score":0.9,"verdict":"accept","issues":[]},
@@ -181,7 +181,7 @@ class TrainingPreflightTests(unittest.TestCase):
             rows=[]
             for i in range(4):
                 prompt=f"p{i}"; response=f"r{i}"
-                rows.append({"schema_version":"1.0","student_model_id":"core-prime","run_id":"corpus-run-001",
+                rows.append({"schema_version":"1.0","student_model_id":"ash-prime","run_id":"corpus-run-001",
                     "task_id":f"task-{i}","competency":"reasoning","accepted":True,
                     "teacher_id":f"teacher-{i}","teacher_revision":"c"*40,"reviewer_id":f"teacher-{(i+1)%4}",
                     "review":{"score":0.9,"verdict":"accept","issues":[]},
@@ -228,9 +228,9 @@ class TrainingPreflightTests(unittest.TestCase):
                     training_execution_manifest_path=execution_path,training_code_revision=CODE_REV,training_config=TRAIN_CONFIG)
 
 
-    def test_dataset_rows_require_core_prime_peer_review_and_human_adjudication(self):
+    def test_dataset_rows_require_ash_prime_peer_review_and_human_adjudication(self):
         from vectolith_runtime.training_preflight import validate_training_dataset_rows
-        base = {"schema_version":"1.0","student_model_id":"core-prime","run_id":"run-1",
+        base = {"schema_version":"1.0","student_model_id":"ash-prime","run_id":"run-1",
             "task_id":"task-1","competency":"reasoning","accepted":True,
             "teacher_id":"teacher-a","teacher_revision":REV,"reviewer_id":"teacher-b",
             "review":{"score":0.9,"verdict":"accept","issues":[]},
@@ -241,7 +241,7 @@ class TrainingPreflightTests(unittest.TestCase):
             "content_sha256":hashlib.sha256(("Explain a proof"+"\0"+"A valid explanation").encode()).hexdigest()}
         self.assertEqual(validate_training_dataset_rows([base], {"teacher-a":REV,"teacher-b":REV}), [])
         cases = [
-            ("student_model_id","core-prima","student_model_id"),
+            ("student_model_id","fyr-prima","student_model_id"),
             ("task_id","","task_id"),
             ("reviewer_id","teacher-a","peer reviewer"),
             ("review",{"score":0.99,"verdict":"reject"},"peer review"),
@@ -256,7 +256,7 @@ class TrainingPreflightTests(unittest.TestCase):
 
     def test_dataset_rows_reject_duplicate_task_teacher_pairs(self):
         from vectolith_runtime.training_preflight import validate_training_dataset_rows
-        row = {"schema_version":"1.0","student_model_id":"core-prime","run_id":"run-1",
+        row = {"schema_version":"1.0","student_model_id":"ash-prime","run_id":"run-1",
             "task_id":"task-1","competency":"reasoning","accepted":True,
             "teacher_id":"teacher-a","teacher_revision":REV,"reviewer_id":"teacher-b",
             "review":{"score":0.9,"verdict":"accept","issues":[]},

@@ -1,12 +1,12 @@
 # Independent Foundation Selection and Training Policy
 
 **Status:** Evaluation policy; no foundation selected  
-**Applies to:** Core Prime, Core Prima, and future vectolith models  
+**Applies to:** ASH PRIME, FYR PRIMA, and future vectolith models  
 **Language target:** Global English
 
 ## 1. Non-negotiable selection rule
 
-Core Prime and Core Prima are separate model products with different capability profiles. Select a foundation independently for each role. They may use different model families, architectures, tokenizers, context strategies, serving engines, and training recipes.
+ASH PRIME and FYR PRIMA are separate model products with different capability profiles. Select a foundation independently for each role. They may use different model families, architectures, tokenizers, context strategies, serving engines, and training recipes.
 
 Do not select a foundation because it is popular, because it was used by an earlier experiment, or because it is shared by the other model. Do not begin expensive fine-tuning, continued pretraining, reinforcement learning, or distillation until the relevant candidate has passed the evaluation and deployment gates in this document.
 
@@ -14,7 +14,7 @@ A model card, vendor benchmark, or parameter count is evidence for shortlisting 
 
 ## 2. Role-specific foundation profiles
 
-### Core Prime — general intelligence
+### ASH PRIME — general intelligence
 
 Evaluate foundations for:
 - General reasoning, factual synthesis, and calibrated uncertainty.
@@ -27,7 +27,7 @@ Evaluate foundations for:
 
 Prime is not selected primarily for code-generation leaderboard performance. It must be a capable general assistant across everyday, educational, analytical, and professional tasks.
 
-### Core Prima — technical intelligence and execution
+### FYR PRIMA — technical intelligence and execution
 
 Evaluate foundations for:
 - Software engineering across languages, frameworks, and repository-scale tasks.
@@ -72,7 +72,7 @@ Maintain independent candidate records for Prime and Prima. Each record must pin
 
 Use separate scorecards; do not transfer one role's weights to the other. Score every dimension from 0 to 5, attach evidence, and report confidence. A missing result is **unknown**, not zero and not a pass.
 
-| Dimension | Core Prime | Core Prima |
+| Dimension | ASH PRIME | FYR PRIMA |
 |---|---:|---:|
 | General reasoning and knowledge | 20% | 8% |
 | Global English quality and instruction following | 25% | 10% |
@@ -147,8 +147,8 @@ Reference material:
 
 ## 8. Current decision
 
-- Core Prime foundation: **NOT SELECTED**.
-- Core Prima foundation: **NOT SELECTED**.
+- ASH PRIME foundation: **NOT SELECTED**.
+- FYR PRIMA foundation: **NOT SELECTED**.
 - Expensive training: **NOT AUTHORIZED / NOT STARTED**.
 - Concrete foundation-specific inference adapters: **PENDING FOUNDATION SELECTION**.
 - Global-English target: **REQUIRED FOR BOTH**.

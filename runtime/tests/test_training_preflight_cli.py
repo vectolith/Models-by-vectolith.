@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "core_prime_training_preflight.py"
+SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "ash_prime_training_preflight.py"
 
 
 class TrainingPreflightCliTests(unittest.TestCase):
@@ -55,7 +55,7 @@ class TrainingPreflightCliTests(unittest.TestCase):
         except ImportError:
             self.skipTest("PyYAML is not installed in this test environment")
         sys.path.insert(0, str(SCRIPT.parent))
-        import core_prime_training_preflight as cli
+        import ash_prime_training_preflight as cli
 
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "approved.yaml"

@@ -1,11 +1,11 @@
 # Models by vectolith — extensible model family
 
-The model family is not limited to Core Prime and Core Prima. Those are orchestration/general engineering anchors; specialist variants are independently defined by role, capability contract, availability, permissions and lifecycle.
+The model family is not limited to ASH PRIME and FYR PRIMA. Those are orchestration/general engineering anchors; specialist variants are independently defined by role, capability contract, availability, permissions and lifecycle.
 
 ## Initial specialization map (contracts, not deployed model claims)
 
-- **Core Prime** — generalist orchestration, planning, synthesis and verification.
-- **Core Prima** — engineering orchestration, implementation planning and engineering verification.
+- **ASH PRIME** — generalist orchestration, planning, synthesis and verification.
+- **FYR PRIMA** — engineering orchestration, implementation planning and engineering verification.
 - **Core Research** — source-grounded research and citation auditing.
 - **Core Code** — software engineering, review, debugging, test and security workflows.
 - **Core Reason** — decomposition, reasoning consistency and verification.

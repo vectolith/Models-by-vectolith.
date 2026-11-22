@@ -2,13 +2,13 @@
 
 **Status: candidate pools defined; zero teachers qualified or appointed yet.**
 
-The non-negotiable requirement is **at least four distinct, qualified teacher models for Core Prime and at least four for Core Prima**. The panels may overlap, but each student must independently meet the four-teacher requirement. A model appearing in a shortlist does not count as a teacher.
+The non-negotiable requirement is **at least four distinct, qualified teacher models for ASH PRIME and at least four for FYR PRIMA**. The panels may overlap, but each student must independently meet the four-teacher requirement. A model appearing in a shortlist does not count as a teacher.
 
 ## Candidate pools
 
 The machine-readable pool is `evaluation/fixtures/teacher_panel_candidates_v1.json`. It intentionally contains more than four candidates per student so a model that fails quality, permission, efficiency, or availability checks can be replaced without lowering the standard.
 
-### Core Prime
+### ASH PRIME
 
 | Candidate | Purpose | Main qualification risk |
 |---|---|---|
@@ -19,7 +19,7 @@ The machine-readable pool is `evaluation/fixtures/teacher_panel_candidates_v1.js
 | Qwen2.5-7B-Instruct | User-requested replacement comparator | Must demonstrate quality and efficiency against newer candidates |
 | Devstral Small 2 24B | Independent cross-family reserve | Dense 24B memory footprint |
 
-### Core Prima
+### FYR PRIMA
 
 | Candidate | Purpose | Main qualification risk |
 |---|---|---|

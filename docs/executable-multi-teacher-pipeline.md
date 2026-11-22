@@ -127,7 +127,7 @@ alone is insufficient.
 
 
 Before any model weights are loaded, `train_student()` also requires a run-specific
-`training_execution_manifest`. It must approve the exact Core Prime foundation and
+`training_execution_manifest`. It must approve the exact ASH PRIME foundation and
 revision, dataset digest, training-code commit, and complete hyperparameter set. It
 must record the compute account/project, region, accelerator, runtime image and
 software versions, measured available VRAM/RAM/storage, peak resource estimates,

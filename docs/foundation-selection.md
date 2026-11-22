@@ -4,7 +4,7 @@
 
 ## Exact research shortlist
 
-Core Prime is the only active student foundation-selection track. Its unified scope includes general reasoning, knowledge, writing, multilingual comprehension, mathematics, coding, software engineering, architecture, debugging, testing, structured tool use and verified execution.
+ASH PRIME is the only active student foundation-selection track. Its unified scope includes general reasoning, knowledge, writing, multilingual comprehension, mathematics, coding, software engineering, architecture, debugging, testing, structured tool use and verified execution.
 
 The current research shortlist is:
 
@@ -14,7 +14,7 @@ The current research shortlist is:
 - `mistralai/Mistral-Small-4` — high-capability reference candidate.
 - `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16` — hybrid/MoE architecture comparator; total checkpoint footprint and OpenMDW 1.1 terms remain explicit constraints.
 
-These are exact repository identifiers, not family-level permission to substitute another checkpoint. Candidate roles are hypotheses for allocating evaluation effort, not rankings or selections. No candidate is selected. Core Prima is paused: its historical candidate material is retained, but no Prima foundation search, comparison run or training campaign is active. A future specialist model, including a reactivated Prima, requires a distinct approved scope and its own independent selection record.
+These are exact repository identifiers, not family-level permission to substitute another checkpoint. Candidate roles are hypotheses for allocating evaluation effort, not rankings or selections. No candidate is selected. FYR PRIMA is paused: its historical candidate material is retained, but no Prima foundation search, comparison run or training campaign is active. A future specialist model, including a reactivated Prima, requires a distinct approved scope and its own independent selection record.
 
 ## Current hardware feasibility evidence
 
@@ -44,7 +44,7 @@ If an exact artifact is inaccessible or incompatible, record that candidate's st
 
 ## Comparative evaluation
 
-Use one active Core Prime scorecard and a common controlled curriculum. Include the full unified Prime scope, with separate competency-level results for:
+Use one active ASH PRIME scorecard and a common controlled curriculum. Include the full unified Prime scope, with separate competency-level results for:
 
 - Reasoning, factual synthesis, mathematics, instruction following, uncertainty calibration, and reliability.
 - Coding, repository-level implementation, debugging, testing, code review, and secure engineering.
@@ -57,7 +57,7 @@ Preserve raw outputs, per-case scores, grading rubrics, evaluator identity/versi
 
 ## Selection and training policy
 
-Core Prime foundation selection remains open until comparative evidence supports a documented decision. Publish the rationale, limitations and exact immutable checkpoint identity. Core Prima is paused; if it is reactivated, its foundation must be selected independently and must not inherit Prime's decision.
+ASH PRIME foundation selection remains open until comparative evidence supports a documented decision. Publish the rationale, limitations and exact immutable checkpoint identity. FYR PRIMA is paused; if it is reactivated, its foundation must be selected independently and must not inherit Prime's decision.
 
 Do not begin foundation-specific training before a foundation is selected and the relevant rights, execution evidence and training compatibility are established. Use only a verified and approved execution environment with measured capacity; do not substitute an unverified provider or relax evaluation requirements. Bounded discovery, metadata capture, licensing review, environment checks and controlled compatibility probes may proceed while other evidence is pending.
 

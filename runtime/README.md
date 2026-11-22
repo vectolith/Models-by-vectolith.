@@ -106,13 +106,13 @@ The SFT entry point also requires a run-specific protected-holdout deployment an
 
 The runtime has a policy layer in `vectolith_runtime.dispatch_policy` that separates candidate discovery from production selection. Selection requires released lifecycle state, caller-supplied qualification and availability predicates, and requested capabilities/modalities. It fails closed if no eligible model is found. The initial deterministic selection ordering is model ID; future ranking must be based on measured and explicit criteria rather than implicit assumptions.
 
-## Core Prime training preflight (evidence validation only)
+## ASH PRIME training preflight (evidence validation only)
 
 Run the fail-closed preflight from the repository root after installing the runtime and its training extras:
 
 ```bash
 python -m pip install -e "runtime[training]"
-python runtime/scripts/core_prime_training_preflight.py \
+python runtime/scripts/ash_prime_training_preflight.py \
   --dataset /secure/path/accepted-teaching-data.jsonl \
   --foundation-model "publisher/model-id" \
   --foundation-revision "<40-character-immutable-revision>" \
@@ -123,17 +123,17 @@ python runtime/scripts/core_prime_training_preflight.py \
   --execution-manifest /secure/path/training-execution-approval.json \
   --training-code-revision "<40-character-git-commit>" \
   --training-config configs/train_approved.yaml \
-  --report evidence/core-prime-preflight-report.json
+  --report evidence/ash-prime-preflight-report.json
 ```
 
 The command delegates to the same validators used by `train_student()`. It records hashes for the supplied input files and writes a JSON report on both success and failure. A non-zero exit code and `status: blocked` mean the evidence is incomplete or invalid. A passing report means only that the preflight validators passed; it is not a training authorization, does not approve legal rights, and does not start training. Keep private holdout artifacts and result files outside the repository.
 
-## Core Prime zero-download resource probe
+## ASH PRIME zero-download resource probe
 
 To measure an actual notebook session before approving any training run, execute:
 
 ```bash
-python -m vectolith_runtime.compute_probe --output core-prime-resource-probe.json
+python -m vectolith_runtime.compute_probe --output ash-prime-resource-probe.json
 ```
 
 The probe uses only the Python standard library and local system inspection. It records CPU, RAM, free storage, NVIDIA GPU names and per-device VRAM, and installed training-library versions. It does not install packages, make network requests, download model weights, run inference, or train. Kaggle quota and session availability are deliberately left unverified in the report; check those in the account UI and confirm the selected accelerator and session limits. Preserve the JSON report and its SHA-256 digest as evidence, but do not treat a hardware probe as run approval.

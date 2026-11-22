@@ -1,4 +1,4 @@
-# Core Prime trajectory and preference dataset v1
+# ASH PRIME trajectory and preference dataset v1
 
 Experimental synthetic draft—not validated or approved training data. No real user conversations are included.
 

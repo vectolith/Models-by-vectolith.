@@ -2,7 +2,7 @@
 
 **Status:** normative architecture and qualification specification  
 **Version:** 1.0  
-**Applies to:** Models by vectolith; active student track: Core Prime
+**Applies to:** Models by vectolith; active student track: ASH PRIME
 
 ## 1. Purpose
 

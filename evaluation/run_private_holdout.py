@@ -87,7 +87,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--model", required=True)
     parser.add_argument("--candidate-id", required=True)
     parser.add_argument("--revision", required=True)
-    parser.add_argument("--role", choices=("core_prime", "core_prima"), required=True)
+    parser.add_argument("--role", choices=("ash_prime", "fyr_prima"), required=True)
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--top-p", type=float, default=1.0)
     parser.add_argument("--max-tokens", type=int, default=2048)

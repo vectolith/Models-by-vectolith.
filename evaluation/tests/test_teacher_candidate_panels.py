@@ -45,7 +45,7 @@ class TeacherCandidatePanelManifestTests(unittest.TestCase):
                 self.assertEqual(candidate["license_review"], "pending")
 
     def test_qwen25_7b_is_retained_as_prime_comparator(self):
-        candidates = self.manifest["students"]["core_prime"]["candidates"]
+        candidates = self.manifest["students"]["ash_prime"]["candidates"]
         qwen = next(item for item in candidates if item["id"] == "qwen2.5-7b-instruct")
         self.assertEqual(qwen["repo_id"], "Qwen/Qwen2.5-7B-Instruct")
         self.assertEqual(qwen["revision"], "a09a35458c702b33eeacc393d103063234e8bc28")

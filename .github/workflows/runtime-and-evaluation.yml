@@ -1,4 +1,4 @@
-name: Core Prime runtime and evaluation tests
+name: ASH PRIME runtime and evaluation tests
 
 on:
   pull_request:
@@ -15,7 +15,7 @@ on:
       - ".github/workflows/runtime-and-evaluation.yml"
 
 concurrency:
-  group: core-prime-runtime-${{ github.event.pull_request.number || github.ref }}
+  group: ash-prime-runtime-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:

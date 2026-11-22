@@ -1,5 +1,5 @@
 {
-  "schema_version": "vectolith-core-prime-run42-grading-status/1.0",
+  "schema_version": "vectolith-ash-prime-run42-grading-status/1.0",
   "inference_run_id": "43820188813",
   "source_branch": "add-qwen25-7b-to-expanded-intake",
   "source_commit": "6f9157b8a4e2150dac6a8d777ed0a8057c795251",

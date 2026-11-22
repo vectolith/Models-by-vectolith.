@@ -1,4 +1,4 @@
-# Core Prime foundation candidate hardware screen — 2026-11-18
+# ASH PRIME foundation candidate hardware screen — 2026-11-18
 
 ## Status and scope
 
@@ -8,7 +8,7 @@ The currently observed Kaggle environment has two independent NVIDIA Tesla T4 GP
 
 ## Important trainer compatibility finding
 
-The current Core Prime trainer imports `AutoModelForCausalLM`, calls `from_pretrained(..., device_map="auto")`, and does not set an explicit model dtype. It uses ordinary LoRA, not QLoRA, and does not currently configure gradient checkpointing. This is not yet a safe generic loader for every candidate below.
+The current ASH PRIME trainer imports `AutoModelForCausalLM`, calls `from_pretrained(..., device_map="auto")`, and does not set an explicit model dtype. It uses ordinary LoRA, not QLoRA, and does not currently configure gradient checkpointing. This is not yet a safe generic loader for every candidate below.
 
 Before a training run, the trainer must:
 - Bind the selected model architecture and loader class to the immutable foundation manifest.

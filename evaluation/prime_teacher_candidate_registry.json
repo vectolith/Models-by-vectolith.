@@ -1,6 +1,6 @@
 {
   "schema_version": "vectolith-prime-teacher-registry/1.0",
-  "role": "core_prime",
+  "role": "ash_prime",
   "training_started": false,
   "contributors": [
     {

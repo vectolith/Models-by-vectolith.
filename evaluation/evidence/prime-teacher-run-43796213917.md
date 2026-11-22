@@ -1,10 +1,10 @@
-# Core Prime teacher response evidence — workflow run 43796213917
+# ASH PRIME teacher response evidence — workflow run 43796213917
 
 Captured from GitHub Actions workflow run [#40](https://github.com/vectolith/Models-by-vectolith./actions/runs/43796213917), on branch `evaluation/expanded-balanced-qualification-v3-mainline`, head `2feabd8ece3dc6ce7034d2903a8e3d6b6edc441f`, on 2026-11-16. The workflow's overall conclusion is **failure** because the separate SmolLM3 snapshot job failed; the five jobs listed below completed successfully and produced real response artifacts.
 
 ## Evaluation coverage and integrity
 
-Each successful run used the same 180-case Core Prime public suite set:
+Each successful run used the same 180-case ASH PRIME public suite set:
 
 - `prime_benchmark_v1.jsonl`: 12 cases
 - `prime_qualification_v2.jsonl`: 20 cases
@@ -60,7 +60,7 @@ The archive digest from GitHub's artifact API was independently reproduced by ha
 
 ## Subsequent preserved multi-teacher runs 42 and 43
 
-The later [run #42](https://github.com/vectolith/Models-by-vectolith./actions/runs/43820188813) (branch `add-qwen25-7b-to-expanded-intake`) and [latest run #43](https://github.com/vectolith/Models-by-vectolith./actions/runs/43821046671) (branch `audit-candidate-weight-memory-2026-11-16`) repeated the same immutable v1-v4 curriculum. Both workflow runs concluded **failure** because their separate SmolLM3 snapshot job hit the same missing-license-file gate. In both runs, all three existing Core Prime teacher jobs, LFM2.5, and Phi-4 completed successfully and uploaded real response artifacts.
+The later [run #42](https://github.com/vectolith/Models-by-vectolith./actions/runs/43820188813) (branch `add-qwen25-7b-to-expanded-intake`) and [latest run #43](https://github.com/vectolith/Models-by-vectolith./actions/runs/43821046671) (branch `audit-candidate-weight-memory-2026-11-16`) repeated the same immutable v1-v4 curriculum. Both workflow runs concluded **failure** because their separate SmolLM3 snapshot job hit the same missing-license-file gate. In both runs, all three existing ASH PRIME teacher jobs, LFM2.5, and Phi-4 completed successfully and uploaded real response artifacts.
 
 ### Run/job and response counts
 
@@ -116,7 +116,7 @@ The SmolLM3-3B job failed in the same snapshot-resolution step in runs 40, 42, a
 
 ## New-candidate rights-capture evidence
 
-The separate [Core Prime runtime and evaluation workflow run](https://github.com/vectolith/Models-by-vectolith./actions/runs/44310409690) completed its `teacher-rights-capture` job `134822758989` successfully and uploaded [`core-prime-teacher-rights-capture` artifact #14429024357](https://api.github.com/repos/vectolith/Models-by-vectolith./actions/artifacts/14429024357/zip). Its ZIP SHA-256 is `ccfc6dc589a3519e4a6a6497059a8382f5a1b85c0a9e361285e6c7436bbf2c1c`. The manifest records nine captures, zero capture failures, no weight downloads and no inference performed by the rights-capture job.
+The separate [ASH PRIME runtime and evaluation workflow run](https://github.com/vectolith/Models-by-vectolith./actions/runs/44310409690) completed its `teacher-rights-capture` job `134822758989` successfully and uploaded [`ash-prime-teacher-rights-capture` artifact #14429024357](https://api.github.com/repos/vectolith/Models-by-vectolith./actions/artifacts/14429024357/zip). Its ZIP SHA-256 is `ccfc6dc589a3519e4a6a6497059a8382f5a1b85c0a9e361285e6c7436bbf2c1c`. The manifest records nine captures, zero capture failures, no weight downloads and no inference performed by the rights-capture job.
 
 - Qwen3.5-2B teacher: exact revision `5bf1871105527bed0f47e8fa941d2fc5170f7b1d`; repository LICENSE SHA-256 `bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a`.
 - Gemma 4 E2B IT: exact revision `4adf15748de9e1a0097b6274cee9c15836c41c37`; official Google license reference SHA-256 `870b0d58d4697272e59d97fddf9447d163b922ad2582cf76226bc953840dfec6`; repository has no LICENSE file, so the official publisher reference and separately captured SPDX Apache-2.0 text are retained.
@@ -129,11 +129,11 @@ The independent local-grader smoke on PR #73 also passed: it loaded Qwen3.5-2B a
 
 ## Qualification and training status
 
-These artifacts preserve additive teacher responses; they do not rank, select or discard a teacher. The three existing teachers remain additive. All recorded evaluation artifacts state `grading=human_review_required`, `license_review=pending_human_legal_review`, `training_output_permission=not_verified`, `teacher_qualification=not_qualified`, and `training_started=false`. Core Prima remains paused. No training, distillation or model release is evidenced by these runs.
+These artifacts preserve additive teacher responses; they do not rank, select or discard a teacher. The three existing teachers remain additive. All recorded evaluation artifacts state `grading=human_review_required`, `license_review=pending_human_legal_review`, `training_output_permission=not_verified`, `teacher_qualification=not_qualified`, and `training_started=false`. FYR PRIMA remains paused. No training, distillation or model release is evidenced by these runs.
 
 ## Follow-up test fixes and verification on open PRs
 
-- PR #76: corrected the stale registry test that expected the LFM2.5 revision to be null; it now asserts the exact pinned SHA `7141b56cd4650af95c7c7b86983443aed050c96a`. The latest [Core Prime runtime and evaluation tests #520](https://github.com/vectolith/Models-by-vectolith./actions/runs/44311872306) passed 110 tests (3 skipped), including both v4 tests; [Vectolith Runtime #349](https://github.com/vectolith/Models-by-vectolith./actions/runs/44311872304) passed 84 tests.
-- PR #73: corrected the model-card frontmatter test fixture, which used literal backslash-n characters instead of newline characters. [Core Prime runtime and evaluation tests #517](https://github.com/vectolith/Models-by-vectolith./actions/runs/44310409690) passed 114 tests (3 skipped); its teacher-rights-capture job captured 9 candidates with zero capture failures, and its local-grader-smoke job passed. [Vectolith Runtime #346](https://github.com/vectolith/Models-by-vectolith./actions/runs/44310409498) passed 81 tests.
+- PR #76: corrected the stale registry test that expected the LFM2.5 revision to be null; it now asserts the exact pinned SHA `7141b56cd4650af95c7c7b86983443aed050c96a`. The latest [ASH PRIME runtime and evaluation tests #520](https://github.com/vectolith/Models-by-vectolith./actions/runs/44311872306) passed 110 tests (3 skipped), including both v4 tests; [Vectolith Runtime #349](https://github.com/vectolith/Models-by-vectolith./actions/runs/44311872304) passed 84 tests.
+- PR #73: corrected the model-card frontmatter test fixture, which used literal backslash-n characters instead of newline characters. [ASH PRIME runtime and evaluation tests #517](https://github.com/vectolith/Models-by-vectolith./actions/runs/44310409690) passed 114 tests (3 skipped); its teacher-rights-capture job captured 9 candidates with zero capture failures, and its local-grader-smoke job passed. [Vectolith Runtime #346](https://github.com/vectolith/Models-by-vectolith./actions/runs/44310409498) passed 81 tests.
 - The local-grader smoke used a synthetic blinded test row and Qwen3.5-2B at grader-only revision `15852e8c16360a2fea060d615a32b45270f8a8fc` on CPU/BF16. It is not a Qwen teacher response, not a human grade, and not candidate qualification evidence.
 - PR #33 is already closed and merged (2026-11-16T03:11:17Z, merge commit `fdf6b6a3066558901c7e69255dcfb906266789c0`). No attempt was made to merge or reopen it. The active evidence and validation updates are on open PR #76; the rights-capture test correction is on open PR #73.

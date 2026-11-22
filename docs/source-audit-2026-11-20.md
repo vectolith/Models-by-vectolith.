@@ -12,7 +12,7 @@ Scope: source-level inspection of the live `main` snapshot at commit `8d501088a8
 - Dataset splitting and tokenization: `distillation_training.py`; deterministic prompt-group split and response-only loss masking.
 - Holdout evidence validators: `protected_holdout.py`; validates evidence metadata/results, not holdout truth or custody by itself.
 - Training preflight: `training_preflight.py`; evidence checks precede training dependencies.
-- Experiment trainer and release evidence verifier: `experiments/core-prime/001/train_lora.py`, `evaluation_gate.py`, `verify_release_bundle.py`.
+- Experiment trainer and release evidence verifier: `experiments/ash-prime/001/train_lora.py`, `evaluation_gate.py`, `verify_release_bundle.py`.
 - Evaluation observation runner: `evaluation/run_eval.py`; captures outputs and provenance but is not itself independent semantic grading.
 
 ## Verified limitations / risks

@@ -1,0 +1,28 @@
+name: ASH PRIME PocketPal packaging
+
+on:
+  pull_request:
+    paths:
+      - "mobile/pocketpal/**"
+  push:
+    branches: [main]
+    paths:
+      - "mobile/pocketpal/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verifier-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run verifier unit tests
+        run: python -m unittest discover -s mobile/pocketpal/tests -v
+      - name: CLI smoke test
+        run: |
+          python mobile/pocketpal/verify_gguf.py --help

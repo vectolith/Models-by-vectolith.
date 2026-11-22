@@ -19,7 +19,7 @@ Every candidate must be tested on the same vectolith teacher suite and measured 
 
 Reject a candidate that is cheap but produces weak or low-quality targets. Reject a candidate whose total storage or serving requirements make its claimed active-parameter efficiency impractical for the chosen host.
 
-## Candidates for Core Prime
+## Candidates for ASH PRIME
 
 | Candidate | Evidence from official model card | Why evaluate it | Main cost or risk |
 |---|---|---|---|
@@ -28,7 +28,7 @@ Reject a candidate that is cheap but produces weak or low-quality targets. Rejec
 | Qwen Qwen3.8-27B | Apache 2.0; 27B dense; 262K native context; published coding, agentic and instruction-following evaluations | Broad generalist, long-horizon reasoning and cross-domain teacher | Dense 27B memory footprint; vendor-reported scores require reproduction |
 | DeepSeek V4.1 Flash | MIT license; official card exposes Transformers, vLLM and SGLang paths | Independent reasoning and multimodal perspective | Full memory/precision requirements and training-output terms must be verified from exact revision |
 
-## Candidates for Core Prima
+## Candidates for FYR PRIMA
 
 | Candidate | Evidence from official model card | Why evaluate it | Main cost or risk |
 |---|---|---|---|

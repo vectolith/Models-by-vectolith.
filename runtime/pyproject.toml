@@ -12,7 +12,7 @@ dependencies = ["jsonschema>=4.23,<5", "PyYAML>=6.0"]
 
 [project.scripts]
 vectolith-runtime = "vectolith_runtime.cli:main"
-core-prime = "vectolith_runtime.core_prime_cli:main"
+ash-prime = "vectolith_runtime.ash_prime_cli:main"
 
 [project.optional-dependencies]
 training = ["torch>=2.4", "transformers>=4.45", "datasets>=3.0", "peft>=0.13", "accelerate>=1.0"]

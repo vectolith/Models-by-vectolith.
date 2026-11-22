@@ -18,7 +18,7 @@ class HoldoutAuthorizationTests(unittest.TestCase):
         self.secret="test-only-secret"
         now=datetime.now(timezone.utc)
         self.payload={"dataset_version":"holdout-v1","dataset_sha256":"a"*64,
-            "candidate_id":"candidate-a","model_revision":"b"*40,"role":"core_prime",
+            "candidate_id":"candidate-a","model_revision":"b"*40,"role":"ash_prime",
             "principal_id":"custodian-approved-runner","run_id":"run-001",
             "issued_at":now.isoformat(),"expires_at":(now+timedelta(minutes=10)).isoformat()}
         self.token=self.root/"authorization.token"; signed_token(self.token,self.secret,self.payload)

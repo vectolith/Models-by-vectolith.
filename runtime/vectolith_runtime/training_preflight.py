@@ -1,4 +1,4 @@
-"""Evidence gates for Core Prime training preflight; no training dependencies imported."""
+"""Evidence gates for ASH PRIME training preflight; no training dependencies imported."""
 from __future__ import annotations
 import hashlib, json, math, re
 from datetime import datetime
@@ -112,8 +112,8 @@ def validate_training_dataset_rows(rows: list[dict[str, Any]], teacher_revisions
             continue
         if row.get("schema_version") != "1.0":
             errors.append(f"{prefix}: unsupported corpus schema_version")
-        if row.get("student_model_id") != "core-prime":
-            errors.append(f"{prefix}: student_model_id must be core-prime")
+        if row.get("student_model_id") != "ash-prime":
+            errors.append(f"{prefix}: student_model_id must be ash-prime")
         if row.get("accepted") is not True:
             errors.append(f"{prefix}: row is not accepted")
         teacher_id = row["teacher_id"]
@@ -230,7 +230,7 @@ def validate_training_execution_manifest(
         return ["unsupported_or_missing_training_execution_schema"]
     if manifest.get("status")!="approved": errors.append("training execution is not approved")
     bindings={
-        "student_model_id":"core-prime",
+        "student_model_id":"ash-prime",
         "foundation_model":foundation_model,
         "foundation_revision":foundation_revision,
         "dataset_sha256":dataset_sha256,

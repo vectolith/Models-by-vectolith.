@@ -83,7 +83,7 @@ def main() -> int:
             raise RuntimeError(f"{case['id']}: checkpoint produced no visible output")
         results.append({
             "suite": str(suite),
-            "role": "core_prima" if suite.name.startswith("prima") else "core_prime",
+            "role": "fyr_prima" if suite.name.startswith("prima") else "ash_prime",
             "case_id": case["id"],
             "category": case.get("category", "uncategorized"),
             "prompt_sha256": prompt_hash(case["messages"]),

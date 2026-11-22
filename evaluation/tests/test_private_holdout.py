@@ -31,7 +31,7 @@ class PrivateHoldoutTests(unittest.TestCase):
             "sha256": digest,
             "case_count": 1,
             "access_control": "restricted",
-            "authorized_roles": ["core_prime"],
+            "authorized_roles": ["ash_prime"],
         }), encoding="utf-8")
         if os.name == "posix":
             self.suite.chmod(0o600)
@@ -43,19 +43,19 @@ class PrivateHoldoutTests(unittest.TestCase):
     def test_accepts_external_hash_pinned_restricted_suite(self):
         digest = hashlib.sha256(self.suite.read_bytes()).hexdigest()
         cases, metadata = load_private_holdout(
-            self.suite, self.manifest, digest, "holdout-2026-01", "core_prime"
+            self.suite, self.manifest, digest, "holdout-2026-01", "ash_prime"
         )
         self.assertEqual(len(cases), 1)
         self.assertEqual(metadata["dataset_version"], "holdout-2026-01")
 
     def test_rejects_wrong_hash(self):
         with self.assertRaisesRegex(ValueError, "SHA-256"):
-            load_private_holdout(self.suite, self.manifest, "0" * 64, "holdout-2026-01", "core_prime")
+            load_private_holdout(self.suite, self.manifest, "0" * 64, "holdout-2026-01", "ash_prime")
 
     def test_rejects_unauthorized_role(self):
         digest = hashlib.sha256(self.suite.read_bytes()).hexdigest()
         with self.assertRaisesRegex(ValueError, "not authorized"):
-            load_private_holdout(self.suite, self.manifest, digest, "holdout-2026-01", "core_prima")
+            load_private_holdout(self.suite, self.manifest, digest, "holdout-2026-01", "fyr_prima")
 
     def test_rejects_unrestricted_manifest(self):
         digest = hashlib.sha256(self.suite.read_bytes()).hexdigest()
@@ -65,7 +65,7 @@ class PrivateHoldoutTests(unittest.TestCase):
         if os.name == "posix":
             self.manifest.chmod(0o600)
         with self.assertRaisesRegex(ValueError, "access_control=restricted"):
-            load_private_holdout(self.suite, self.manifest, digest, "holdout-2026-01", "core_prime")
+            load_private_holdout(self.suite, self.manifest, digest, "holdout-2026-01", "ash_prime")
 
 
 if __name__ == "__main__":

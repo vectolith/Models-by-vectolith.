@@ -56,7 +56,7 @@ def download_verified_artifact(
     headers = {
         "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
-        "User-Agent": "vectolith-core-prime-historical-review-preparation",
+        "User-Agent": "vectolith-ash-prime-historical-review-preparation",
     }
     if token:
         headers["Authorization"] = f"Bearer {token}"

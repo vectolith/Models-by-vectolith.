@@ -13,7 +13,7 @@ class RegistryTests(unittest.TestCase):
  def test_no_available_model_is_not_assumed(self):
   self.assertEqual(route(self.registry,["reasoning"]),[])
  def test_delegate_allowlist(self):
-  self.assertEqual(delegation_targets(self.registry,"core-prima",available_ids=["core-code","core-research","core-creative"]),["core-code","core-research"])
+  self.assertEqual(delegation_targets(self.registry,"fyr-prima",available_ids=["core-code","core-research","core-creative"]),["core-code","core-research"])
  def test_unknown_delegate_rejected(self):
   bad=json.loads(json.dumps(self.registry));bad["models"][0]["delegates_to"]=["missing"]
   with self.assertRaises(RegistryError):validate_registry(bad)
@@ -23,17 +23,17 @@ class RegistryTests(unittest.TestCase):
  def test_capability_route_requires_full_set(self):
   self.assertEqual(route(self.registry,["testing","code_review","deployment_verification"],available_ids=["core-code"]),[])
  def test_prime_capability_contract(self):
-  prime=next(m for m in self.registry["models"] if m["id"]=="core-prime")
+  prime=next(m for m in self.registry["models"] if m["id"]=="ash-prime")
   required={"task_intake","requirements_elicitation","multi_step_planning","adaptive_routing","result_integration","verification"}
   self.assertTrue(required.issubset(set(prime["capabilities"])))
   self.assertTrue(prime["profile"]["workflow"])
  def test_prima_capability_contract(self):
-  prima=next(m for m in self.registry["models"] if m["id"]=="core-prima")
+  prima=next(m for m in self.registry["models"] if m["id"]=="fyr-prima")
   required={"repository_inspection","code_generation","debugging","test_execution","ci_diagnosis","reproducibility","engineering_evidence_capture"}
   self.assertTrue(required.issubset(set(prima["capabilities"])))
   self.assertTrue(prima["profile"]["workflow"])
  def test_orchestrator_delegation_allowlists_are_defined(self):
-  for model_id in ("core-prime","core-prima"):
+  for model_id in ("ash-prime","fyr-prima"):
    model=next(m for m in self.registry["models"] if m["id"]==model_id)
    self.assertTrue(model["delegates_to"])
    self.assertTrue(model["limits"])

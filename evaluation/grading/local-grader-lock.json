@@ -21,7 +21,7 @@
     "do_sample": false,
     "thinking_mode": false
   },
-  "prompt_version": "core-prime-semantic-grader-v2-local",
+  "prompt_version": "ash-prime-semantic-grader-v2-local",
   "output_contract": "strict_json_parsed_and_rubric_validated",
   "remote_api": false,
   "credentials_required": false,

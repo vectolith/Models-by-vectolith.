@@ -2,7 +2,7 @@
 
 ## Decision
 
-Every student model in Models by vectolith MUST be taught by a panel of at least four qualified teacher models. This applies to Core Prime, Core Prima, and every future model family member. All four or more teachers assigned to a student MUST make a measurable contribution to that student's training. A teacher panel is not satisfied by listing four candidates, querying only one teacher, or using the others as optional fallbacks.
+Every student model in Models by vectolith MUST be taught by a panel of at least four qualified teacher models. This applies to ASH PRIME, FYR PRIMA, and every future model family member. All four or more teachers assigned to a student MUST make a measurable contribution to that student's training. A teacher panel is not satisfied by listing four candidates, querying only one teacher, or using the others as optional fallbacks.
 
 Teachers are training-time contributors. A released student MUST perform its declared capabilities independently and MUST NOT require, call, route to, or depend on its former teachers during ordinary inference or task execution.
 
@@ -10,7 +10,7 @@ This is a multi-teacher knowledge-distillation architecture, not a permanent ens
 
 ## 1. Student and teacher separation
 
-- A **student** is a vectolith model being trained and released: Core Prime, Core Prima, or a future registered model.
+- A **student** is a vectolith model being trained and released: ASH PRIME, FYR PRIMA, or a future registered model.
 - A **teacher** is an independently developed model temporarily used to generate, critique, verify, explain, or demonstrate training targets.
 - A **teacher panel** is the minimum four distinct teacher models assigned to one student for a defined training run.
 - A **training contribution** is a traceable, quality-controlled artifact from a teacher that is incorporated into the student's training corpus or optimization process.
@@ -42,9 +42,9 @@ A panel may contain more than four teachers. Four is the floor, not a ceiling.
 
 The following are initial candidate pools for evaluation, not final appointments or a claim that they have already taught the students. The exact checkpoint and immutable revision must be recorded. Candidates may be replaced if they fail quality, license, access, cost, latency, or compatibility gates.
 
-### Core Prime — general intelligence
+### ASH PRIME — general intelligence
 
-Core Prime's panel must collectively cover general reasoning, knowledge synthesis, instruction following, planning, global-English communication, multilingual comprehension, explanation, and uncertainty calibration.
+ASH PRIME's panel must collectively cover general reasoning, knowledge synthesis, instruction following, planning, global-English communication, multilingual comprehension, explanation, and uncertainty calibration.
 
 Initial candidates to benchmark:
 
@@ -53,9 +53,9 @@ Initial candidates to benchmark:
 3. **Google Gemma 4 31B** — independent generalist and multimodal perspective, language and knowledge tasks. The exact checkpoint and applicable license must be verified before use.
 4. **DeepSeek-V4.1-Flash** — reasoning, mathematical and multilingual examples, plus a distinct architecture and efficient active-compute profile. Model card: https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash
 
-### Core Prima — engineering and execution
+### FYR PRIMA — engineering and execution
 
-Core Prima's panel must collectively cover software architecture, code generation, debugging, testing, mathematics, repository-level changes, tool calling, terminal workflows, planning, and verified task completion.
+FYR PRIMA's panel must collectively cover software architecture, code generation, debugging, testing, mathematics, repository-level changes, tool calling, terminal workflows, planning, and verified task completion.
 
 Initial candidates to benchmark:
 
@@ -111,7 +111,7 @@ A student is not considered taught merely because training completed. Before rel
 - ablations confirm meaningful contributions from every teacher;
 - reproducibility, provenance, security and license checks pass.
 
-The model-family runtime maintained in this repository may use explicitly registered peer models when a model-family workflow calls for it. That is separate from teacher dependence: a released student must never need its former training teachers to function. Core Prime and Core Prima may communicate through the family task contract defined here, but neither may silently substitute an external teacher for its own missing capability. No external Vectolith product or shared runtime is required.
+The model-family runtime maintained in this repository may use explicitly registered peer models when a model-family workflow calls for it. That is separate from teacher dependence: a released student must never need its former training teachers to function. ASH PRIME and FYR PRIMA may communicate through the family task contract defined here, but neither may silently substitute an external teacher for its own missing capability. No external Vectolith product or shared runtime is required.
 
 ## 7. Future model onboarding
 

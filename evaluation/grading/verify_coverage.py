@@ -28,7 +28,7 @@ def verify_coverage(expected: Iterable[dict[str, str]], grades: Iterable[dict[st
 def validate_grade_record(record: dict[str, Any]) -> None:
     required = {"schema_version", "inference_run_id", "candidate_id", "candidate_revision", "source_artifact_sha256", "case_id", "response_sha256", "rubric_sha256", "rubric_version", "grader", "criteria", "score", "graded_at"}
     if not isinstance(record, dict) or set(record) != required: raise ValueError("grade record fields do not match strict schema")
-    if record["schema_version"] != "vectolith-core-prime-grade/1.0": raise ValueError("unsupported grade schema")
+    if record["schema_version"] != "vectolith-ash-prime-grade/1.0": raise ValueError("unsupported grade schema")
     for key in ("candidate_id", "case_id", "inference_run_id", "rubric_version", "graded_at"):
         if not isinstance(record[key], str) or not record[key].strip(): raise ValueError(f"{key} is required")
     if not isinstance(record["candidate_revision"], str) or not REVISION_SHA.fullmatch(record["candidate_revision"]):

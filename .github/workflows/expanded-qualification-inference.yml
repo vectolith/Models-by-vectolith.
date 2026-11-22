@@ -1,4 +1,4 @@
-name: Core Prime sequential multi-teacher inference evidence
+name: ASH PRIME sequential multi-teacher inference evidence
 
 on:
   workflow_dispatch:
@@ -10,7 +10,7 @@ on:
         default: false
 
 concurrency:
-  group: core-prime-inference-${{ github.event.pull_request.number || github.ref }}
+  group: ash-prime-inference-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -19,7 +19,7 @@ permissions:
 jobs:
   granite31:
     if: ${{ inputs.run_qualification == true }}
-    name: Granite 3.1 3B-A800M / Core Prime
+    name: Granite 3.1 3B-A800M / ASH PRIME
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
@@ -37,22 +37,22 @@ jobs:
         run: |
           mkdir -p artifacts/evaluations
           set -o pipefail
-          python evaluation/run_real_candidate_eval.py --repo ibm-granite/granite-3.1-3b-a800m-instruct --revision a02780686e08a03fe0d2679a293b5c74a90efa89 --family "IBM Granite" --candidate-id granite-3.1-3b-a800m --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/granite-3.1-3b-a800m-core_prime.json 2>&1 | tee artifacts/evaluations/granite-3.1-3b-a800m-core_prime.log
+          python evaluation/run_real_candidate_eval.py --repo ibm-granite/granite-3.1-3b-a800m-instruct --revision a02780686e08a03fe0d2679a293b5c74a90efa89 --family "IBM Granite" --candidate-id granite-3.1-3b-a800m --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/granite-3.1-3b-a800m-ash_prime.json 2>&1 | tee artifacts/evaluations/granite-3.1-3b-a800m-ash_prime.log
       - name: Preserve raw evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: prime-teacher-granite-3.1-3b-a800m
           path: |
-            artifacts/evaluations/granite-3.1-3b-a800m-core_prime.json
-            artifacts/evaluations/granite-3.1-3b-a800m-core_prime.jsonl
-            artifacts/evaluations/granite-3.1-3b-a800m-core_prime.log
+            artifacts/evaluations/granite-3.1-3b-a800m-ash_prime.json
+            artifacts/evaluations/granite-3.1-3b-a800m-ash_prime.jsonl
+            artifacts/evaluations/granite-3.1-3b-a800m-ash_prime.log
             artifacts/compute/granite-3.1-3b-a800m-runner.json
           if-no-files-found: warn
           retention-days: 90
 
   granite42:
-    name: Granite 4.2 3B / Core Prime
+    name: Granite 4.2 3B / ASH PRIME
     needs: granite31
     if: ${{ inputs.run_qualification == true && needs.granite31.result == 'success' }}
     runs-on: ubuntu-latest
@@ -72,22 +72,22 @@ jobs:
         run: |
           mkdir -p artifacts/evaluations
           set -o pipefail
-          python evaluation/run_real_candidate_eval.py --repo ibm-granite/granite-4.2-3b --revision 4e9c275e232f10211ec88644d106a1f6a1b60e06 --family "IBM Granite" --candidate-id granite-4.2-3b --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/granite-4.2-3b-core_prime.json 2>&1 | tee artifacts/evaluations/granite-4.2-3b-core_prime.log
+          python evaluation/run_real_candidate_eval.py --repo ibm-granite/granite-4.2-3b --revision 4e9c275e232f10211ec88644d106a1f6a1b60e06 --family "IBM Granite" --candidate-id granite-4.2-3b --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/granite-4.2-3b-ash_prime.json 2>&1 | tee artifacts/evaluations/granite-4.2-3b-ash_prime.log
       - name: Preserve raw evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: prime-teacher-granite-4.2-3b
           path: |
-            artifacts/evaluations/granite-4.2-3b-core_prime.json
-            artifacts/evaluations/granite-4.2-3b-core_prime.jsonl
-            artifacts/evaluations/granite-4.2-3b-core_prime.log
+            artifacts/evaluations/granite-4.2-3b-ash_prime.json
+            artifacts/evaluations/granite-4.2-3b-ash_prime.jsonl
+            artifacts/evaluations/granite-4.2-3b-ash_prime.log
             artifacts/compute/granite-4.2-3b-runner.json
           if-no-files-found: warn
           retention-days: 90
 
   minicpm5:
-    name: MiniCPM5 2B / Core Prime
+    name: MiniCPM5 2B / ASH PRIME
     needs: granite42
     if: ${{ inputs.run_qualification == true && needs.granite42.result == 'success' }}
     runs-on: ubuntu-latest
@@ -107,22 +107,22 @@ jobs:
         run: |
           mkdir -p artifacts/evaluations
           set -o pipefail
-          python evaluation/run_real_candidate_eval.py --repo openbmb/MiniCPM5-2B --revision 42433e90dad95123ab87729fd7011e7110629556 --family "OpenBMB MiniCPM" --candidate-id minicpm5-2b --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/minicpm5-2b-core_prime.json 2>&1 | tee artifacts/evaluations/minicpm5-2b-core_prime.log
+          python evaluation/run_real_candidate_eval.py --repo openbmb/MiniCPM5-2B --revision 42433e90dad95123ab87729fd7011e7110629556 --family "OpenBMB MiniCPM" --candidate-id minicpm5-2b --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/minicpm5-2b-ash_prime.json 2>&1 | tee artifacts/evaluations/minicpm5-2b-ash_prime.log
       - name: Preserve raw evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: prime-teacher-minicpm5-2b
           path: |
-            artifacts/evaluations/minicpm5-2b-core_prime.json
-            artifacts/evaluations/minicpm5-2b-core_prime.jsonl
-            artifacts/evaluations/minicpm5-2b-core_prime.log
+            artifacts/evaluations/minicpm5-2b-ash_prime.json
+            artifacts/evaluations/minicpm5-2b-ash_prime.jsonl
+            artifacts/evaluations/minicpm5-2b-ash_prime.log
             artifacts/compute/minicpm5-2b-runner.json
           if-no-files-found: warn
           retention-days: 90
 
   smollm3:
-    name: SmolLM3-3B / snapshot + Core Prime
+    name: SmolLM3-3B / snapshot + ASH PRIME
     needs: minicpm5
     if: ${{ inputs.run_qualification == true && needs.minicpm5.result == 'success' }}
     runs-on: ubuntu-latest
@@ -144,7 +144,7 @@ jobs:
           set -o pipefail
           REVISION=$(python -c "import json; print(json.load(open('artifacts/snapshots/smollm3-3b.json'))['immutable_revision'])")
           python evaluation/probe_compute.py --output artifacts/compute/smollm3-3b-runner.json
-          python evaluation/run_real_candidate_eval.py --repo HuggingFaceTB/SmolLM3-3B --revision "$REVISION" --family "HuggingFaceTB SmolLM3" --candidate-id smollm3-3b --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/smollm3-3b-core_prime.json 2>&1 | tee artifacts/evaluations/smollm3-3b-core_prime.log
+          python evaluation/run_real_candidate_eval.py --repo HuggingFaceTB/SmolLM3-3B --revision "$REVISION" --family "HuggingFaceTB SmolLM3" --candidate-id smollm3-3b --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/smollm3-3b-ash_prime.json 2>&1 | tee artifacts/evaluations/smollm3-3b-ash_prime.log
       - name: Preserve snapshot manifest and raw evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -153,14 +153,14 @@ jobs:
           path: |
             artifacts/snapshots/smollm3-3b.json
             artifacts/compute/smollm3-3b-runner.json
-            artifacts/evaluations/smollm3-3b-core_prime.json
-            artifacts/evaluations/smollm3-3b-core_prime.jsonl
-            artifacts/evaluations/smollm3-3b-core_prime.log
+            artifacts/evaluations/smollm3-3b-ash_prime.json
+            artifacts/evaluations/smollm3-3b-ash_prime.jsonl
+            artifacts/evaluations/smollm3-3b-ash_prime.log
           if-no-files-found: warn
           retention-days: 90
 
   lfm25:
-    name: LFM2.5-2.6B / snapshot + Core Prime
+    name: LFM2.5-2.6B / snapshot + ASH PRIME
     needs: smollm3
     if: ${{ inputs.run_qualification == true && needs.smollm3.result == 'success' }}
     runs-on: ubuntu-latest
@@ -182,7 +182,7 @@ jobs:
           set -o pipefail
           REVISION=$(python -c "import json; print(json.load(open('artifacts/snapshots/lfm2.5-2.6b.json'))['immutable_revision'])")
           python evaluation/probe_compute.py --output artifacts/compute/lfm2.5-2.6b-runner.json
-          python evaluation/run_real_candidate_eval.py --repo LiquidAI/LFM2.5-2.6B --revision "$REVISION" --family "LiquidAI LFM2.5" --candidate-id lfm2.5-2.6b --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/lfm2.5-2.6b-core_prime.json 2>&1 | tee artifacts/evaluations/lfm2.5-2.6b-core_prime.log
+          python evaluation/run_real_candidate_eval.py --repo LiquidAI/LFM2.5-2.6B --revision "$REVISION" --family "LiquidAI LFM2.5" --candidate-id lfm2.5-2.6b --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/lfm2.5-2.6b-ash_prime.json 2>&1 | tee artifacts/evaluations/lfm2.5-2.6b-ash_prime.log
       - name: Preserve snapshot manifest and raw evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -191,14 +191,14 @@ jobs:
           path: |
             artifacts/snapshots/lfm2.5-2.6b.json
             artifacts/compute/lfm2.5-2.6b-runner.json
-            artifacts/evaluations/lfm2.5-2.6b-core_prime.json
-            artifacts/evaluations/lfm2.5-2.6b-core_prime.jsonl
-            artifacts/evaluations/lfm2.5-2.6b-core_prime.log
+            artifacts/evaluations/lfm2.5-2.6b-ash_prime.json
+            artifacts/evaluations/lfm2.5-2.6b-ash_prime.jsonl
+            artifacts/evaluations/lfm2.5-2.6b-ash_prime.log
           if-no-files-found: warn
           retention-days: 90
 
   phi4mini:
-    name: Phi-4-mini-instruct / snapshot + Core Prime
+    name: Phi-4-mini-instruct / snapshot + ASH PRIME
     needs: lfm25
     if: ${{ inputs.run_qualification == true && needs.lfm25.result == 'success' }}
     runs-on: ubuntu-latest
@@ -220,7 +220,7 @@ jobs:
           set -o pipefail
           REVISION=$(python -c "import json; print(json.load(open('artifacts/snapshots/phi-4-mini-instruct.json'))['immutable_revision'])")
           python evaluation/probe_compute.py --output artifacts/compute/phi-4-mini-instruct-runner.json
-          python evaluation/run_real_candidate_eval.py --repo microsoft/Phi-4-mini-instruct --revision "$REVISION" --family "Microsoft Phi-4" --candidate-id phi-4-mini-instruct --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/phi-4-mini-instruct-core_prime.json 2>&1 | tee artifacts/evaluations/phi-4-mini-instruct-core_prime.log
+          python evaluation/run_real_candidate_eval.py --repo microsoft/Phi-4-mini-instruct --revision "$REVISION" --family "Microsoft Phi-4" --candidate-id phi-4-mini-instruct --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/phi-4-mini-instruct-ash_prime.json 2>&1 | tee artifacts/evaluations/phi-4-mini-instruct-ash_prime.log
       - name: Preserve snapshot manifest and raw evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -229,8 +229,8 @@ jobs:
           path: |
             artifacts/snapshots/phi-4-mini-instruct.json
             artifacts/compute/phi-4-mini-instruct-runner.json
-            artifacts/evaluations/phi-4-mini-instruct-core_prime.json
-            artifacts/evaluations/phi-4-mini-instruct-core_prime.jsonl
-            artifacts/evaluations/phi-4-mini-instruct-core_prime.log
+            artifacts/evaluations/phi-4-mini-instruct-ash_prime.json
+            artifacts/evaluations/phi-4-mini-instruct-ash_prime.jsonl
+            artifacts/evaluations/phi-4-mini-instruct-ash_prime.log
           if-no-files-found: warn
           retention-days: 90

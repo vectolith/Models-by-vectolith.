@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Resolve and snapshot an additive Core Prime teacher at an immutable Hub revision."""
+"""Resolve and snapshot an additive ASH PRIME teacher at an immutable Hub revision."""
 from __future__ import annotations
 
 import argparse

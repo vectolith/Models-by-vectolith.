@@ -1,7 +1,7 @@
 # User Task Lifecycle and Completion Reporting Contract
 
 **Status:** Normative family-wide behavioural requirement  
-**Applies to:** Core Prime, Core Prima, every future vectolith model, and model-facing runtime integrations  
+**Applies to:** ASH PRIME, FYR PRIMA, every future vectolith model, and model-facing runtime integrations  
 **Contract version:** 1.0.0
 
 ## 1. Purpose

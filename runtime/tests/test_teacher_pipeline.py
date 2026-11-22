@@ -103,14 +103,14 @@ class TeacherPipelineTests(unittest.TestCase):
     def test_teaching_corpus_digest_uses_same_nul_separator_as_training_preflight(self):
         import hashlib
         from vectolith_runtime.teacher_pipeline import _digest
-        prompt = "Core Prime training prompt"
+        prompt = "ASH PRIME training prompt"
         response = "Verified teaching response"
         expected = hashlib.sha256((prompt + "\0" + response).encode("utf-8")).hexdigest()
         self.assertEqual(_digest(prompt + "\0" + response), expected)
 
     def test_generated_corpus_digest_passes_training_preflight_digest_contract(self):
         assignment = select_teacher_panel(
-            "core_prime", REV, "run-corpus",
+            "ash_prime", REV, "run-corpus",
             [candidate(i) for i in range(4)],
             required_competencies={"reasoning"},
         )
@@ -121,7 +121,7 @@ class TeacherPipelineTests(unittest.TestCase):
                 return "The invariant is preserved by each transition."
             return json.dumps({"score": 0.95, "verdict": "accept", "issues": []})
         with tempfile.TemporaryDirectory() as tmp:
-            output = Path(tmp) / "core-prime.jsonl"
+            output = Path(tmp) / "ash-prime.jsonl"
             with patch("vectolith_runtime.teacher_pipeline.OpenAICompatibleTeacher.generate", new=mocked_generate):
                 result = asyncio.run(generate_teaching_corpus(assignment, endpoints, [task], output))
             rows = [json.loads(line) for line in output.read_text(encoding="utf-8").splitlines()]
@@ -133,17 +133,17 @@ class TeacherPipelineTests(unittest.TestCase):
 
     def test_selects_four_or_more_distinct_qualified_teachers(self):
         candidates = [candidate(i, ("reasoning", "planning") if i == 0 else ("reasoning",)) for i in range(5)]
-        panel = select_teacher_panel("core_prime", REV, "run-a", candidates, required_competencies={"reasoning", "planning"})
+        panel = select_teacher_panel("ash_prime", REV, "run-a", candidates, required_competencies={"reasoning", "planning"})
         self.assertGreaterEqual(len(panel.teachers), 4)
         self.assertEqual(len({t.endpoint.teacher_id for t in panel.teachers}), len(panel.teachers))
 
     def test_refuses_fewer_than_four_qualified_teachers(self):
         with self.assertRaisesRegex(ValueError, "only 3"):
-            select_teacher_panel("core_prima", REV, "run-b", [candidate(i) for i in range(3)], required_competencies={"reasoning"})
+            select_teacher_panel("fyr_prima", REV, "run-b", [candidate(i) for i in range(3)], required_competencies={"reasoning"})
 
     def test_rejects_panel_with_missing_competency_coverage(self):
         with self.assertRaisesRegex(ValueError, "does not cover"):
-            select_teacher_panel("core_prime", REV, "run-c", [candidate(i) for i in range(4)], required_competencies={"reasoning", "multilingual"})
+            select_teacher_panel("ash_prime", REV, "run-c", [candidate(i) for i in range(4)], required_competencies={"reasoning", "multilingual"})
 
     def test_keyword_overlap_never_scores_capability(self):
         result = run_capability_suite(lambda prompt: "reasoning planning but incorrect", [
@@ -194,7 +194,7 @@ class TeacherPipelineTests(unittest.TestCase):
 
     def test_finalize_panel_requires_actual_contributions_and_ablation(self):
         assignment = select_teacher_panel(
-            "core_prime", REV, "run-final",
+            "ash_prime", REV, "run-final",
             [candidate(i) for i in range(4)],
             required_competencies={"reasoning"},
         )
@@ -206,7 +206,7 @@ class TeacherPipelineTests(unittest.TestCase):
             assignment,
             accepted_examples_by_teacher={f"teacher-{i}": 25 for i in range(4)},
             accepted_tokens_by_teacher={f"teacher-{i}": 5000 for i in range(4)},
-            dataset_shard_id="core-prime-run-final",
+            dataset_shard_id="ash-prime-run-final",
             ablation_report=report,
         )
         self.assertEqual(len(panel.teachers), 4)
@@ -216,7 +216,7 @@ class TeacherPipelineTests(unittest.TestCase):
                 assignment,
                 accepted_examples_by_teacher={f"teacher-{i}": 25 for i in range(4)},
                 accepted_tokens_by_teacher={f"teacher-{i}": 5000 for i in range(4)},
-                dataset_shard_id="core-prime-run-final",
+                dataset_shard_id="ash-prime-run-final",
                 ablation_report={"release_eligible": False, "leave_one_teacher_out_deltas": {}},
             )
 
@@ -268,7 +268,7 @@ class TeacherPipelineTests(unittest.TestCase):
         self.assertEqual(len(candidate.response_evidence[0]["response_sha256"]), 64)
 
     def test_peer_review_rejects_malformed_scores_and_issues(self):
-        assignment = select_teacher_panel("core_prime", REV, "run-review", [candidate(i) for i in range(4)], required_competencies={"reasoning"})
+        assignment = select_teacher_panel("ash_prime", REV, "run-review", [candidate(i) for i in range(4)], required_competencies={"reasoning"})
         endpoints = {teacher.endpoint.teacher_id: teacher.endpoint for teacher in assignment.teachers}
         task = TeachingTask("case-review", "reasoning", "Prompt", "Rubric")
         malformed = [

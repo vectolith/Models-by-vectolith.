@@ -25,7 +25,7 @@ One JSON object per evaluator, candidate, model revision, run, and benchmark cas
   "evidence_started_at": "2026-11-15T16:00:00+00:00",
   "candidate_id": "provider/model",
   "model_revision": "IMMUTABLE_REVISION",
-  "role": "core_prime",
+  "role": "ash_prime",
   "category": "reasoning",
   "run_id": "trial-01",
   "evaluator_id": "reviewer-01",
@@ -66,7 +66,7 @@ The output retains criterion-level means, population standard deviation, case co
 - Public benchmark fixtures are public and must not be represented as secret or contamination-proof holdouts.
 
 
-## Core Prime qualification gate
+## ASH PRIME qualification gate
 
 The qualification gate requires complete coverage of the expected response set by at least two distinct independent human reviewers. It binds the grading report and rubric version, reviewer-independence attestation, inter-grader agreement report, and adjudication report (including a documented no-disagreement disposition where applicable). Machine-only or single-pass AI grading does not satisfy the gate.
 

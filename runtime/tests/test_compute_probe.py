@@ -131,7 +131,7 @@ class ResourceProbeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             payload = compute_probe.collect_resource_probe(tmp)
             self.assertTrue(Path(payload["storage"]["path"]).is_dir())
-        self.assertEqual(payload["schema_version"], "vectolith-core-prime-resource-probe/1.0")
+        self.assertEqual(payload["schema_version"], "vectolith-ash-prime-resource-probe/1.0")
         self.assertEqual(payload["resource_probe_sha256"], _digest(payload))
         self.assertGreater(payload["storage"]["total_bytes"], 0)
 

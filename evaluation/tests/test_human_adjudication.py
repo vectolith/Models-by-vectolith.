@@ -13,7 +13,7 @@ class HumanAdjudicationTests(unittest.TestCase):
         base = {
             "candidate_id": "blind-candidate-a",
             "model_revision": "a" * 40,
-            "role": "core_prime",
+            "role": "ash_prime",
             "run_id": "run-1",
             "benchmark_case_id": "prime-v4-case-1",
             "evidence_started_at": "2026-11-16T10:00:00+00:00",

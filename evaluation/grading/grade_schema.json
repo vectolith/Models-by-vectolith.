@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Core Prime evidence-bound criterion grade",
+  "title": "ASH PRIME evidence-bound criterion grade",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -20,7 +20,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "vectolith-core-prime-grade/1.0"
+      "const": "vectolith-ash-prime-grade/1.0"
     },
     "inference_run_id": {
       "type": "string",

@@ -1,4 +1,4 @@
-"""Collect a no-download, no-training hardware probe for Core Prime.
+"""Collect a no-download, no-training hardware probe for ASH PRIME.
 
 Run inside a Kaggle notebook after selecting the free GPU accelerator.
 This script never downloads model weights, installs packages, or starts training.
@@ -90,7 +90,7 @@ def collect_resource_probe(storage_path: str | Path | None = None) -> dict[str, 
     # Never serialize credential-bearing environment values.
     kaggle_environment.pop("KAGGLE_USER_SECRETS_TOKEN", None)
     payload: dict[str, Any] = {
-        "schema_version": "vectolith-core-prime-resource-probe/1.0",
+        "schema_version": "vectolith-ash-prime-resource-probe/1.0",
         "measured_at": datetime.now(timezone.utc).isoformat(),
         "provider": "kaggle" if Path("/kaggle").exists() or "KAGGLE_KERNEL_ID" in os.environ else "unknown",
         "environment": {
@@ -141,7 +141,7 @@ def collect_resource_probe(storage_path: str | Path | None = None) -> dict[str, 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", default="core-prime-resource-probe.json")
+    parser.add_argument("--output", default="ash-prime-resource-probe.json")
     parser.add_argument("--storage-path", default=None)
     args = parser.parse_args()
     report = collect_resource_probe(args.storage_path)

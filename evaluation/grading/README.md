@@ -1,4 +1,4 @@
-# Core Prime grading engine
+# ASH PRIME grading engine
 
 This package separates deterministic criterion checks, local semantic grading, artifact ingestion and response-coverage verification. The grading path is **local-only and offline**: it does not call a hosted model API, transmit candidate responses to an inference provider, use credentials, or start training.
 
@@ -14,7 +14,7 @@ The semantic grader is pinned in [`local-grader-lock.json`](local-grader-lock.js
 - Immutable Hub revision: `15852e8c16360a2fea060d615a32b45270f8a8fc`
 - Published model-card license: Apache-2.0; exact-revision license capture and legal review remain pending.
 - Runtime: Transformers 5.23.0 and CPU-only PyTorch; remote code disabled.
-- Prompt: `core-prime-semantic-grader-v2-local`
+- Prompt: `ash-prime-semantic-grader-v2-local`
 - No remote endpoint, credential or model substitution.
 
 This is a **provisional evaluation judge**, not a selected Vectolith foundation, teacher or training target. Its quality and CPU workload must be checked on the 30-response pilot before processing the remaining 870. A pilot mismatch or runtime failure must be recorded and investigated; do not silently change the grader. The model is not being used to generate student training examples.
@@ -107,7 +107,7 @@ python evaluation/grading/grade_run42.py \
 
 Grade each of the 29 candidate-balanced batches of 30 with the same local command, then concatenate the resulting decision JSONL files in batch order and import them using the same `--phase remaining` arguments plus `--decisions /secure/run42/remaining-decisions.jsonl` and the actual UTC `--graded-at` timestamp. The CLI verifies the completed pilot report, exact artifact hashes and unchanged grader/prompt versions before accepting the remaining phase.
 
-The historical 30-response pilot did not preserve criterion-level records; it is a comparison reference, not ground truth. This machine-assisted grading engine is not the independent human qualification gate and cannot satisfy it. Core Prime qualification requires two distinct independent human reviewers, complete response coverage, reviewer-independence attestation, agreement and adjudication evidence. Specialized factuality, executable code verification, safety review, protected holdout and corpus-integrity evidence remain separate gates.
+The historical 30-response pilot did not preserve criterion-level records; it is a comparison reference, not ground truth. This machine-assisted grading engine is not the independent human qualification gate and cannot satisfy it. ASH PRIME qualification requires two distinct independent human reviewers, complete response coverage, reviewer-independence attestation, agreement and adjudication evidence. Specialized factuality, executable code verification, safety review, protected holdout and corpus-integrity evidence remain separate gates.
 
 ## Tests
 

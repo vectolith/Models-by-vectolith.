@@ -102,8 +102,8 @@ class CandidateReportTests(unittest.TestCase):
             "generation_seconds": 20.0,
             "total_seconds": 35.0,
             "results": [
-                {"latency_seconds": 4.0, "generated_tokens": 40, "role": "core_prime"},
-                {"latency_seconds": 6.0, "generated_tokens": 60, "role": "core_prima"},
+                {"latency_seconds": 4.0, "generated_tokens": 40, "role": "ash_prime"},
+                {"latency_seconds": 6.0, "generated_tokens": 60, "role": "fyr_prima"},
             ],
         }
         summary = summarize_real_candidate_results.summarize(record)
@@ -111,7 +111,7 @@ class CandidateReportTests(unittest.TestCase):
         self.assertEqual(summary["peak_rss_gib"], 3.0)
         self.assertEqual(summary["tokens_per_second"], 5.0)
         self.assertEqual(summary["mean_case_latency_seconds"], 5.0)
-        self.assertEqual(summary["role_case_counts"], {"core_prime": 1, "core_prima": 1})
+        self.assertEqual(summary["role_case_counts"], {"ash_prime": 1, "fyr_prima": 1})
         self.assertEqual(summary["grading"], "human_review_required")
         self.assertEqual(summary["teacher_qualification"], "not_qualified")
 

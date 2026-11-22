@@ -65,7 +65,7 @@ def main() -> int:
     with raw_output.open('w',encoding='utf-8') as raw_handle:
         for suite,case in cases:
             case_started_at=datetime.now(timezone.utc).isoformat()
-            base={"suite":str(suite),"role":"core_prime","case_id":case["id"],"benchmark_case_id":case["id"],
+            base={"suite":str(suite),"role":"ash_prime","case_id":case["id"],"benchmark_case_id":case["id"],
               "candidate_id":candidate_id,"model_revision":rev,"run_id":run_id,"started_at":case_started_at,
               "recorded_at":datetime.now(timezone.utc).isoformat(),"category":case.get("category","uncategorized"),
               "prompt_sha256":prompt_hash(case["messages"]),"rubric":case.get("rubric"),

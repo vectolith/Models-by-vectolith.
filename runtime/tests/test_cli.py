@@ -13,7 +13,7 @@ class SelfcheckTests(unittest.TestCase):
         self.assertTrue(report["ok"], report["problems"])
         self.assertEqual(report["problems"], [])
         self.assertGreater(report["fixture_records"], 0)
-        self.assertEqual(report["core_prime_capabilities"], 24)
+        self.assertEqual(report["ash_prime_capabilities"], 24)
 
     def test_every_check_has_a_reason(self):
         report = selfcheck()

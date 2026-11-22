@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build identity-separated human review packages from immutable Core Prime evidence."""
+"""Build identity-separated human review packages from immutable ASH PRIME evidence."""
 from __future__ import annotations
 
 import argparse
@@ -242,8 +242,8 @@ def build_review_packages(
         seen_execution_ids.add(execution_id)
         if len(revision) != 40 or any(c not in "0123456789abcdef" for c in revision.lower()):
             raise ValueError(f"{path}: model revision is not an immutable 40-character SHA")
-        if record.get("role") not in (None, "core_prime") or any(r.get("role") != "core_prime" for r in rows):
-            raise ValueError(f"{path}: evidence is not Core Prime")
+        if record.get("role") not in (None, "ash_prime") or any(r.get("role") != "ash_prime" for r in rows):
+            raise ValueError(f"{path}: evidence is not ASH PRIME")
         if len(rows) != expected_cases:
             raise ValueError(f"{path}: expected {expected_cases} responses, received {len(rows)}")
         seen_cases = set()
@@ -264,8 +264,8 @@ def build_review_packages(
                 raise ValueError(f"{path}:{case_id}: prompt_sha256 does not match the original suite messages")
             if row.get("candidate_id") != candidate or row.get("model_revision") != revision or row.get("run_id") != run_id:
                 raise ValueError(f"{path}:{case_id}: per-response provenance disagrees with artifact metadata")
-            if row.get("role") != "core_prime":
-                raise ValueError(f"{path}:{case_id}: expected role core_prime")
+            if row.get("role") != "ash_prime":
+                raise ValueError(f"{path}:{case_id}: expected role ash_prime")
         if seen_cases != set(suites):
             missing = sorted(set(suites) - seen_cases)
             raise ValueError(f"{path}: suite coverage mismatch; missing {missing[:5]}")
@@ -341,7 +341,7 @@ def build_review_packages(
                 "run_id": record["run_id"],
                 "evidence_started_at": started_at,
                 "benchmark_case_id": case_id,
-                "role": "core_prime",
+                "role": "ash_prime",
                 "category": row["category"],
                 "rubric": list(suites[case_id]["rubric"]),
                 "gradeable": gradeable,
@@ -429,7 +429,7 @@ def build_review_packages(
                     "blinded_response_id": row["blind_id"],
                     "benchmark_case_id": row["case_id"],
                     "evaluator_id": "",
-                    "evaluator_version": "core-prime-rubric-v1",
+                    "evaluator_version": "ash-prime-rubric-v1",
                     "rubric_scores": [
                         {"criterion": criterion, "score": None, "notes": ""}
                         for criterion in row["rubric"]
@@ -452,7 +452,7 @@ def build_review_packages(
             "identity_key_included": False,
         }
         readme = (
-            "# Core Prime blinded response review\n\n"
+            "# ASH PRIME blinded response review\n\n"
             "Do not attempt to identify model providers. Candidate aliases are randomized independently in each reviewer package. "
             "Review every gradeable response against the supplied original prompt and rubric. Do not discuss scores with other reviewers before submission. "
             "If a response appears to identify its provider, set unblinding_observed=true and explain without guessing a score from provider identity.\n\n"

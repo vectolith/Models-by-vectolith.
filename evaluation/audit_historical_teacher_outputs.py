@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reproducible, non-destructive screening of preserved Core Prime teacher outputs.
+"""Reproducible, non-destructive screening of preserved ASH PRIME teacher outputs.
 
 This tool does not assign quality scores or qualify teachers. Heuristic flags are
 review leads requiring substantive adjudication; they are not proof of a defect.
@@ -81,8 +81,8 @@ def main():
     parser.add_argument("--json-output",required=True)
     parser.add_argument("--csv-output",required=True)
     args=parser.parse_args()
-    paths=sorted(glob.glob(os.path.join(args.artifact_dir,"core-prime-*.zip")))
-    if not paths: raise SystemExit("No core-prime-*.zip artifacts found")
+    paths=sorted(glob.glob(os.path.join(args.artifact_dir,"ash-prime-*.zip")))
+    if not paths: raise SystemExit("No ash-prime-*.zip artifacts found")
     rows=load_rows(paths)
     if len(rows)!=2700: raise SystemExit(f"Expected 2700 rows from pinned historical corpus, found {len(rows)}")
     findings=screen(rows); summary=summarize(rows,findings)

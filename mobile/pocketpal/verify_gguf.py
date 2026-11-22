@@ -3,7 +3,7 @@
 
 This checks file integrity metadata only. It does not validate model quality,
 llama.cpp compatibility, PocketPal compatibility, or whether the weights are
-actually Core Prime.
+actually ASH PRIME.
 """
 from __future__ import annotations
 

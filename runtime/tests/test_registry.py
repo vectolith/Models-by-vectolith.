@@ -1,8 +1,8 @@
 import unittest
 from vectolith_runtime import FamilyIdentity, ModelLifecycle, ModelManifest, ModelRegistry
-from vectolith_runtime.registry import CORE_PRIME_TARGET_CAPABILITIES
+from vectolith_runtime.registry import ASH_PRIME_TARGET_CAPABILITIES
 
-def manifest(model_id="core-prime", *, capabilities=frozenset({"reasoning", "conversation"}), **kwargs):
+def manifest(model_id="ash-prime", *, capabilities=frozenset({"reasoning", "conversation"}), **kwargs):
     return ModelManifest(
         model_id=model_id, display_name=model_id.replace("-", " ").title(),
         version="0.1.0", specialization="general-purpose reasoning",
@@ -17,18 +17,18 @@ class ModelRegistryTests(unittest.TestCase):
             "tools.structured_use", "agents.task_execution",
             "verification.results", "reasoning.mathematical",
         }
-        self.assertTrue(required.issubset(CORE_PRIME_TARGET_CAPABILITIES))
-        self.assertIn("research.evidence_synthesis", CORE_PRIME_TARGET_CAPABILITIES)
+        self.assertTrue(required.issubset(ASH_PRIME_TARGET_CAPABILITIES))
+        self.assertIn("research.evidence_synthesis", ASH_PRIME_TARGET_CAPABILITIES)
 
     def test_register_and_get_model(self):
         registry = ModelRegistry()
         item = manifest()
         registry.register(item)
-        self.assertEqual(registry.get("core-prime"), item)
+        self.assertEqual(registry.get("ash-prime"), item)
 
     def test_registry_is_not_limited_to_prime_and_prima(self):
         registry = ModelRegistry()
-        for model_id in ("core-prime", "core-prima", "vision-specialist", "math-specialist"):
+        for model_id in ("ash-prime", "fyr-prima", "vision-specialist", "math-specialist"):
             registry.register(manifest(model_id))
         self.assertEqual(len(registry.list_models()), 4)
 
@@ -38,7 +38,7 @@ class ModelRegistryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             registry.register(manifest(capabilities=frozenset({"coding"})))
         registry.register(manifest(capabilities=frozenset({"coding"})), replace=True)
-        self.assertEqual(registry.get("core-prime").capabilities, frozenset({"coding"}))
+        self.assertEqual(registry.get("ash-prime").capabilities, frozenset({"coding"}))
 
     def test_foreign_identity_is_rejected(self):
         registry = ModelRegistry()

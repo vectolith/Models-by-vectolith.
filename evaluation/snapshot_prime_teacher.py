@@ -65,7 +65,7 @@ def main() -> int:
     external_license_evidence=[]
     for index,url in enumerate(spec.get("license_evidence_urls",[])):
         from urllib.request import Request, urlopen
-        request=Request(url,headers={"User-Agent":"vectolith-core-prime-evidence/1.0"})
+        request=Request(url,headers={"User-Agent":"vectolith-ash-prime-evidence/1.0"})
         with urlopen(request,timeout=30) as response:
             content=response.read()
         if not content:
