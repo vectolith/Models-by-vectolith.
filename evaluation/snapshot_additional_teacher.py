@@ -31,6 +31,18 @@ EXPECTED = {
 }
 
 
+# Candidates whose Hub snapshot legitimately ships no LICENSE file. Tag-only evidence
+# is accepted only for these, only with the explicit CLI flag, and the manifest always
+# records the caveat that a model-card tag is metadata, not licence text.
+TAG_ONLY_LICENSE_EVIDENCE_CANDIDATES = frozenset({"smollm3-3b"})
+
+TAG_ONLY_LICENSE_EVIDENCE_CAVEAT = (
+    "Snapshot contains no LICENSE or NOTICE file. Licence status rests on the model-card "
+    "tag alone, which is Hub metadata and not licence text; it is not a substitute for a "
+    "bundled licence file and must be re-reviewed if the upstream card changes."
+)
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
@@ -49,6 +61,7 @@ def build_manifest(
     snapshot: Path,
     config: dict,
     files: list[dict],
+    accept_tag_only_license_evidence: bool = False,
 ) -> dict:
     card = info.card_data.to_dict() if info.card_data else {}
     license_files = [
@@ -60,10 +73,20 @@ def build_manifest(
         for key in ("license", "license_name", "license_link", "license_url")
         if card.get(key) not in (None, "")
     }
-    license_file_status = "present" if license_files else "missing"
-    validation_status = (
-        "complete" if license_files else "blocked_missing_license_file"
+    named_license_tag = str(card.get("license_name") or card.get("license") or "").lower()
+    tag_only_accepted = bool(
+        accept_tag_only_license_evidence and not license_files and named_license_tag
     )
+    license_file_status = "present" if license_files else "missing"
+    if license_files:
+        validation_status = "complete"
+        license_evidence_basis = "license_file"
+    elif tag_only_accepted:
+        validation_status = "complete_with_tag_only_license_evidence"
+        license_evidence_basis = "model_card_tag_only"
+    else:
+        validation_status = "blocked_missing_license_file"
+        license_evidence_basis = "none"
 
     return {
         "schema_version": "vectolith-teacher-snapshot/1.1",
@@ -79,6 +102,10 @@ def build_manifest(
         "model_card_license_evidence": license_card_evidence,
         "license_file_status": license_file_status,
         "license_files": license_files,
+        "license_evidence_basis": license_evidence_basis,
+        "license_evidence_caveat": (
+            TAG_ONLY_LICENSE_EVIDENCE_CAVEAT if tag_only_accepted else None
+        ),
         "snapshot_validation_status": validation_status,
         "license_review": "pending_human_legal_review",
         "training_output_permission": "not_verified",
@@ -99,7 +126,24 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--cache-dir", type=Path, required=True)
     parser.add_argument("--revision", default="main")
+    parser.add_argument(
+        "--accept-model-card-tag-evidence",
+        action="store_true",
+        help=(
+            "Accept the model-card licence tag as the licence evidence basis when the "
+            "snapshot ships no LICENSE file. Only valid for candidates in "
+            "TAG_ONLY_LICENSE_EVIDENCE_CANDIDATES; the manifest records the caveat."
+        ),
+    )
     args = parser.parse_args()
+    if (
+        args.accept_model_card_tag_evidence
+        and args.candidate_id not in TAG_ONLY_LICENSE_EVIDENCE_CANDIDATES
+    ):
+        parser.error(
+            f"--accept-model-card-tag-evidence is not enabled for {args.candidate_id}; "
+            f"allowed: {sorted(TAG_ONLY_LICENSE_EVIDENCE_CANDIDATES)}"
+        )
 
     from huggingface_hub import HfApi, snapshot_download
 
@@ -149,6 +193,7 @@ def main() -> int:
         snapshot=snapshot,
         config=config,
         files=files,
+        accept_tag_only_license_evidence=args.accept_model_card_tag_evidence,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -164,6 +209,14 @@ def main() -> int:
     }, sort_keys=True), flush=True)
 
     if not manifest["license_files"]:
+        if manifest["license_evidence_basis"] == "model_card_tag_only":
+            print(
+                "Snapshot manifest preserved; inference proceeds on TAG-ONLY licence "
+                "evidence. CAVEAT: "
+                + TAG_ONLY_LICENSE_EVIDENCE_CAVEAT,
+                flush=True,
+            )
+            return 0
         print(
             "Snapshot manifest preserved, but inference is blocked because the "
             "snapshot contains no license file; model-card license metadata is "

@@ -20,7 +20,7 @@ These flags identify generations that reached the configured token limit without
 
 The manual workflow offers 512, 768, or 1024 new tokens. It runs one candidate per matrix job on the same GitHub-hosted CPU runner class, using the same four Prime suites, greedy decoding, BF16, chat template, and disabled thinking. The only planned inference-setting change from run 40 is the output budget. Model-specific Transformers and Hugging Face Hub versions remain pinned to the previously verified loader combinations. Each job records its own CPU capability, available memory, RSS and runtime versions; hosted hardware can vary between jobs, so latency and resource comparisons across candidates must not be treated as controlled rankings.
 
-The five candidates are Granite 3.1, Granite 4.2, MiniCPM5, LFM2.5, and Phi-4. SmolLM3 is excluded because its missing LICENSE file remains a hard snapshot/license gate. No new candidate is added.
+The candidates are Granite 3.1, Granite 4.2, MiniCPM5, SmolLM3, LFM2.5, and Phi-4. SmolLM3 has no LICENSE file in its published snapshot, so it is admitted on tag-only evidence: the model-card licence tag is recorded as the evidence basis together with an explicit caveat, and its legal review stays pending. No other candidate may use that basis.
 
 The workflow records each candidate's snapshot revision, workflow run and attempt, per-case internal run ID, completion classification, token counts, per-case latency, load/download/generation times, CPU capability, visible CPU count, peak RSS, runtime versions, and compute probe. Every candidate's JSON, JSONL, log, and compute record is uploaded as a separate artifact within the study artifact.
 

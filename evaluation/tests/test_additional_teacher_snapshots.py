@@ -32,7 +32,7 @@ class AdditionalTeacherSnapshotTests(unittest.TestCase):
             self.assertTrue(candidate["architectures"])
             self.assertEqual(len(candidate["architectures"]), 1)
 
-    def _run_snapshot(self, root: Path, include_license: bool):
+    def _run_snapshot(self, root: Path, include_license: bool, extra_args=()):
         snapshot = root / REVISION
         snapshot.mkdir()
         (snapshot / "config.json").write_text(json.dumps({
@@ -67,6 +67,7 @@ class AdditionalTeacherSnapshotTests(unittest.TestCase):
             "--candidate-id", "smollm3-3b",
             "--output", str(output),
             "--cache-dir", str(root / "cache"),
+            *extra_args,
         ]
         with patch.dict(sys.modules, {"huggingface_hub": hub}), patch.object(sys, "argv", argv):
             exit_code = main()
@@ -126,6 +127,42 @@ class AdditionalTeacherSnapshotTests(unittest.TestCase):
                 [license_entry],
             )
             self.assertEqual(manifest["snapshot_path_revision"], REVISION)
+
+    def test_tag_only_flag_accepts_model_card_evidence_and_records_the_caveat(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            exit_code, output = self._run_snapshot(
+                Path(tmp),
+                include_license=False,
+                extra_args=("--accept-model-card-tag-evidence",),
+            )
+            self.assertEqual(exit_code, 0)
+            manifest = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(manifest["license_files"], [])
+            self.assertEqual(manifest["license_file_status"], "missing")
+            self.assertEqual(
+                manifest["snapshot_validation_status"],
+                "complete_with_tag_only_license_evidence",
+            )
+            self.assertEqual(manifest["license_evidence_basis"], "model_card_tag_only")
+            self.assertIn("LICENSE", manifest["license_evidence_caveat"])
+            self.assertIn("model-card", manifest["license_evidence_caveat"])
+            self.assertEqual(manifest["license_review"], "pending_human_legal_review")
+            self.assertEqual(manifest["teacher_qualification"], "not_qualified")
+            self.assertFalse(manifest["training_started"])
+
+    def test_tag_only_flag_is_refused_for_candidates_without_explicit_authorization(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            argv = [
+                "snapshot_additional_teacher.py",
+                "--candidate-id", "lfm2.5-2.6b",
+                "--output", str(root / "out.json"),
+                "--cache-dir", str(root / "cache"),
+                "--accept-model-card-tag-evidence",
+            ]
+            with patch.object(sys, "argv", argv), self.assertRaises(SystemExit) as raised:
+                main()
+            self.assertNotEqual(raised.exception.code, 0)
 
     def test_license_file_presence_completes_snapshot_gate(self):
         with tempfile.TemporaryDirectory() as tmp:

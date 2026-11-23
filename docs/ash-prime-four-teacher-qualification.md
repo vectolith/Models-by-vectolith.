@@ -50,6 +50,6 @@ The cohort gate passes only when at least four unique candidates individually pa
 - LFM2.5-2.6B and Phi-4-mini-instruct remain discovery-only despite repeated successful inference. They are not qualified.
 - Qwen3.5-2B is used only as the provisional local semantic grader and is not a teacher or foundation candidate. Gemma 4 E2B IT remains discovery-only pending immutable revision, license, loader, inference, resource, Grading and permission evidence.
 - Nemotron 3 Nano 4B remains deferred.
-- SmolLM3 remains blocked by the missing LICENSE file; no inference is allowed until the license gate is satisfied.
+- SmolLM3 has no LICENSE file in its published snapshot; it runs only on tag-only model-card evidence, recorded with an explicit caveat and a pending legal review. Every other candidate stays on the hard license-file gate.
 
 No training is authorized by a passing report alone. FYR PRIMA remains paused. The four-qualified-teacher, legal, human grading, safety, holdout, corpus-integrity, and separate written training-output permission gates remain mandatory.
