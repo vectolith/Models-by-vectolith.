@@ -122,7 +122,7 @@ jobs:
           retention-days: 90
 
   smollm3:
-    name: SmolLM3-3B / snapshot + ASH PRIME
+    name: SmolLM3-3B / snapshot + ASH PRIME (tag-only licence evidence)
     needs: minicpm5
     if: ${{ inputs.run_qualification == true && needs.minicpm5.result == 'success' }}
     runs-on: ubuntu-latest
@@ -137,7 +137,16 @@ jobs:
           python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
           python -m pip install transformers==4.57.1 accelerate==1.10.1 safetensors==0.6.2 huggingface_hub==0.36.0
       - name: Resolve immutable revision and hash the full snapshot
-        run: python evaluation/snapshot_additional_teacher.py --candidate-id smollm3-3b --output artifacts/snapshots/smollm3-3b.json --cache-dir "${{ runner.temp }}/hf-cache"
+        run: python evaluation/snapshot_additional_teacher.py --candidate-id smollm3-3b --accept-model-card-tag-evidence --output artifacts/snapshots/smollm3-3b.json --cache-dir "${{ runner.temp }}/hf-cache"
+      - name: Record the tag-only licence evidence caveat
+        run: |
+          python - <<'PY' | tee artifacts/snapshots/smollm3-3b-license-caveat.txt
+          import json
+          m = json.load(open('artifacts/snapshots/smollm3-3b.json'))
+          print('license_evidence_basis:', m['license_evidence_basis'])
+          print('license_evidence_caveat:', m['license_evidence_caveat'])
+          print('license_review:', m['license_review'])
+          PY
       - name: Collect all real Prime responses at the pinned revision
         run: |
           mkdir -p artifacts/evaluations
@@ -152,6 +161,7 @@ jobs:
           name: prime-teacher-smollm3-3b
           path: |
             artifacts/snapshots/smollm3-3b.json
+            artifacts/snapshots/smollm3-3b-license-caveat.txt
             artifacts/compute/smollm3-3b-runner.json
             artifacts/evaluations/smollm3-3b-ash_prime.json
             artifacts/evaluations/smollm3-3b-ash_prime.jsonl
