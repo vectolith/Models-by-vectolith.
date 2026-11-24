@@ -11,7 +11,17 @@ from pathlib import Path
 from typing import Any
 
 SCHEMA = "vectolith-teacher-qualification-candidate/1.0"
+WAIVER_SCHEMA = "vectolith-owner-waiver/1.0"
 SHA_LENGTH = 64
+DEFAULT_WAIVER_PATH = Path(__file__).with_name("owner_waivers.json")
+HUMAN_GATE_NAMES = (
+    "license_review",
+    "grading",
+    "safety_review",
+    "holdout",
+    "corpus_integrity",
+    "training_output_permission",
+)
 
 
 def valid_sha(value: Any) -> bool:
@@ -52,7 +62,45 @@ def positive_number(value: Any) -> bool:
         return False
 
 
-def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
+def load_waivers(path: Path | None = None) -> dict[str, dict[str, Any]]:
+    """Load owner waivers.
+
+    A waiver is an owner decision to proceed without a review. It is recorded
+    separately from gate status and is never reported as a passed review.
+    """
+    target = Path(path) if path is not None else DEFAULT_WAIVER_PATH
+    if not target.exists():
+        return {}
+    data = json.loads(target.read_text(encoding="utf-8"))
+    if not isinstance(data, dict) or data.get("schema_version") != WAIVER_SCHEMA:
+        raise ValueError(f"{target}: unsupported owner waiver schema")
+    if not nonempty_string(data.get("owner_id")) or not valid_time(data.get("decided_at")):
+        raise ValueError(f"{target}: owner waiver requires owner_id and decided_at")
+    entries = data.get("waived_gates")
+    if not isinstance(entries, list):
+        raise ValueError(f"{target}: waived_gates must be a list")
+    waivers: dict[str, dict[str, Any]] = {}
+    for entry in entries:
+        if not isinstance(entry, dict):
+            raise ValueError(f"{target}: each waived gate must be an object")
+        name = entry.get("gate")
+        if name not in HUMAN_GATE_NAMES:
+            raise ValueError(f"{target}: gate {name!r} is not waivable")
+        if entry.get("status") != "waived_by_owner":
+            raise ValueError(f"{target}: gate {name!r} must declare status waived_by_owner")
+        if not nonempty_string(entry.get("reason")):
+            raise ValueError(f"{target}: gate {name!r} requires a reason")
+        if name in waivers:
+            raise ValueError(f"{target}: gate {name!r} is waived twice")
+        waivers[name] = dict(entry, owner_id=data["owner_id"], decided_at=data["decided_at"])
+    return waivers
+
+
+def evaluate_candidate(
+    manifest: dict[str, Any], waivers: dict[str, dict[str, Any]] | None = None
+) -> dict[str, Any]:
+    waived = dict(waivers or {})
+    applied_waivers: list[str] = []
     failures: list[str] = []
     if manifest.get("schema_version") != SCHEMA:
         failures.append("unsupported_schema")
@@ -70,13 +118,24 @@ def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
         gates = {}
         failures.append("gates_object_missing")
 
+    def mark_waived(name: str) -> None:
+        if name not in applied_waivers:
+            applied_waivers.append(name)
+
     def require(name: str, condition: bool, reason: str) -> None:
-        if not condition:
-            failures.append(f"{name}:{reason}")
+        if condition:
+            return
+        if name in waived:
+            mark_waived(name)
+            return
+        failures.append(f"{name}:{reason}")
 
     def gate(name: str) -> dict[str, Any]:
         value = gates.get(name)
         if not isinstance(value, dict):
+            if name in waived:
+                mark_waived(name)
+                return {}
             failures.append(f"{name}:gate_object_missing")
             return {}
         return value
@@ -173,6 +232,8 @@ def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
         "immutable_revision": revision,
         "qualification_status": "qualified" if not failures else "not_qualified",
         "failed_gates": failures,
+        "waived_gates": applied_waivers,
+        "review_basis": "owner_waiver" if applied_waivers else "independent_review",
         "gate_count": 10,
         "qualification_decision": "gate_validation_only",
         "teacher_ranking": "not_performed",
@@ -181,10 +242,14 @@ def evaluate_candidate(manifest: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def evaluate_cohort(manifests: list[dict[str, Any]], required_teachers: int = 4) -> dict[str, Any]:
+def evaluate_cohort(
+    manifests: list[dict[str, Any]],
+    required_teachers: int = 4,
+    waivers: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     if type(required_teachers) is not int or required_teachers < 4:
         raise ValueError("Core Prime cohort qualification requires at least four teachers (integer count)")
-    results = [evaluate_candidate(manifest) for manifest in manifests]
+    results = [evaluate_candidate(manifest, waivers) for manifest in manifests]
     candidate_ids = [row.get("candidate_id") for row in results]
     valid_candidate_ids = [candidate_id for candidate_id in candidate_ids if isinstance(candidate_id, str) and candidate_id.strip()]
     duplicates = len(valid_candidate_ids) != len(set(valid_candidate_ids))
@@ -240,16 +305,19 @@ def main() -> int:
     cohort.add_argument("--manifest-dir", type=Path, required=True)
     cohort.add_argument("--required-teachers", type=int, default=4)
     cohort.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--waivers", type=Path, default=DEFAULT_WAIVER_PATH)
+    parser.add_argument("--strict", action="store_true", help="ignore owner waivers")
     args = parser.parse_args()
+    waivers = {} if args.strict else load_waivers(args.waivers)
     if args.command == "validate":
-        result = evaluate_candidate(read_manifest(args.manifest))
+        result = evaluate_candidate(read_manifest(args.manifest), waivers)
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
         print(json.dumps(result, indent=2))
         return 0 if result["qualification_status"] == "qualified" else 1
     paths = sorted(args.manifest_dir.glob("*.json"))
     manifests = [read_manifest(path) for path in paths]
-    result = evaluate_cohort(manifests, args.required_teachers)
+    result = evaluate_cohort(manifests, args.required_teachers, waivers)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(result, indent=2))

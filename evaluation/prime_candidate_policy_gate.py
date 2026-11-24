@@ -13,6 +13,18 @@ REGISTRY = Path(__file__).with_name("prime_teacher_candidate_registry.json")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 
+def load_owner_waivers() -> dict[str, dict[str, Any]]:
+    """Owner waivers are owner decisions, never completed reviews."""
+    try:
+        from evaluation.teacher_qualification_gates import load_waivers
+    except ModuleNotFoundError:
+        import sys
+
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        from evaluation.teacher_qualification_gates import load_waivers
+    return load_waivers()
+
+
 def _aware_timestamp(value: Any) -> bool:
     if not isinstance(value, str) or not value.strip():
         return False
@@ -27,8 +39,16 @@ def _https_evidence(value: Any) -> bool:
     return isinstance(value, str) and value.startswith("https://") and len(value) > 8
 
 
-def candidate_is_authorized(candidate: dict[str, Any]) -> bool:
-    """Require revision-bound legal review and a separate inference approval."""
+def candidate_is_authorized(
+    candidate: dict[str, Any], waivers: dict[str, dict[str, Any]] | None = None
+) -> bool:
+    """Require revision-bound legal review and a separate inference approval.
+
+    Revision binding is never waived. The two human gates (license_review and
+    training_output_permission) may be waived by the repository owner, in which
+    case the caller must report review_basis=owner_waiver.
+    """
+    waived = set(waivers or ())
     revision = candidate.get("revision")
     legal = candidate.get("license_review_evidence")
     authorization = candidate.get("local_inference_authorization")
@@ -36,10 +56,11 @@ def candidate_is_authorized(candidate: dict[str, Any]) -> bool:
 
     if not isinstance(revision, str) or not re.fullmatch(r"[0-9a-f]{40}", revision):
         return False
-    if candidate.get("license_review") != "approved_for_local_inference":
-        return False
-    if candidate.get("local_inference_authorized") is not True:
-        return False
+    if "license_review" not in waived:
+        if candidate.get("license_review") != "approved_for_local_inference":
+            return False
+        if candidate.get("local_inference_authorized") is not True:
+            return False
     if conflict and (
         not isinstance(conflict, dict)
         or conflict.get("status") != "resolved"
@@ -48,6 +69,8 @@ def candidate_is_authorized(candidate: dict[str, Any]) -> bool:
     ):
         return False
 
+    if "license_review" in waived:
+        return True
     if not isinstance(legal, dict):
         return False
     if (
@@ -86,7 +109,8 @@ def main() -> int:
     if args.candidate_id not in rows:
         raise SystemExit("unknown candidate")
     candidate = rows[args.candidate_id]
-    approved = candidate_is_authorized(candidate)
+    waivers = load_owner_waivers()
+    approved = candidate_is_authorized(candidate, waivers)
 
     if args.github_output:
         args.github_output.parent.mkdir(parents=True, exist_ok=True)
@@ -98,6 +122,8 @@ def main() -> int:
         "license_review": candidate.get("license_review"),
         "training_output_permission": candidate.get("training_output_permission"),
         "teacher_qualification": candidate.get("teacher_qualification"),
+        "review_basis": "owner_waiver" if waivers else "independent_review",
+        "waived_gates": sorted(waivers),
         "training_started": False,
     }, sort_keys=True))
     return 0
