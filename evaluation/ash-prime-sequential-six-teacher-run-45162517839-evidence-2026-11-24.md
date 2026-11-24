@@ -11,9 +11,9 @@ Recorded from the live workflow run https://github.com/vectolith/Models-by-vecto
 | minicpm5-2b | 137805871258 | success | 2026-11-23T15:36:44Z | 2026-11-23T17:42:41Z |
 | smollm3-3b | 137888715672 | success | 2026-11-23T17:42:43Z | 2026-11-23T19:48:56Z |
 | lfm2.5-2.6b | 137966713991 | success | 2026-11-23T19:48:58Z | 2026-11-24T00:15:13Z |
-| phi-4-mini-instruct | 138115183115 | in_progress, no artifact yet | 2026-11-24T00:15:15Z | - |
+| phi-4-mini-instruct | 138115183115 | success | 2026-11-24T00:15:15Z | 2026-11-24T04:09:28Z |
 
-Five of six jobs completed successfully. Phi-4-mini-instruct job 138115183115 was still running with no uploaded artifact when this register was written, so no Phi-4 result from this run is recorded here and this run does not yet establish six-candidate evidence.
+All six jobs completed successfully. Phi-4-mini-instruct job 138115183115 finished at 2026-11-24T04:09:28Z, after the first revision of this register, so its artifact was downloaded and verified separately and is recorded below with the same procedure as the other five. This document is additive: nothing above it was rewritten.
 
 ## Artifact integrity
 
@@ -24,6 +24,7 @@ Five of six jobs completed successfully. Phi-4-mini-instruct job 138115183115 wa
 | minicpm5-2b | `prime-teacher-minicpm5-2b` | 14847127062 | 130,489 | `3ead6c0936aa2cb8f213197f996a28c70c86434e3078b011c2c6b2a3f3069c8f` | yes |
 | smollm3-3b | `prime-teacher-smollm3-3b` | 14856493494 | 156,638 | `13be31b44098c3762e62349e4883afd280f722c5299f436513b3ad087939e9cd` | yes |
 | lfm2.5-2.6b | `prime-teacher-lfm2.5-2.6b` | 14877000376 | 200,951 | `e862d224c5b8e5cecde3a4a43fbd6cac2503bcceace18f8ccf4d185b43263c16` | yes |
+| phi-4-mini-instruct | `prime-teacher-phi-4-mini-instruct` | 14888583630 | 149,720 | `9cec18142407dce0bf42777d940ed74cfbc19f7d7f2cb9e855969a46e8004730` | yes |
 
 ## Response coverage and completion-budget outcome
 
@@ -36,6 +37,7 @@ Per-artifact check on the embedded `evaluations/*-ash_prime.json`: 180 records, 
 | minicpm5-2b | `42433e90dad95123ab87729fd7011e7110629556` | 180 | 0 | 0 | 54 | 126 | 7501.6 | 5.25 | 4.57.1 |
 | smollm3-3b | `a07cc9a04f16550a088caea529712d1d335b0ac1` | 180 | 0 | 95 | 85 | 0 | 7496.2 | 6.26 | 4.57.1 |
 | lfm2.5-2.6b | `7141b56cd4650af95c7c7b86983443aed050c96a` | 180 | 0 | 22 | 158 | 0 | 15892.7 | 5.64 | 5.0.0 |
+| phi-4-mini-instruct | `cfbefacb99257ffa30c83adab238a50856ac3083` | 180 | 0 | 0 | 63 | 117 | 13981.0 | 7.66 | 4.57.1 |
 
 These are new 256-token-budget generations on the four Prime suites with the same procedure as runs 40/42/43: additive response evidence for a new run, not a controlled completion-budget study, not a replacement for any earlier response set.
 
@@ -45,11 +47,15 @@ These are new 256-token-budget generations on the four Prime suites with the sam
 
 - LFM2.5-2.6B is the most budget-limited candidate: 158/180 generations hit the 256-token cap (162/180 in run 43).
 
-- All five artifacts used CPU-only PyTorch 2.8.0, BF16, greedy decoding. No GPU or hosted inference.
+- Phi-4-mini-instruct likewise reports 117/180 `stopped_without_eos` against 63 `token_cap_truncated`: the runner stopped before the cap without emitting EOS and does not count that as completion. Same caveat as MiniCPM5: inspect before reading anything into those responses.
+
+- All six artifacts used CPU-only PyTorch 2.8.0, BF16, greedy decoding. No GPU or hosted inference. Phi-4-mini-instruct's snapshot is 7,694,054,130 bytes with a LICENSE file present (`license_file_status: present`, tag `mit`), which is stronger licence evidence than SmolLM3's tag-only snapshot but still `pending_human_legal_review`.
 
 ## Licence evidence
 
 - SmolLM3-3B ran on tag-only licence evidence: snapshot revision `a07cc9a04f16550a088caea529712d1d335b0ac1`, `license_file_status: missing`, snapshot size 6,167,865,576 bytes, `snapshot_validation_status: complete_with_tag_only_license_evidence`, `license_review: pending_human_legal_review`. The job log prints: "Snapshot contains no LICENSE or NOTICE file. Licence status rests on the model-card tag alone, which is Hub metadata and not licence text".
+
+- Phi-4-mini-instruct carries `license_tag: mit` with `license_file_status: present` and `snapshot_validation_status: complete`; it is still `pending_human_legal_review`.
 
 - Every artifact retains `license_review: pending_human_legal_review`, `training_output_permission: not_verified`, `teacher_qualification: not_qualified`, `training_started: false`.
 
@@ -64,4 +70,4 @@ No candidate is qualified and no gate is marked verified in this document. Grani
 
 ## Retention
 
-Artifacts expire 2027-02-21. Copy the five ZIPs and this register to restricted evidence storage before then; the ZIPs are not committed to this repository.
+Artifacts expire 2027-02-21. Copy the six ZIPs and this register to restricted evidence storage before then; the ZIPs are not committed to this repository.
