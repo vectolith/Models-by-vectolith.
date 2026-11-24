@@ -79,6 +79,20 @@ def build_messages(request: dict[str, Any]) -> list[dict[str, str]]:
     ]
 
 
+def _normalize_evidence(text: str) -> str:
+    """Normalize only presentation differences so a quote can be verified.
+
+    Unicode form, zero-width characters, non-breaking spaces and whitespace runs
+    are collapsed; the excerpt must still be a real contiguous slice of the
+    response, so paraphrased evidence is still rejected.
+    """
+    import unicodedata
+
+    normalized = unicodedata.normalize("NFKC", text)
+    normalized = normalized.replace("\u200b", "").replace("\u00a0", " ")
+    return " ".join(normalized.split()).lower()
+
+
 def parse_decision(raw: str, request: dict[str, Any]) -> dict[str, Any]:
     from evaluation.grading.semantic_grader import validate_semantic_decision
 
@@ -88,9 +102,10 @@ def parse_decision(raw: str, request: dict[str, Any]) -> dict[str, Any]:
         raise ValueError(f"grader did not return strict JSON: {exc}") from exc
     criteria = validate_semantic_decision(decision, request["rubric"])
     response = request["response"]
+    normalized_response = _normalize_evidence(response)
     for criterion in criteria:
         excerpt = criterion["evidence_excerpt"]
-        if excerpt and excerpt not in response:
+        if excerpt and _normalize_evidence(excerpt) not in normalized_response:
             raise ValueError(f"{criterion['criterion_id']}: evidence excerpt is not verbatim")
         if criterion["status"] in {"passed", "failed"} and not excerpt:
             raise ValueError(f"{criterion['criterion_id']}: scored decision has no evidence excerpt")
@@ -175,45 +190,58 @@ def read_requests(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
-def grade_requests(requests: list[dict[str, Any]], lock: dict[str, Any]) -> tuple[list[dict[str, Any]], str]:
+def grade_requests(
+    requests: list[dict[str, Any]],
+    lock: dict[str, Any],
+    on_decision=None,
+    skip=frozenset(),
+    max_attempts: int = 3,
+) -> tuple[list[dict[str, Any]], str, list[dict[str, Any]]]:
     torch, processor, model, dtype_name = load_local_model(lock)
-    results = []
+    results: list[dict[str, Any]] = []
+    rejected: list[dict[str, Any]] = []
     begun = time.monotonic()
     max_input_tokens = int(lock["runtime"]["max_input_tokens"])
     max_new_tokens = int(lock["runtime"]["max_new_tokens"])
     for index, request in enumerate(requests, 1):
+        if request["case_id"] in skip:
+            continue
         started = time.monotonic()
         messages = build_messages(request)
-        encoded = processor.apply_chat_template(
-            messages,
-            tokenize=True,
-            add_generation_prompt=True,
-            return_dict=True,
-            return_tensors="pt",
-            enable_thinking=False,
-        )
-        input_ids = encoded.get("input_ids")
-        if input_ids is None:
-            raise RuntimeError("pinned processor did not return input_ids")
-        input_length = int(input_ids.shape[-1])
-        if input_length > max_input_tokens:
-            raise ValueError(
-                f"{request['case_id']}: input has {input_length} tokens; "
-                f"locked maximum is {max_input_tokens}; refusing silent truncation"
+        decision = None
+        last_error = None
+        text = ""
+        for attempt in range(1, max_attempts + 1):
+            text, input_length = _generate(
+                torch, processor, model, messages, max_input_tokens, max_new_tokens
             )
-        with torch.inference_mode():
-            generated = model.generate(
-                **encoded,
-                max_new_tokens=max_new_tokens,
-                do_sample=False,
-                use_cache=True,
+            try:
+                decision = parse_decision(text, request)
+                break
+            except ValueError as exc:
+                last_error = exc
+                decision = None
+                messages = messages + [
+                    {"role": "assistant", "content": text},
+                    {"role": "user", "content": (
+                        "That output was rejected: " + str(exc) + ". Return only the corrected "
+                        "JSON object, and quote evidence exactly as it appears in the candidate "
+                        "response, copied character for character."
+                    )},
+                ]
+        if decision is None:
+            rejected.append({
+                "case_id": request["case_id"],
+                "candidate_alias": request["candidate_alias"],
+                "attempts": max_attempts,
+                "error": str(last_error),
+                "grader_output_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+            })
+            print(
+                f"rejected {index}/{len(requests)}: {request['case_id']} after {max_attempts} attempts: {last_error}",
+                flush=True,
             )
-        text = processor.batch_decode(
-            generated[:, input_length:],
-            skip_special_tokens=True,
-            clean_up_tokenization_spaces=False,
-        )[0].strip()
-        decision = parse_decision(text, request)
+            continue
         decision.update({
             "grader_model_id": lock["model_id"],
             "grader_revision": lock["immutable_revision"],
@@ -223,18 +251,55 @@ def grade_requests(requests: list[dict[str, Any]], lock: dict[str, Any]) -> tupl
             "runtime_dtype": dtype_name,
         })
         results.append(decision)
+        if on_decision is not None:
+            on_decision(decision)
         print(
             f"graded {index}/{len(requests)}: {request['case_id']} "
             f"in {time.monotonic() - started:.1f}s (total {time.monotonic() - begun:.1f}s)",
             flush=True,
         )
-    return results, dtype_name
+    return results, dtype_name, rejected
+
+
+def _generate(torch, processor, model, messages, max_input_tokens: int, max_new_tokens: int):
+    encoded = processor.apply_chat_template(
+        messages,
+        tokenize=True,
+        add_generation_prompt=True,
+        return_dict=True,
+        return_tensors="pt",
+        enable_thinking=False,
+    )
+    input_ids = encoded.get("input_ids")
+    if input_ids is None:
+        raise RuntimeError("pinned processor did not return input_ids")
+    input_length = int(input_ids.shape[-1])
+    if input_length > max_input_tokens:
+        raise ValueError(
+            f"input has {input_length} tokens; locked maximum is {max_input_tokens}; "
+            "refusing silent truncation"
+        )
+    with torch.inference_mode():
+        generated = model.generate(
+            **encoded,
+            max_new_tokens=max_new_tokens,
+            do_sample=False,
+            use_cache=True,
+        )
+    text = processor.batch_decode(
+        generated[:, input_length:],
+        skip_special_tokens=True,
+        clean_up_tokenization_spaces=False,
+    )[0].strip()
+    return text, input_length
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, required=True, help="Blinded request JSONL outside the repository")
     parser.add_argument("--output", type=Path, required=True, help="Decision JSONL outside the repository")
+    parser.add_argument("--resume", action="store_true",
+                        help="Append to an existing decision file, skipping cases already decided")
     args = parser.parse_args()
 
     input_path = args.input.resolve()
@@ -250,20 +315,32 @@ def main() -> int:
         parser.error("--input and --output must be different files")
     if not input_path.is_file():
         parser.error(f"request file does not exist: {input_path}")
+    graded: set[str] = set()
     if output_path.exists():
-        parser.error(f"refusing to overwrite existing decisions: {output_path}")
+        if not args.resume:
+            parser.error(f"refusing to overwrite existing decisions: {output_path}")
+        for line in output_path.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                graded.add(json.loads(line)["case_id"])
 
     lock = load_lock()
     requests = read_requests(input_path)
-    results, dtype_name = grade_requests(requests, lock)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(
-        "w", encoding="utf-8", dir=output_path.parent, delete=False
-    ) as handle:
-        temp_path = Path(handle.name)
-        for row in results:
-            handle.write(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n")
-    temp_path.replace(output_path)
+    handle = output_path.open("a", encoding="utf-8")
+
+    def write_decision(row: dict[str, Any]) -> None:
+        handle.write(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n")
+        handle.flush()
+
+    try:
+        results, dtype_name, rejected = grade_requests(
+            requests, lock, on_decision=write_decision, skip=frozenset(graded)
+        )
+    finally:
+        handle.close()
+
+    rejected_path = output_path.with_suffix(output_path.suffix + ".rejected.json")
+    rejected_path.write_text(json.dumps(rejected, indent=2) + "\n", encoding="utf-8")
     digest = hashlib.sha256(output_path.read_bytes()).hexdigest()
     print(json.dumps({
         "status": "local_grading_completed",
@@ -273,6 +350,9 @@ def main() -> int:
         "device": "cpu",
         "dtype": dtype_name,
         "response_count": len(results),
+        "resumed_from": len(graded),
+        "rejected_count": len(rejected),
+        "rejected_file": str(rejected_path),
         "decision_file_sha256": digest,
         "remote_api": False,
     }, indent=2))
