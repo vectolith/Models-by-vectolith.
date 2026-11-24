@@ -1,0 +1,187 @@
+name: ASH PRIME Run 42 sharded semantic grading
+
+on:
+  workflow_dispatch:
+    inputs:
+      shard_count:
+        description: "Number of grading shards (each shard grades a contiguous slice of all 900 requests)"
+        required: false
+        default: "30"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: run42-sharded-grading
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: prepare blinded requests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Download Run 42 inference artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/zips
+          gh api "repos/${{ github.repository }}/actions/runs/43820188813/artifacts?per_page=100" \
+            --jq '.artifacts[] | [.id, .name] | @tsv' > /tmp/artifacts.tsv
+          cat /tmp/artifacts.tsv
+          for pair in \
+            "granite-3.1-3b-a800m:prime-teacher-granite-3.1-3b-a800m" \
+            "granite-4.2-3b:prime-teacher-granite-4.2-3b" \
+            "minicpm5-2b:prime-teacher-minicpm5-2b" \
+            "lfm2.5-2.6b:prime-teacher-lfm2.5-2.6b" \
+            "phi-4-mini-instruct:prime-teacher-phi-4-mini-instruct"; do
+            candidate="${pair%%:*}"
+            name="${pair#*:}"
+            id="$(awk -F'\t' -v n="$name" '$2==n {print $1}' /tmp/artifacts.tsv | head -1)"
+            if [ -z "$id" ]; then echo "missing artifact $name"; exit 1; fi
+            gh api "repos/${{ github.repository }}/actions/artifacts/$id/zip" > "/tmp/zips/$candidate.zip"
+            echo "$candidate $id $(stat -c%s /tmp/zips/$candidate.zip)"
+          done
+      - name: Build 900 blinded grading requests
+        run: |
+          set -euo pipefail
+          python evaluation/grading/grade_run42.py \
+            --artifact granite-3.1-3b-a800m=/tmp/zips/granite-3.1-3b-a800m.zip \
+            --artifact granite-4.2-3b=/tmp/zips/granite-4.2-3b.zip \
+            --artifact minicpm5-2b=/tmp/zips/minicpm5-2b.zip \
+            --artifact lfm2.5-2.6b=/tmp/zips/lfm2.5-2.6b.zip \
+            --artifact phi-4-mini-instruct=/tmp/zips/phi-4-mini-instruct.zip \
+            --out-dir /tmp/run42 --phase all --batch-size 900
+          ls -l /tmp/run42/all/requests
+      - uses: actions/upload-artifact@v4
+        with:
+          name: run42-prepared
+          path: /tmp/run42
+          retention-days: 7
+
+  grade:
+    name: grade shard ${{ matrix.shard }}
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        shard: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v4
+        with:
+          name: run42-prepared
+          path: /tmp/run42
+      - name: Install pinned CPU runtime
+        run: |
+          python -m pip install --quiet --upgrade pip
+          python -m pip install --quiet torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --quiet "transformers==5.23.0" safetensors accelerate
+      - name: Grade shard ${{ matrix.shard }}
+        env:
+          SHARD: ${{ matrix.shard }}
+          SHARD_COUNT: ${{ github.event.inputs.shard_count }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, pathlib
+          shard = int(os.environ["SHARD"]); total = int(os.environ["SHARD_COUNT"])
+          source = pathlib.Path("/tmp/run42/all/requests/batch-001.jsonl")
+          rows = [json.loads(l) for l in source.read_text(encoding="utf-8").splitlines() if l.strip()]
+          print("total requests", len(rows))
+          n = len(rows)
+          start = n * shard // total
+          end = n * (shard + 1) // total
+          out = pathlib.Path("/tmp/shard.jsonl")
+          out.write_text("".join(json.dumps(r, ensure_ascii=False, separators=(",", ":")) + "\n" for r in rows[start:end]), encoding="utf-8")
+          print(f"shard {shard}: rows {start}-{end} ({end-start})")
+          PY
+          python evaluation/grading/local_semantic_grader.py \
+            --input /tmp/shard.jsonl \
+            --output /tmp/decisions/shard-${{ matrix.shard }}.jsonl
+      - uses: actions/upload-artifact@v4
+        with:
+          name: run42-decisions-${{ matrix.shard }}
+          path: /tmp/decisions
+          retention-days: 7
+
+  aggregate:
+    name: assemble grade ledger
+    needs: grade
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v4
+        with:
+          name: run42-prepared
+          path: /tmp/run42
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: run42-decisions-*
+          path: /tmp/decisions
+          merge-multiple: true
+      - name: Concatenate decisions
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import pathlib, hashlib
+          files = sorted(pathlib.Path("/tmp/decisions").rglob("shard-*.jsonl"), key=lambda p: int(p.stem.split("-")[1]))
+          print("shards", len(files))
+          rows = []
+          for f in files:
+              rows.extend([l for l in f.read_text(encoding="utf-8").splitlines() if l.strip()])
+          out = pathlib.Path("/tmp/all-decisions.jsonl")
+          out.write_text("\n".join(rows) + "\n", encoding="utf-8")
+          print("decisions", len(rows), "sha256", hashlib.sha256(out.read_bytes()).hexdigest())
+          PY
+      - name: Build evidence-bound grade records
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/zips
+          gh api "repos/${{ github.repository }}/actions/runs/43820188813/artifacts?per_page=100" \
+            --jq '.artifacts[] | [.id, .name] | @tsv' > /tmp/artifacts.tsv
+          for pair in \
+            "granite-3.1-3b-a800m:prime-teacher-granite-3.1-3b-a800m" \
+            "granite-4.2-3b:prime-teacher-granite-4.2-3b" \
+            "minicpm5-2b:prime-teacher-minicpm5-2b" \
+            "lfm2.5-2.6b:prime-teacher-lfm2.5-2.6b" \
+            "phi-4-mini-instruct:prime-teacher-phi-4-mini-instruct"; do
+            candidate="${pair%%:*}"
+            name="${pair#*:}"
+            id="$(awk -F'\t' -v n="$name" '$2==n {print $1}' /tmp/artifacts.tsv | head -1)"
+            gh api "repos/${{ github.repository }}/actions/artifacts/$id/zip" > "/tmp/zips/$candidate.zip"
+          done
+          python evaluation/grading/grade_run42.py \
+            --artifact granite-3.1-3b-a800m=/tmp/zips/granite-3.1-3b-a800m.zip \
+            --artifact granite-4.2-3b=/tmp/zips/granite-4.2-3b.zip \
+            --artifact minicpm5-2b=/tmp/zips/minicpm5-2b.zip \
+            --artifact lfm2.5-2.6b=/tmp/zips/lfm2.5-2.6b.zip \
+            --artifact phi-4-mini-instruct=/tmp/zips/phi-4-mini-instruct.zip \
+            --out-dir /tmp/run42 --phase all --batch-size 900 \
+            --decisions /tmp/all-decisions.jsonl \
+            --graded-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: run42-grade-ledger
+          path: |
+            /tmp/run42/all
+            /tmp/all-decisions.jsonl
+          retention-days: 30
