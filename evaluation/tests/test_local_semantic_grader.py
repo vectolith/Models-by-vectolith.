@@ -27,6 +27,30 @@ class LocalSemanticGraderTests(unittest.TestCase):
             ],
         }
 
+
+    def test_evidence_matching_ignores_whitespace_and_unicode_form_only(self):
+        response = "Line one\u00a0has\u200b  the answer 42.\nSecond line."
+        request = {
+            "candidate_alias": "blind-01",
+            "case_id": "case-002",
+            "response": response,
+            "response_sha256": hashlib.sha256(response.encode("utf-8")).hexdigest(),
+            "rubric": [{"criterion_id": "c1", "description": "States the answer."}],
+        }
+        raw = json.dumps({"criteria": [{
+            "criterion_id": "c1", "status": "passed",
+            "evidence_excerpt": "Line one has the answer 42.", "rationale": "states it"}]})
+        decision = parse_decision(raw, request)
+        self.assertEqual(decision["criteria"][0]["evidence_excerpt"], "Line one has the answer 42.")
+
+    def test_paraphrased_evidence_is_still_rejected(self):
+        request = self.request()
+        raw = json.dumps({"criteria": [{
+            "criterion_id": "c1", "status": "passed",
+            "evidence_excerpt": "The final value is forty-two.", "rationale": "states it"}]})
+        with self.assertRaisesRegex(ValueError, "not verbatim"):
+            parse_decision(raw, request)
+
     def test_lock_is_local_pinned_and_has_no_remote_api(self):
         lock = load_lock()
         self.assertEqual(lock["model_id"], "Qwen/Qwen3.5-2B")
