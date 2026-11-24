@@ -17,7 +17,7 @@
     "preferred_dtype": "bfloat16",
     "fallback_dtype": "float32_only_if_memory_probe_passes",
     "max_input_tokens": 8192,
-    "max_new_tokens": 384,
+    "max_new_tokens": 640,
     "do_sample": false,
     "thinking_mode": false
   },
@@ -25,6 +25,13 @@
   "output_contract": "strict_json_parsed_and_rubric_validated",
   "remote_api": false,
   "credentials_required": false,
+  "budget_history": [
+    {
+      "runtime_max_new_tokens": 384,
+      "superseded_on": "2026-11-24",
+      "reason": "Run 42 batch-001 pilot case 1 was cut mid-string by the 384-token output cap (unterminated string at char 1531 of a 22-line object). Raised to 640 so a strict-JSON verdict with rubric rationales fits."
+    }
+  ],
   "use_boundary": "evaluation_only; not a teacher, foundation candidate, training dependency, or source of training targets",
   "no_fallback_to_hosted_api": true,
   "notes": "This is a provisional local semantic grader selected to keep evaluation reproducible and self-contained. Model quality and CPU workload feasibility must be checked on the 30-response pilot before grading the remaining 870. If the CPU workload cannot complete, stop and retain the Grading gate as pending; do not use remote inference or silently substitute another model.",
