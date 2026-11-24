@@ -54,6 +54,39 @@ class LocalSemanticGraderTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "digest mismatch"):
             build_messages(request)
 
+    def test_plain_string_rubric_ids_are_visible_to_the_grader(self):
+        request = self.request()
+        request["rubric"] = ["Exactly four bullets", "No analogy"]
+        payload = json.loads(build_messages(request)[1]["content"])
+        self.assertEqual(
+            payload["rubric"],
+            [
+                {"criterion_id": "criterion-01", "criterion": "Exactly four bullets"},
+                {"criterion_id": "criterion-02", "criterion": "No analogy"},
+            ],
+        )
+        raw = json.dumps({
+            "criteria": [
+                {"criterion_id": "criterion-01", "status": "failed",
+                 "evidence_excerpt": "42", "rationale": "One line, not four bullets."},
+                {"criterion_id": "criterion-02", "status": "passed",
+                 "evidence_excerpt": "42", "rationale": "No analogy used."},
+            ]
+        })
+        result = parse_decision(raw, request)
+        self.assertEqual([c["criterion_id"] for c in result["criteria"]],
+                         ["criterion-01", "criterion-02"])
+
+    def test_invented_criterion_ids_are_rejected(self):
+        request = self.request()
+        request["rubric"] = ["Exactly four bullets"]
+        raw = json.dumps({
+            "criteria": [{"criterion_id": "bullet_format", "status": "passed",
+                          "evidence_excerpt": "42", "rationale": "Four bullets."}]
+        })
+        with self.assertRaisesRegex(ValueError, "exactly once"):
+            parse_decision(raw, request)
+
     def test_valid_decision_is_bound_to_blinded_request(self):
         request = self.request()
         raw = json.dumps({

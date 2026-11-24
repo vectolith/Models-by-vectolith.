@@ -8,6 +8,7 @@ import json
 import os
 import sys
 import tempfile
+import time
 from pathlib import Path
 from typing import Any
 
@@ -64,10 +65,12 @@ def build_messages(request: dict[str, Any]) -> list[dict[str, str]]:
         raise ValueError("grading request response digest mismatch")
     if not isinstance(request["rubric"], list) or not request["rubric"]:
         raise ValueError("grading request rubric must be a non-empty array")
+    from evaluation.grading.semantic_grader import annotate_rubric
+
     payload = {
         "candidate_alias": request["candidate_alias"],
         "case_id": request["case_id"],
-        "rubric": request["rubric"],
+        "rubric": annotate_rubric(request["rubric"]),
         "candidate_response": response,
     }
     return [
@@ -175,9 +178,11 @@ def read_requests(path: Path) -> list[dict[str, Any]]:
 def grade_requests(requests: list[dict[str, Any]], lock: dict[str, Any]) -> tuple[list[dict[str, Any]], str]:
     torch, processor, model, dtype_name = load_local_model(lock)
     results = []
+    begun = time.monotonic()
     max_input_tokens = int(lock["runtime"]["max_input_tokens"])
     max_new_tokens = int(lock["runtime"]["max_new_tokens"])
     for index, request in enumerate(requests, 1):
+        started = time.monotonic()
         messages = build_messages(request)
         encoded = processor.apply_chat_template(
             messages,
@@ -218,7 +223,11 @@ def grade_requests(requests: list[dict[str, Any]], lock: dict[str, Any]) -> tupl
             "runtime_dtype": dtype_name,
         })
         results.append(decision)
-        print(f"graded {index}/{len(requests)}: {request['case_id']}", flush=True)
+        print(
+            f"graded {index}/{len(requests)}: {request['case_id']} "
+            f"in {time.monotonic() - started:.1f}s (total {time.monotonic() - begun:.1f}s)",
+            flush=True,
+        )
     return results, dtype_name
 
 

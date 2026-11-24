@@ -1,6 +1,7 @@
 """Provider-neutral semantic grading request and decision validation."""
 from __future__ import annotations
 import hashlib
+import json
 from typing import Any
 
 PROMPT_VERSION = "ash-prime-semantic-grader-v2-local"
@@ -17,11 +18,38 @@ def build_grading_request(*, candidate_alias: str, case_id: str, response: str, 
             "rubric": rubric, "response": response,
             "required_output": {"criteria": [{"criterion_id": "rubric criterion ID", "status": "passed|failed|unscored", "evidence_excerpt": "verbatim excerpt or empty", "rationale": "brief reason"}]}}
 
+def criterion_ids(rubric: list[Any]) -> list[str]:
+    """The exact criterion IDs a decision must use, derived from the rubric order."""
+    ids = []
+    for index, item in enumerate(rubric):
+        if isinstance(item, dict):
+            ids.append(str(item.get("criterion_id") or item.get("id") or f"criterion-{index + 1:02d}"))
+        else:
+            ids.append(f"criterion-{index + 1:02d}")
+    return ids
+
+
+def annotate_rubric(rubric: list[Any]) -> list[dict[str, str]]:
+    """Rubric as sent to the grader, with the IDs it must echo back made explicit.
+
+    Plain string rubrics carry no ID, so without this the model has to invent one and
+    every decision would be rejected by validate_semantic_decision.
+    """
+    annotated = []
+    for cid, item in zip(criterion_ids(rubric), rubric):
+        if isinstance(item, dict):
+            text = item.get("criterion") or item.get("text") or item.get("description")
+            if not isinstance(text, str) or not text.strip():
+                text = json.dumps(item, ensure_ascii=False, sort_keys=True)
+        else:
+            text = str(item)
+        annotated.append({"criterion_id": cid, "criterion": text})
+    return annotated
+
+
 def validate_semantic_decision(decision: dict[str, Any], rubric: list[Any]) -> list[dict[str, Any]]:
     if not isinstance(decision, dict) or not isinstance(decision.get("criteria"), list): raise ValueError("decision must contain criteria array")
-    expected = []
-    for index, item in enumerate(rubric):
-        expected.append(str(item.get("criterion_id") or item.get("id") or f"criterion-{index + 1:02d}") if isinstance(item, dict) else f"criterion-{index + 1:02d}")
+    expected = criterion_ids(rubric)
     actual, rows = [], []
     for item in decision["criteria"]:
         if not isinstance(item, dict): raise ValueError("criterion decision must be an object")
