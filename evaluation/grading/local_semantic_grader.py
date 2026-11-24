@@ -65,10 +65,12 @@ def build_messages(request: dict[str, Any]) -> list[dict[str, str]]:
         raise ValueError("grading request response digest mismatch")
     if not isinstance(request["rubric"], list) or not request["rubric"]:
         raise ValueError("grading request rubric must be a non-empty array")
+    from evaluation.grading.semantic_grader import annotate_rubric
+
     payload = {
         "candidate_alias": request["candidate_alias"],
         "case_id": request["case_id"],
-        "rubric": request["rubric"],
+        "rubric": annotate_rubric(request["rubric"]),
         "candidate_response": response,
     }
     return [
