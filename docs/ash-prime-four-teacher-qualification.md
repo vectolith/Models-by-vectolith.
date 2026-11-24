@@ -48,6 +48,7 @@ The cohort gate passes only when at least four unique candidates individually pa
 
 - Granite 3.1 3B-A800M, Granite 4.2 3B, and MiniCPM5 2B remain the three existing additive Prime teachers. Their real response evidence is preserved, but legal approval, grading, safety, holdout, corpus, and training-output permission gates are not complete.
 - LFM2.5-2.6B and Phi-4-mini-instruct remain discovery-only despite repeated successful inference. They are not qualified.
+2026-11-24 sequence: workflow run 45162517839 produced verified 180-case response artifacts for Granite 3.1, Granite 4.2, MiniCPM5, SmolLM3 (tag-only licence) and LFM2.5; the Phi-4 job was still running with no artifact. That is real-inference evidence for five candidates only and changes no gate disposition. See [run 45162517839 evidence](../evaluation/ash-prime-sequential-six-teacher-run-45162517839-evidence-2026-11-24.md).
 - Qwen3.5-2B is used only as the provisional local semantic grader and is not a teacher or foundation candidate. Gemma 4 E2B IT remains discovery-only pending immutable revision, license, loader, inference, resource, Grading and permission evidence.
 - Nemotron 3 Nano 4B remains deferred.
 - SmolLM3 has no LICENSE file in its published snapshot; it runs only on tag-only model-card evidence, recorded with an explicit caveat and a pending legal review. Every other candidate stays on the hard license-file gate.
