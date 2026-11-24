@@ -1,6 +1,8 @@
 # ASH PRIME draft split exposure audit
 
-**Status: BLOCKED — the current draft holdout is not protected and must not be used as a blind or final holdout.**
+**Status: BLOCKED — the draft holdout rows remain compromised, and the replacement v2 holdout is split-isolated but not yet custodian-protected.**
+
+Replacement in progress (2026-11-24): `data/personality/holdout/ash-prime-protected-holdout-v2.jsonl` (12 fresh original records, digest `b025cfbb769a5e7cb13652ca63e5acc7d8c5f4cbe9df64fa5da90af26d82f0e8`) was authored after this audit and is not derived from any training corpus, prompt fixture or prior draft row. It is hash-manifested in `ash-prime-protected-holdout-v2-manifest.json` and enforced by `scripts/validate_ash_prime_holdout.py`, which CI runs on every personality-data change; `scripts/tests/test_holdout_isolation.py` fails if any 8-word holdout shingle or holdout record ID appears in a non-holdout path. This closes the split-isolation engineering gap only. Because the file and digest sit in a public repository it is still not a blind protected holdout: the custody gate stays BLOCKED until a restricted private copy, separate custodian/evaluator identities and access controls exist.
 
 Audit scope: public \`main\` snapshot and the ASH PRIME personality-draft datasets. This is a source-level audit, not a legal review, training authorization, or claim that a protected evaluation was run.
 

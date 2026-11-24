@@ -6,6 +6,7 @@ on:
       - "data/personality/**"
       - "scripts/prepare_ash_prime_sft.py"
       - "scripts/validate_ash_prime_personality_data.py"
+      - "scripts/validate_ash_prime_holdout.py"
       - "scripts/export_ash_prime_personality_train_data.py"
       - "scripts/tests/**"
       - "scripts/run_ash_prime_blind_eval.py"
@@ -17,6 +18,7 @@ on:
       - "data/personality/**"
       - "scripts/prepare_ash_prime_sft.py"
       - "scripts/validate_ash_prime_personality_data.py"
+      - "scripts/validate_ash_prime_holdout.py"
       - "scripts/export_ash_prime_personality_train_data.py"
       - "scripts/tests/**"
 
@@ -30,6 +32,8 @@ jobs:
           python-version: "3.11"
       - name: Validate draft dataset
         run: python scripts/validate_ash_prime_personality_data.py
+      - name: Validate protected holdout split isolation
+        run: python scripts/validate_ash_prime_holdout.py
       - name: Unit tests
         run: python -m unittest discover -s scripts/tests -v
       - name: Smoke-check exporter
