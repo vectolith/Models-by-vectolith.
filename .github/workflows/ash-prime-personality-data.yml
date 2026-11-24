@@ -8,8 +8,9 @@ on:
       - "scripts/validate_ash_prime_personality_data.py"
       - "scripts/export_ash_prime_personality_train_data.py"
       - "scripts/tests/**"
-      - "scripts/run_ash_prime_blind_eval.py"
-      - "evaluation/personality/**"
+          - "scripts/run_ash_prime_blind_eval.py"
+          - "evaluation/personality/**"
+          - "scripts/validate_ash_prime_holdout.py"
       - ".github/workflows/ash-prime-personality-data.yml"
   push:
     branches: ["main"]
@@ -30,8 +31,10 @@ jobs:
           python-version: "3.11"
       - name: Validate draft dataset
         run: python scripts/validate_ash_prime_personality_data.py
-      - name: Unit tests
-        run: python -m unittest discover -s scripts/tests -v
+          - name: Validate protected holdout split isolation
+            run: python scripts/validate_ash_prime_holdout.py
+          - name: Unit tests
+            run: python -m unittest discover -s scripts/tests -v
       - name: Smoke-check exporter
         run: |
           tmpdir="$(mktemp -d)"

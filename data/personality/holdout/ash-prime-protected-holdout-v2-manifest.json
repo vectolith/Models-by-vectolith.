@@ -1,0 +1,36 @@
+{
+  "schema_version": "vectolith-ash-prime-protected-holdout-manifest/1.0",
+  "holdout_id": "ash-prime-protected-holdout-v2",
+  "path": "data/personality/holdout/ash-prime-protected-holdout-v2.jsonl",
+  "sha256": "b025cfbb769a5e7cb13652ca63e5acc7d8c5f4cbe9df64fa5da90af26d82f0e8",
+  "bytes": 5154,
+  "record_count": 12,
+  "record_ids": [
+    "ho-v2-001",
+    "ho-v2-002",
+    "ho-v2-003",
+    "ho-v2-004",
+    "ho-v2-005",
+    "ho-v2-006",
+    "ho-v2-007",
+    "ho-v2-008",
+    "ho-v2-009",
+    "ho-v2-010",
+    "ho-v2-011",
+    "ho-v2-012"
+  ],
+  "created_at": "2026-11-24T00:00:00Z",
+  "created_by": "vectolith",
+  "selection_rule": "Fresh original authoring dated 2026-11-24 for this holdout only; no record, prompt, scenario, trait sentence or preferred/rejected candidate text is derived from data/personality/ash-prime-keyboard-* , the seed corpus, any prompt fixture, docs example or prior draft split-labelled row. Every record was written after the 2026-11-17 draft exposure audit.",
+  "replaces": "draft split-labelled holdout rows in data/personality/ash-prime-{multiturn-trajectories,contrastive-preferences,behavioral-micro-scenarios}-v1.jsonl (compromised, public Git history)",
+  "split_isolation": {
+    "enforced_by": "scripts/validate_ash_prime_holdout.py",
+    "leak_test": "scripts/tests/test_holdout_isolation.py",
+    "probe_rule": "normalized 8-word shingles of every holdout field must not appear in any text file outside data/personality/holdout/, and no holdout record ID may appear outside the holdout directory"
+  },
+  "custody": {
+    "status": "pending_custodian_private_vault",
+    "note": "This file and its digest are in a public repository. Split isolation and leakage checks are enforced by CI, but public exposure means this holdout is NOT a blind protected evaluation set and cannot satisfy the private-holdout qualification gate until a custodian-controlled private copy with restricted access is established and this manifest is superseded."
+  },
+  "human_gate": "unverified"
+}
