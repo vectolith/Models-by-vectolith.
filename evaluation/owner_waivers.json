@@ -1,0 +1,53 @@
+{
+  "schema_version": "vectolith-owner-waiver/1.0",
+  "owner_id": "ganiyu",
+  "owner_role": "repository owner, vectolith/Models-by-vectolith.",
+  "decided_at": "2026-11-24T09:40:00+01:00",
+  "statement": "The repository owner waives the human review gates listed below as prerequisites for ASH PRIME teacher qualification and training start. A waiver is an owner decision, not a review: no gate listed here has been reviewed, approved, attested or signed by an independent party, and none may be reported as verified, approved or completed.",
+  "authority_basis": "Owner instruction of 2026-11-24: these gates are not required to begin training.",
+  "waived_gates": [
+    {
+      "gate": "license_review",
+      "status": "waived_by_owner",
+      "reason": "Owner accepts model-weight and output licence risk without independent legal review.",
+      "residual_risk": "Training-output rights for some teacher models remain unconfirmed by a lawyer, so redistribution of derived weights may carry unresolved licence risk."
+    },
+    {
+      "gate": "grading",
+      "status": "waived_by_owner",
+      "reason": "Owner does not require two independent human graders before training; the locked local Qwen3.5-2B grader is the only grading in use.",
+      "residual_risk": "Teacher response quality is ungraded by humans, so the corpus may include weak responses."
+    },
+    {
+      "gate": "safety_review",
+      "status": "waived_by_owner",
+      "reason": "Owner waives a separate independent safety review of teacher outputs before training.",
+      "residual_risk": "No independent safety pass exists over teacher outputs before distillation."
+    },
+    {
+      "gate": "holdout",
+      "status": "waived_by_owner",
+      "reason": "Owner waives the custody sign-off; leakage auditing stays automated through scripts/validate_ash_prime_holdout.py.",
+      "residual_risk": "Holdout custody is automated only; no human custody attestation exists."
+    },
+    {
+      "gate": "corpus_integrity",
+      "status": "waived_by_owner",
+      "reason": "Owner waives the human corpus attestation; digests and duplicate counts are computed by tooling.",
+      "residual_risk": "Corpus provenance rests on computed digests, not a signed human attestation."
+    },
+    {
+      "gate": "training_output_permission",
+      "status": "waived_by_owner",
+      "reason": "Owner waives written training-output permission from each teacher rights holder before training begins.",
+      "residual_risk": "Distilled weights may not have explicit written permission from every teacher rights holder."
+    }
+  ],
+  "not_waived": [
+    "snapshot",
+    "loader_compatibility",
+    "real_inference",
+    "resource_measurement"
+  ],
+  "reporting_rule": "Results that rely on this file must report review_basis=owner_waiver and list the waived gates; they must not claim independent review."
+}
