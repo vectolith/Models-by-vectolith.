@@ -9,12 +9,18 @@ RESPONSE = (
 )
 
 
-def test_anchor_finds_verbatim_sentence_for_paraphrase():
-    excerpt = "Sure, I can make it lighter. However, I need more context to provide an accurate response."
-    assert evidence_is_verbatim(excerpt, RESPONSE)
-    anchored = anchor_evidence("I can make it lighter, though I need more context for accuracy.", RESPONSE)
+def test_anchor_recovers_quote_that_spans_two_sentences():
+    assert evidence_is_verbatim("Sure, I can make it lighter.", RESPONSE)
+    merged = "Sure, I can make it lighter... However, I need more context to provide an accurate response."
+    assert not evidence_is_verbatim(merged, RESPONSE)
+    anchored = anchor_evidence(merged, RESPONSE)
     assert anchored is not None
     assert anchored in RESPONSE
+    assert "make it lighter" in anchored and "more context" in anchored
+
+
+def test_anchor_refuses_to_change_a_number():
+    assert anchor_evidence("The answer is 43", "The answer is 42.") is None
 
 
 def test_anchor_returns_none_for_unrelated_text():

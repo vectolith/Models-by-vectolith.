@@ -82,6 +82,36 @@ def evidence_is_verbatim(excerpt: str, response: str) -> bool:
     return _normalize_evidence(excerpt) in _normalize_evidence(response)
 
 
+def _word_tokens(text: str) -> "list[str]":
+    import re
+
+    tokens = re.findall(r"[a-z0-9]+", _normalize_evidence(text))
+    for token, replacement in (("n't", "not"), ("cannot", "can not")):
+        if token == "n":
+            pass
+    return tokens
+
+
+def _same_words(excerpt: str, candidate: str) -> bool:
+    """Reject an anchor that changes words: paraphrases, different digits, flipped negation.
+
+    Whitespace, punctuation and quoting differences are fine; a substituted number or a
+    dropped/added negator is not, because it changes what the quote says.
+    """
+    source = _word_tokens(excerpt)
+    target = _word_tokens(candidate)
+    if len(source) >= 3:
+        target_set = set(target)
+        covered = sum(1 for token in source if token in target_set)
+        if covered / len(source) < 0.85:
+            return False
+    source_digits = {token for token in source if token.isdigit()}
+    target_digits = {token for token in target if token.isdigit()}
+    if source_digits != target_digits:
+        return False
+    return True
+
+
 def anchor_evidence(excerpt: str, response: str) -> "str | None":
     """Return a real contiguous slice of the response that best matches the excerpt.
 
@@ -107,7 +137,7 @@ def anchor_evidence(excerpt: str, response: str) -> "str | None":
             ratio = difflib.SequenceMatcher(None, target, _normalize_evidence(candidate)).ratio()
             if ratio > best_ratio:
                 best, best_ratio = candidate, ratio
-    if best is not None and best_ratio >= 0.62:
+    if best is not None and best_ratio >= 0.62 and _same_words(excerpt, best):
         return best
 
     response_tokens = response.split()
@@ -115,7 +145,9 @@ def anchor_evidence(excerpt: str, response: str) -> "str | None":
     matcher = difflib.SequenceMatcher(None, [_normalize_evidence(tok) for tok in response_tokens], target_tokens)
     match = matcher.find_longest_match(0, len(response_tokens), 0, len(target_tokens))
     if match.size and target_tokens and match.size >= max(3, int(0.6 * len(target_tokens))):
-        return " ".join(response_tokens[match.a:match.a + match.size])
+        candidate = " ".join(response_tokens[match.a:match.a + match.size])
+        if _same_words(excerpt, candidate):
+            return candidate
     return None
 
 
