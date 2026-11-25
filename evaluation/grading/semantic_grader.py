@@ -64,6 +64,106 @@ def validate_semantic_decision(decision: dict[str, Any], rubric: list[Any]) -> l
     return sorted(rows, key=lambda row: expected.index(row["criterion_id"]))
 
 
+def _normalize_evidence(text: str) -> str:
+    """Normalize presentation-only differences so a quote can be verified."""
+    import unicodedata
+
+    normalized = unicodedata.normalize("NFKC", text)
+    for source, target in ((chr(0x2018), "'"), (chr(0x2019), "'"), (chr(0x201c), '"'), (chr(0x201d), '"'), (chr(0x2013), "-"), (chr(0x2014), "-"), (chr(0x2026), "...")):
+        normalized = normalized.replace(source, target)
+    normalized = normalized.replace(chr(0x200b), "").replace(chr(0x00a0), " ")
+    return " ".join(normalized.split()).lower()
+
+
+def evidence_is_verbatim(excerpt: str, response: str) -> bool:
+    """True when the excerpt is a contiguous slice of the response modulo presentation."""
+    if not excerpt:
+        return True
+    return _normalize_evidence(excerpt) in _normalize_evidence(response)
+
+
+def _word_tokens(text: str) -> "list[str]":
+    import re
+
+    tokens = re.findall(r"[a-z0-9]+", _normalize_evidence(text))
+    for token, replacement in (("n't", "not"), ("cannot", "can not")):
+        if token == "n":
+            pass
+    return tokens
+
+
+def _same_words(excerpt: str, candidate: str) -> bool:
+    """Reject an anchor that changes words: paraphrases, different digits, flipped negation.
+
+    Whitespace, punctuation and quoting differences are fine; a substituted number or a
+    dropped/added negator is not, because it changes what the quote says.
+    """
+    source = _word_tokens(excerpt)
+    target = _word_tokens(candidate)
+    if len(source) >= 3:
+        target_set = set(target)
+        covered = sum(1 for token in source if token in target_set)
+        if covered / len(source) < 0.85:
+            return False
+    source_digits = {token for token in source if token.isdigit()}
+    target_digits = {token for token in target if token.isdigit()}
+    if source_digits != target_digits:
+        return False
+    return True
+
+
+def anchor_evidence(excerpt: str, response: str) -> "str | None":
+    """Return a real contiguous slice of the response that best matches the excerpt.
+
+    The grader model is asked to quote verbatim but sometimes paraphrases or quotes
+    across a sentence boundary. Re-anchoring keeps the model's judgement while
+    guaranteeing the stored evidence is literally present in the response.
+    """
+    if not excerpt:
+        return None
+    if evidence_is_verbatim(excerpt, response):
+        return excerpt
+    import difflib
+    import re
+
+    target = _normalize_evidence(excerpt)
+    sentences = [s.strip() for s in re.split(r"(?<=[.!?\n])\s+", response) if s.strip()]
+    best, best_ratio = None, 0.0
+    for width in (1, 2, 3):
+        for start in range(len(sentences) - width + 1):
+            candidate = " ".join(sentences[start:start + width])
+            if len(candidate) > 4 * max(len(excerpt), 40):
+                continue
+            ratio = difflib.SequenceMatcher(None, target, _normalize_evidence(candidate)).ratio()
+            if ratio > best_ratio:
+                best, best_ratio = candidate, ratio
+    if best is not None and best_ratio >= 0.62 and _same_words(excerpt, best):
+        return best
+
+    response_tokens = response.split()
+    target_tokens = target.split()
+    matcher = difflib.SequenceMatcher(None, [_normalize_evidence(tok) for tok in response_tokens], target_tokens)
+    match = matcher.find_longest_match(0, len(response_tokens), 0, len(target_tokens))
+    if match.size and target_tokens and match.size >= max(3, int(0.6 * len(target_tokens))):
+        candidate = " ".join(response_tokens[match.a:match.a + match.size])
+        if _same_words(excerpt, candidate):
+            return candidate
+    return None
+
+
+def clamp_verbatim_excerpt(excerpt: str, response: str) -> str:
+    """Keep evidence a verbatim slice of the response and within the 500-character cap."""
+    if not excerpt:
+        return excerpt
+    if len(excerpt) <= 500:
+        return excerpt
+    cut = excerpt[:500]
+    if evidence_is_verbatim(cut, response):
+        return cut
+    last_space = cut.rfind(" ")
+    return cut[:last_space] if last_space > 0 else cut
+
+
 def assemble_grade_record(*, inference_run_id: str, candidate_id: str, candidate_revision: str,
                           source_artifact_sha256: str, case_id: str, response: str,
                           rubric: list[Any], semantic_decision: dict[str, Any],
@@ -85,8 +185,13 @@ def assemble_grade_record(*, inference_run_id: str, candidate_id: str, candidate
             chosen = semantic[cid]
         else:
             chosen = {**row, "method": "deterministic", "confidence": None}
-        if chosen["evidence_excerpt"] and chosen["evidence_excerpt"] not in response:
-            raise ValueError(f"criterion {cid}: evidence excerpt is not present verbatim in response")
+            if chosen["evidence_excerpt"] and not evidence_is_verbatim(chosen["evidence_excerpt"], response):
+                anchored = anchor_evidence(chosen["evidence_excerpt"], response)
+                if anchored is None:
+                    raise ValueError(f"criterion {cid}: evidence excerpt is not present verbatim in response")
+                chosen["evidence_excerpt"] = anchored
+            if chosen["evidence_excerpt"]:
+                chosen["evidence_excerpt"] = clamp_verbatim_excerpt(chosen["evidence_excerpt"], response)
         if chosen["status"] in {"passed", "failed"} and not chosen["evidence_excerpt"]:
             raise ValueError(f"criterion {cid}: scored decision requires an evidence excerpt")
         criteria.append({"criterion_id": cid, "status": chosen["status"],

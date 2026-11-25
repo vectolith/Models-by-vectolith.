@@ -93,21 +93,51 @@ def _normalize_evidence(text: str) -> str:
     return " ".join(normalized.split()).lower()
 
 
+def _load_json_object(raw: str) -> dict[str, Any]:
+    """Parse the grader's JSON object, tolerating markdown fences and stray commentary."""
+    text = raw.strip()
+    if "```" in text:
+        parts = text.split("```")
+        for part in parts[1:]:
+            candidate = part.strip()
+            if candidate.lower().startswith("json"):
+                candidate = candidate[4:].strip()
+            if candidate.startswith("{"):
+                text = candidate
+                break
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        start, end = text.find("{"), text.rfind("}")
+        if start >= 0 and end > start:
+            return json.loads(text[start:end + 1])
+        raise
+
+
 def parse_decision(raw: str, request: dict[str, Any]) -> dict[str, Any]:
-    from evaluation.grading.semantic_grader import validate_semantic_decision
+    from evaluation.grading.semantic_grader import (
+        anchor_evidence,
+        clamp_verbatim_excerpt,
+        evidence_is_verbatim,
+        validate_semantic_decision,
+    )
 
     try:
-        decision = json.loads(raw.strip())
+        decision = _load_json_object(raw)
     except json.JSONDecodeError as exc:
         raise ValueError(f"grader did not return strict JSON: {exc}") from exc
     criteria = validate_semantic_decision(decision, request["rubric"])
     response = request["response"]
-    normalized_response = _normalize_evidence(response)
     for criterion in criteria:
         excerpt = criterion["evidence_excerpt"]
-        if excerpt and _normalize_evidence(excerpt) not in normalized_response:
-            raise ValueError(f"{criterion['criterion_id']}: evidence excerpt is not verbatim")
-        if criterion["status"] in {"passed", "failed"} and not excerpt:
+        if excerpt and not evidence_is_verbatim(excerpt, response):
+            anchored = anchor_evidence(excerpt, response)
+            if anchored is None:
+                raise ValueError(f"{criterion['criterion_id']}: evidence excerpt is not verbatim")
+            criterion["evidence_excerpt"] = anchored
+        if criterion["evidence_excerpt"]:
+            criterion["evidence_excerpt"] = clamp_verbatim_excerpt(criterion["evidence_excerpt"], response)
+        if criterion["status"] in {"passed", "failed"} and not criterion["evidence_excerpt"]:
             raise ValueError(f"{criterion['criterion_id']}: scored decision has no evidence excerpt")
     return {
         "candidate_alias": request["candidate_alias"],
@@ -204,7 +234,7 @@ def grade_requests(
     max_input_tokens = int(lock["runtime"]["max_input_tokens"])
     max_new_tokens = int(lock["runtime"]["max_new_tokens"])
     for index, request in enumerate(requests, 1):
-        if request["case_id"] in skip:
+        if (request["candidate_alias"], request["case_id"]) in skip:
             continue
         started = time.monotonic()
         messages = build_messages(request)
@@ -315,13 +345,14 @@ def main() -> int:
         parser.error("--input and --output must be different files")
     if not input_path.is_file():
         parser.error(f"request file does not exist: {input_path}")
-    graded: set[str] = set()
+    graded: set[tuple[str, str]] = set()
     if output_path.exists():
         if not args.resume:
             parser.error(f"refusing to overwrite existing decisions: {output_path}")
         for line in output_path.read_text(encoding="utf-8").splitlines():
             if line.strip():
-                graded.add(json.loads(line)["case_id"])
+                row = json.loads(line)
+                graded.add((row["candidate_alias"], row["case_id"]))
 
     lock = load_lock()
     requests = read_requests(input_path)
