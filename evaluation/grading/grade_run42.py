@@ -101,6 +101,8 @@ def main() -> int:
     parser.add_argument("--grader-version", default=LOCKED_GRADER_VERSION, help="Exact immutable local grader revision")
     parser.add_argument("--graded-at", help="ISO-8601 timestamp for imported grading decisions")
     parser.add_argument("--batch-size", type=int, default=30)
+    parser.add_argument("--allow-partial", action="store_true",
+                        help="Emit the ledger for the decisions that exist and report ungraded responses instead of failing")
     args = parser.parse_args()
     if args.batch_size < 1:
         parser.error("--batch-size must be positive")
@@ -372,6 +374,13 @@ def main() -> int:
         "status": report["status"]}
     (phase_dir / "run42-final-summary.json").write_text(json.dumps(final_summary, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2))
+    if args.allow_partial and report.get("grade_coverage"):
+        report["status"] = "grading_complete" if report["grade_coverage"]["coverage_complete"] else "grading_incomplete"
+        (phase_dir / "run42-grading-population-report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        final_summary["status"] = report["status"]
+        (phase_dir / "run42-final-summary.json").write_text(json.dumps(final_summary, indent=2) + "\n", encoding="utf-8")
+        print(json.dumps({"ungraded": report["grade_coverage"].get("missing", []), "status": report["status"]}))
+        return 0
     return 0 if report["status"] in {"requests_prepared_not_graded", "pilot_compared", "grading_complete"} else 2
 
 if __name__ == "__main__":
