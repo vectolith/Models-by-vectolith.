@@ -7,6 +7,14 @@ used. The run is reproducible: tasks come from the repository curriculum, teache
 sampling is seeded, and every accepted record carries teacher identity, revision,
 content hash and deterministic check results.
 
+Two corpus sources, in priority order:
+
+  * a pre-graded Run 42 corpus mounted under /kaggle/input/ash-prime-run42-corpus
+    (built by training/build_run42_corpus.py from the graded responses). Only
+    responses whose every rubric criterion passed are used, so the panel is the
+    five verified Run 42 candidates instead of live teacher generation.
+  * otherwise the in-kernel teacher panel below generates the corpus.
+
 Stages:
   1. fetch the repository and the curriculum
   2. ask each teacher in the panel to answer its assigned tasks
@@ -38,14 +46,47 @@ from transformers import (
     TrainingArguments,
 )
 
-WORK = Path("/kaggle/working")
+WORK = Path(os.environ.get("KAGGLE_WORKING_DIR", "/kaggle/working"))
 REPO = WORK / "repo"
 OUT = WORK / "out"
 CORPUS = OUT / "corpus"
-for path in (OUT, CORPUS):
-    path.mkdir(parents=True, exist_ok=True)
+
+
+def prepare_paths() -> None:
+    """Create the output tree. Deferred out of import time so the module stays
+    importable (and testable) on machines that have no /kaggle/working."""
+    for path in (OUT, CORPUS):
+        path.mkdir(parents=True, exist_ok=True)
+
 
 REPO_URL = "https://github.com/vectolith/Models-by-vectolith.git"
+
+# Pre-graded Run 42 corpus. When this directory exists the kernel trains from
+# graded responses instead of generating a fresh corpus on the GPU.
+GRADED_CORPUS_DIR = Path(os.environ.get("ASH_PRIME_CORPUS_DIR", "/kaggle/input/ash-prime-run42-corpus"))
+GRADED_CORPUS_FILE = "run42-graded-corpus.jsonl"
+GRADED_CORPUS_MANIFEST = "run42-graded-corpus.manifest.json"
+
+# License evidence for each Run 42 candidate, from evidence/teacher-rights-register.json.
+GRADED_TEACHER_LICENSES = {
+    "granite-3.1-3b-a800m": "apache-2.0",
+    "granite-4.2-3b": "apache-2.0",
+    "minicpm5-2b": "apache-2.0",
+    "lfm2.5-2.6b": "lfm-open-license",
+    "phi-4-mini-instruct": "mit",
+}
+
+GRADED_REQUIRED_FIELDS = (
+    "case_id",
+    "teacher",
+    "teacher_revision",
+    "source_artifact_sha256",
+    "system",
+    "prompt",
+    "response",
+    "response_sha256",
+    "accepted",
+)
 
 TEACHERS = {
     "granite-4.2-8b": {
@@ -85,8 +126,45 @@ STUDENTS = {
     },
 }
 
+# Panels used when training from the pre-graded Run 42 corpus: the teacher keys
+# are Run 42 candidate IDs, not the in-kernel generation panel above.
+GRADED_STUDENTS = {
+    "ash-prime": {
+        "model_id": "Qwen/Qwen3-4B-Instruct-2507",
+        "panel": ["granite-3.1-3b-a800m", "granite-4.2-3b", "minicpm5-2b", "lfm2.5-2.6b", "phi-4-mini-instruct"],
+        "epochs": 2,
+        "learning_rate": 1.5e-4,
+        "seed": 11,
+    },
+    "fyr-prima": {
+        "model_id": "Qwen/Qwen3-1.7B",
+        "panel": ["granite-4.2-3b", "minicpm5-2b", "phi-4-mini-instruct"],
+        "epochs": 2,
+        "learning_rate": 2e-4,
+        "seed": 29,
+    },
+}
+
 MAX_NEW_TOKENS = 320
 BATCH = 4
+
+REQUIRED_TASK_FIELDS = ("id", "competency", "system", "prompt")
+REQUIRED_CORPUS_FIELDS = (
+    "task_id",
+    "competency",
+    "prompt",
+    "system",
+    "teacher",
+    "teacher_model",
+    "teacher_revision",
+    "teacher_license",
+    "response",
+    "response_sha256",
+    "checks",
+)
+
+# Filled during corpus generation: teacher name -> immutable Hub revision.
+REVISIONS: dict = {}
 
 
 def log(message: str) -> None:
@@ -95,6 +173,36 @@ def log(message: str) -> None:
 
 def sha(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def seed_for(name: str) -> int:
+    """Process-independent sampling seed for one teacher.
+
+    Python randomises str hashing per interpreter (PYTHONHASHSEED), so
+    hash(name) would give a different seed on every run and break the
+    reproducibility the run summary claims. Derive the seed from the
+    content hash instead.
+    """
+    return int(sha(name)[:8], 16) % 10000
+
+
+def validate_task(task: dict, competencies: set) -> None:
+    missing = [field for field in REQUIRED_TASK_FIELDS if field not in task]
+    if missing:
+        raise ValueError(f"curriculum task {task.get('id')!r} missing fields {missing}")
+    if task["competency"] not in competencies:
+        raise ValueError(
+            f"curriculum task {task['id']!r} uses competency {task['competency']!r} "
+            "that no teacher in TEACHERS is assigned"
+        )
+
+
+def validate_corpus_row(row: dict) -> None:
+    missing = [field for field in REQUIRED_CORPUS_FIELDS if field not in row]
+    if missing:
+        raise ValueError(f"teacher record {row.get('task_id')!r} missing fields {missing}")
+    if row["response_sha256"] != sha(row["response"]):
+        raise ValueError(f"teacher record {row['task_id']!r} has a mismatched response hash")
 
 
 def fetch_repo() -> None:
@@ -107,8 +215,76 @@ def fetch_repo() -> None:
 def load_tasks() -> list:
     path = REPO / "training" / "curriculum" / "tasks-v1.jsonl"
     tasks = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
-    log(f"curriculum tasks: {len(tasks)}")
+    competencies = {competency for spec in TEACHERS.values() for competency in spec["competencies"]}
+    for task in tasks:
+        validate_task(task, competencies)
+    covered = {task["competency"] for task in tasks}
+    log(f"curriculum tasks: {len(tasks)} across {len(covered)} competencies")
     return tasks
+
+
+def load_graded_corpus() -> list:
+    """Load the pre-graded Run 42 corpus, or return [] when it is not mounted.
+
+    Every row must carry its provenance and an all-criteria-passed verdict;
+    rows that were rejected during grading are never trained on.
+    """
+    path = GRADED_CORPUS_DIR / GRADED_CORPUS_FILE
+    if not path.is_file():
+        log(f"no graded corpus at {path}; falling back to in-kernel generation")
+        return []
+    manifest_path = GRADED_CORPUS_DIR / GRADED_CORPUS_MANIFEST
+    if not manifest_path.is_file():
+        raise RuntimeError(f"graded corpus at {path} has no manifest at {manifest_path}")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if manifest.get("corpus_sha256") != sha(path.read_text(encoding="utf-8")):
+        raise RuntimeError("graded corpus content does not match its manifest digest")
+
+    rows = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        missing = [field for field in GRADED_REQUIRED_FIELDS if field not in row]
+        if missing:
+            raise ValueError(f"graded corpus row {row.get('case_id')!r} missing fields {missing}")
+        if row["response_sha256"] != sha(row["response"]):
+            raise ValueError(f"graded corpus row {row['case_id']!r} has a mismatched response hash")
+        if row.get("rejection_reason"):
+            continue
+        if not row.get("accepted"):
+            continue
+        if row.get("teacher") not in GRADED_TEACHER_LICENSES:
+            raise ValueError(f"graded corpus row {row['case_id']!r} has unknown teacher {row['teacher']!r}")
+        rows.append(row)
+    log(f"graded corpus: {len(rows)} accepted responses from {len({r['teacher'] for r in rows})} teachers")
+    return rows
+
+
+def build_graded_dataset(rows: list, panel: list, seed: int) -> list:
+    """Turn accepted graded responses into chat SFT rows for one student."""
+    dataset = []
+    for row in rows:
+        if row["teacher"] not in panel:
+            continue
+        dataset.append(
+            {
+                "messages": [
+                    {"role": "system", "content": row["system"]},
+                    {"role": "user", "content": row["prompt"]},
+                    {"role": "assistant", "content": row["response"]},
+                ],
+                "teacher": row["teacher"],
+                "teacher_model": row["teacher"],
+                "teacher_revision": row["teacher_revision"],
+                "teacher_license": GRADED_TEACHER_LICENSES[row["teacher"]],
+                "task_id": row["case_id"],
+                "response_sha256": row["response_sha256"],
+                "grade_total": (row.get("grade") or {}).get("total"),
+            }
+        )
+    dataset.sort(key=lambda item: sha(item["task_id"] + item["teacher"] + str(seed)))
+    return dataset
 
 
 def load_teacher(name: str, spec: dict):
@@ -130,7 +306,12 @@ def load_teacher(name: str, spec: dict):
         device_map="auto",
     )
     model.eval()
-    log(f"loaded teacher {name}")
+    revision = getattr(getattr(model, "config", None), "_commit_hash", None)
+    if revision:
+        REVISIONS[name] = revision
+        log(f"loaded teacher {name} at revision {revision}")
+    else:
+        log(f"loaded teacher {name} (no immutable revision available from the checkpoint config)")
     return tokenizer, model
 
 
@@ -148,7 +329,10 @@ def answer_tasks(tokenizer, model, tasks: list, seed: int) -> list:
         prompts = [render(tokenizer, task["system"], task["prompt"]) for task in chunk]
         encoded = tokenizer(
             prompts, return_tensors="pt", padding=True, truncation=True, max_length=1536
-        ).to(model.device)
+        )
+        encoded.pop("token_type_ids", None)
+        input_len = encoded["input_ids"].shape[1]
+        encoded = encoded.to(model.device)
         generated = model.generate(
             **encoded,
             max_new_tokens=MAX_NEW_TOKENS,
@@ -159,7 +343,7 @@ def answer_tasks(tokenizer, model, tasks: list, seed: int) -> list:
             pad_token_id=tokenizer.pad_token_id,
         )
         for index, task in enumerate(chunk):
-            new_tokens = generated[index][encoded["input_ids"].shape[1] :]
+            new_tokens = generated[index][input_len:]
             text = tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
             records.append({"task": task, "text": text})
         log(f"  answered {min(start + BATCH, len(tasks))}/{len(tasks)}")
@@ -197,26 +381,28 @@ def generate_corpus(tasks: list) -> dict:
             log(f"teacher {name} has no assigned competencies; skipping")
             continue
         tokenizer, model = load_teacher(name, spec)
+        revision = REVISIONS.get(name)
         started = time.time()
-        answers = answer_tasks(tokenizer, model, subset, seed=abs(hash(name)) % 10000)
+        answers = answer_tasks(tokenizer, model, subset, seed=seed_for(name))
         elapsed = round(time.time() - started, 1)
         accepted = []
         for record in answers:
             checks = deterministic_checks(record["task"], record["text"])
-            accepted.append(
-                {
-                    "task_id": record["task"]["id"],
-                    "competency": record["task"]["competency"],
-                    "prompt": record["task"]["prompt"],
-                    "system": record["task"]["system"],
-                    "teacher": name,
-                    "teacher_model": spec["model_id"],
-                    "teacher_license": spec["license"],
-                    "response": record["text"],
-                    "response_sha256": sha(record["text"]),
-                    "checks": checks,
-                }
-            )
+            row = {
+                "task_id": record["task"]["id"],
+                "competency": record["task"]["competency"],
+                "prompt": record["task"]["prompt"],
+                "system": record["task"]["system"],
+                "teacher": name,
+                "teacher_model": spec["model_id"],
+                "teacher_revision": revision,
+                "teacher_license": spec["license"],
+                "response": record["text"],
+                "response_sha256": sha(record["text"]),
+                "checks": checks,
+            }
+            validate_corpus_row(row)
+            accepted.append(row)
         corpus[name] = accepted
         path = CORPUS / f"teacher-{name}.jsonl"
         path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in accepted), encoding="utf-8")
@@ -240,6 +426,9 @@ def build_dataset(corpus: dict, panel: list, seed: int) -> list:
                         {"role": "assistant", "content": record["response"]},
                     ],
                     "teacher": record["teacher"],
+                    "teacher_model": record["teacher_model"],
+                    "teacher_revision": record["teacher_revision"],
+                    "teacher_license": record["teacher_license"],
                     "task_id": record["task_id"],
                     "response_sha256": record["response_sha256"],
                 }
@@ -371,7 +560,9 @@ def evaluate_student(name: str, spec: dict) -> dict:
             tokenize=False,
             add_generation_prompt=True,
         )
-        encoded = tokenizer(prompt, return_tensors="pt").to(model.device)
+        encoded = tokenizer(prompt, return_tensors="pt")
+        encoded.pop("token_type_ids", None)
+        encoded = encoded.to(model.device)
         with torch.inference_mode():
             generated = model.generate(
                 **encoded, max_new_tokens=200, do_sample=False, pad_token_id=tokenizer.pad_token_id
@@ -395,20 +586,33 @@ def evaluate_student(name: str, spec: dict) -> dict:
 
 def main() -> None:
     started = time.time()
+    prepare_paths()
     fetch_repo()
-    tasks = load_tasks()
-    corpus = generate_corpus(tasks)
+    graded_rows = load_graded_corpus()
+    tasks: list = []
+    corpus: dict = {}
+    if graded_rows:
+        students = GRADED_STUDENTS
+        corpus_source = "graded_run42"
+    else:
+        students = STUDENTS
+        corpus_source = "in_kernel_generation"
+        tasks = load_tasks()
+        corpus = generate_corpus(tasks)
 
     manifests = {}
-    for name, spec in STUDENTS.items():
-        rows = build_dataset(corpus, spec["panel"], spec["seed"])
+    for name, spec in students.items():
+        if graded_rows:
+            rows = build_graded_dataset(graded_rows, spec["panel"], spec["seed"])
+        else:
+            rows = build_dataset(corpus, spec["panel"], spec["seed"])
         log(f"{name}: {len(rows)} training records from panel {spec['panel']}")
         if len(rows) < 10:
             raise RuntimeError(f"{name} has too few accepted records to train on: {len(rows)}")
         manifests[name] = train_student(name, spec, rows)
 
     evaluations = {}
-    for name, spec in STUDENTS.items():
+    for name, spec in students.items():
         try:
             evaluations[name] = evaluate_student(name, spec)
         except Exception:
@@ -423,9 +627,18 @@ def main() -> None:
             "gpu_count": torch.cuda.device_count(),
             "torch": torch.__version__,
         },
-        "teachers": {name: {"model_id": spec["model_id"], "license": spec["license"]} for name, spec in TEACHERS.items()},
+        "teachers": {
+            name: {
+                "model_id": spec["model_id"],
+                "revision": REVISIONS.get(name),
+                "license": spec["license"],
+            }
+            for name, spec in TEACHERS.items()
+        },
         "students": manifests,
         "evaluations": evaluations,
+        "corpus_source": corpus_source,
+        "graded_corpus_responses": len(graded_rows),
         "curriculum_tasks": len(tasks),
     }
     (OUT / "run-summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
