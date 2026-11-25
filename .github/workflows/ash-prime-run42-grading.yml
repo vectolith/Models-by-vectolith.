@@ -2,15 +2,15 @@ name: ASH PRIME Run 42 sharded semantic grading
 
 on:
   workflow_dispatch:
-        inputs:
-          shard_count:
-            description: "Number of grading shards (each shard grades a contiguous slice of all 900 requests)"
-            required: false
-            default: "30"
-          prior_run_id:
-            description: "Optional completed run of this workflow to resume decisions from; only rejected cases are re-graded"
-            required: false
-            default: ""
+    inputs:
+      shard_count:
+        description: "Number of grading shards (each shard grades a contiguous slice of all 900 requests)"
+        required: false
+        default: "30"
+      prior_run_id:
+        description: "Optional completed run of this workflow to resume decisions from; only rejected cases are re-graded"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -63,32 +63,32 @@ jobs:
             --artifact phi-4-mini-instruct=/tmp/zips/phi-4-mini-instruct.zip \
             --out-dir /tmp/run42 --phase all --batch-size 900
           ls -l /tmp/run42/all/requests
-          - name: Restore prior shard decisions
-            if: inputs.prior_run_id != ''
-            env:
-              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            run: |
-              set -euo pipefail
-              mkdir -p /tmp/run42/prior
-              gh api "repos/${{ github.repository }}/actions/runs/${{ inputs.prior_run_id }}/artifacts?per_page=100" \
-                --jq '.artifacts[] | select(.name | startswith("run42-decisions-")) | [.id, .name] | @tsv' > /tmp/prior.tsv
-              cat /tmp/prior.tsv
-              while IFS=$'\t' read -r id name; do
-                [ -z "$id" ] && continue
-                gh api "repos/${{ github.repository }}/actions/artifacts/$id/zip" > /tmp/prior.zip
-                rm -rf /tmp/priorx && mkdir -p /tmp/priorx
-                unzip -oq /tmp/prior.zip -d /tmp/priorx
-                for f in /tmp/priorx/*.jsonl; do
-                  [ -e "$f" ] && cp "$f" /tmp/run42/prior/
-                done
-              done < /tmp/prior.tsv
-              ls -l /tmp/run42/prior | head -40
-              cat /tmp/run42/prior/*.jsonl 2>/dev/null | wc -l
-          - uses: actions/upload-artifact@v4
-            with:
-              name: run42-prepared
-              path: /tmp/run42
-              retention-days: 7
+      - name: Restore prior shard decisions
+        if: inputs.prior_run_id != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/run42/prior
+          gh api "repos/${{ github.repository }}/actions/runs/${{ inputs.prior_run_id }}/artifacts?per_page=100" \
+            --jq '.artifacts[] | select(.name | startswith("run42-decisions-")) | [.id, .name] | @tsv' > /tmp/prior.tsv
+          cat /tmp/prior.tsv
+          while IFS=$'\t' read -r id name; do
+            [ -z "$id" ] && continue
+            gh api "repos/${{ github.repository }}/actions/artifacts/$id/zip" > /tmp/prior.zip
+            rm -rf /tmp/priorx && mkdir -p /tmp/priorx
+            unzip -oq /tmp/prior.zip -d /tmp/priorx
+            for f in /tmp/priorx/*.jsonl; do
+              [ -e "$f" ] && cp "$f" /tmp/run42/prior/
+            done
+          done < /tmp/prior.tsv
+          ls -l /tmp/run42/prior | head -40
+          cat /tmp/run42/prior/*.jsonl 2>/dev/null | wc -l
+      - uses: actions/upload-artifact@v4
+        with:
+          name: run42-prepared
+          path: /tmp/run42
+          retention-days: 7
 
   grade:
     name: grade shard ${{ matrix.shard }}
