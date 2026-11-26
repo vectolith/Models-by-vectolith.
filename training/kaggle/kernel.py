@@ -128,9 +128,17 @@ STUDENTS = {
 
 # Panels used when training from the pre-graded Run 42 corpus: the teacher keys
 # are Run 42 candidate IDs, not the in-kernel generation panel above.
+# Run 42 session trains the 8B ASH PRIME student only: Qwen3-8B QLoRA (4-bit NF4,
+# r=16) for 2 epochs fits one Kaggle session. FYR PRIMA is left out of this run.
+TRAIN_SELECTION = ("ash-prime",)
+
+# Every Run 42 corpus sample (system + user + assistant) sits inside 512 tokens:
+# Qwen3-8B tokenizer over all 900 candidate/case rows gives p50 291, p99 377, max 401.
+MAX_SEQ_LEN = int(os.environ.get("ASH_PRIME_MAX_SEQ_LEN", "512"))
+
 GRADED_STUDENTS = {
     "ash-prime": {
-        "model_id": "Qwen/Qwen3-4B-Instruct-2507",
+        "model_id": "Qwen/Qwen3-8B",
         "panel": ["granite-3.1-3b-a800m", "granite-4.2-3b", "minicpm5-2b", "lfm2.5-2.6b", "phi-4-mini-instruct"],
         "epochs": 2,
         "learning_rate": 1.5e-4,
@@ -437,8 +445,8 @@ def build_dataset(corpus: dict, panel: list, seed: int) -> list:
     return rows
 
 
-class ChatCollator:
-    def __init__(self, tokenizer, max_length: int = 1536):
+    class ChatCollator:
+    def __init__(self, tokenizer, max_length: int = MAX_SEQ_LEN):
         self.tokenizer = tokenizer
         self.max_length = max_length
 
@@ -509,10 +517,12 @@ def train_student(name: str, spec: dict, rows: list) -> dict:
         fp16=True,
         optim="paged_adamw_8bit",
     )
-    trainer = Trainer(model=model, args=arguments, train_dataset=rows, data_collator=ChatCollator(tokenizer))
-    started = time.time()
-    result = trainer.train()
-    elapsed = round(time.time() - started, 1)
+        trainer = Trainer(model=model, args=arguments, train_dataset=rows, data_collator=ChatCollator(tokenizer))
+        started = time.time()
+        result = trainer.train()
+        elapsed = round(time.time() - started, 1)
+        log(f"{name}: {trainer.state.global_step} steps, {trainer.state.epoch} epochs, "
+            f"final loss {result.training_loss:.4f}")
     trainer.save_model(str(adapter_dir))
     tokenizer.save_pretrained(str(adapter_dir))
 
@@ -526,8 +536,12 @@ def train_student(name: str, spec: dict, rows: list) -> dict:
         "learning_rate": spec["learning_rate"],
         "seed": spec["seed"],
         "train_seconds": elapsed,
-        "train_loss": result.training_loss,
-        "lora": {"r": 16, "alpha": 32, "dropout": 0.05},
+            "train_loss": result.training_loss,
+            "global_step": trainer.state.global_step,
+            "completed_epochs": trainer.state.epoch,
+            "max_seq_len": MAX_SEQ_LEN,
+            "quantization": {"load_in_4bit": True, "quant_type": "nf4", "double_quant": True},
+            "lora": {"r": 16, "alpha": 32, "dropout": 0.05},
         "dataset_sha256": sha(dataset_path.read_text(encoding="utf-8")),
     }
     (OUT / f"{name}-training-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
@@ -592,7 +606,7 @@ def main() -> None:
     tasks: list = []
     corpus: dict = {}
     if graded_rows:
-        students = GRADED_STUDENTS
+        students = {k: v for k, v in GRADED_STUDENTS.items() if k in TRAIN_SELECTION}
         corpus_source = "graded_run42"
     else:
         students = STUDENTS

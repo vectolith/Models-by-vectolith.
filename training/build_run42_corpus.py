@@ -167,7 +167,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--response-index", type=Path, required=True)
     parser.add_argument("--grade-records", type=Path, required=True)
-    parser.add_argument("--cases", type=Path, default=Path("evaluation/fixtures/prime_benchmark_v1.jsonl"))
+    parser.add_argument("--cases", type=Path, action="append",
+                        help="Benchmark case suite; repeat to merge several suites (Run 42 spans "
+                             "prime_benchmark_v1 plus qualification v2-v4)")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--accepted-only", action="store_true", help="Write only accepted rows")
     parser.add_argument("--require-coverage", action="store_true", help="Fail unless every indexed response is graded")
@@ -177,7 +179,14 @@ def main() -> int:
     if not index:
         parser.error(f"{args.response_index}: empty response index")
     grades = index_grades(args.grade_records)
-    cases = load_cases(args.cases)
+    case_paths = args.cases or [Path("evaluation/fixtures/prime_benchmark_v1.jsonl")]
+    cases: dict[str, dict[str, str]] = {}
+    for case_path in case_paths:
+        merged = load_cases(case_path)
+        clash = set(merged) & set(cases)
+        if clash:
+            raise ValueError(f"{case_path}: duplicate case ids already loaded: {sorted(clash)[:5]}")
+        cases.update(merged)
     rows = build_rows(index, grades, cases)
 
     for row in rows:
@@ -200,7 +209,14 @@ def main() -> int:
         "schema_version": SCHEMA,
         "response_index_sha256": hashlib.sha256(args.response_index.read_bytes()).hexdigest(),
         "grade_records_sha256": hashlib.sha256(args.grade_records.read_bytes()).hexdigest(),
-        "cases_sha256": hashlib.sha256(args.cases.read_bytes()).hexdigest(),
+        "cases_sha256": hashlib.sha256(
+            "".join(f"{path.name}:{hashlib.sha256(path.read_bytes()).hexdigest()}\n"
+                    for path in case_paths).encode("utf-8")).hexdigest(),
+        "case_suites": [
+            {"file": str(path), "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+             "cases": sum(1 for line in path.read_text(encoding="utf-8").splitlines() if line.strip())}
+            for path in case_paths
+        ],
         "indexed_responses": len(rows),
         "graded_responses": graded,
         "accepted_responses": len(accepted),
