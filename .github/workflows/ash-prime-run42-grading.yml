@@ -69,7 +69,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          mkdir -p /tmp/run42/prior
+          mkdir -p /tmp/run42/prior /tmp/priorraw
+          rm -f /tmp/priorraw/decisions.jsonl
           gh api "repos/${{ github.repository }}/actions/runs/${{ inputs.prior_run_id }}/artifacts?per_page=100" \
             --jq '.artifacts[] | select(.name | startswith("run42-decisions-")) | [.id, .name] | @tsv' > /tmp/prior.tsv
           cat /tmp/prior.tsv
@@ -79,9 +80,19 @@ jobs:
             rm -rf /tmp/priorx && mkdir -p /tmp/priorx
             unzip -oq /tmp/prior.zip -d /tmp/priorx
             for f in /tmp/priorx/*.jsonl; do
-              [ -e "$f" ] && cp "$f" /tmp/run42/prior/
+              if [ -e "$f" ]; then cat "$f" >> /tmp/priorraw/decisions.jsonl; fi
             done
           done < /tmp/prior.tsv
+          wc -l /tmp/priorraw/decisions.jsonl || true
+          # Blinded aliases are re-randomised by every prepare run, so prior decisions are
+          # re-bound to the current alias map by response digest, never by their stale alias.
+          python evaluation/grading/rebind_decisions.py \
+            --requests /tmp/run42/all/requests/batch-001.jsonl \
+            --decisions /tmp/priorraw/decisions.jsonl \
+            --out-dir /tmp/run42/prior \
+            --shard-count "${{ github.event.inputs.shard_count || '30' }}" \
+            --report /tmp/run42/prior-rebind-report.json
+          cat /tmp/run42/prior-rebind-report.json
           ls -l /tmp/run42/prior | head -40
           cat /tmp/run42/prior/*.jsonl 2>/dev/null | wc -l
       - uses: actions/upload-artifact@v4
@@ -171,20 +182,20 @@ jobs:
           pattern: run42-decisions-*
           path: /tmp/decisions
           merge-multiple: true
-      - name: Concatenate decisions
+      - name: Concatenate and re-bind decisions
         run: |
           set -euo pipefail
-          python - <<'PY'
-          import pathlib, hashlib
-          files = sorted(pathlib.Path("/tmp/decisions").rglob("shard-*.jsonl"), key=lambda p: int(p.stem.split("-")[1]))
-          print("shards", len(files))
-          rows = []
-          for f in files:
-              rows.extend([l for l in f.read_text(encoding="utf-8").splitlines() if l.strip()])
-          out = pathlib.Path("/tmp/all-decisions.jsonl")
-          out.write_text("\n".join(rows) + "\n", encoding="utf-8")
-          print("decisions", len(rows), "sha256", hashlib.sha256(out.read_bytes()).hexdigest())
-          PY
+          # Re-bind every decision to the current alias map by response digest and
+          # fail on any digest that cannot be bound, so a stale alias can never
+          # silently attach a grade to the wrong candidate.
+          python evaluation/grading/rebind_decisions.py \
+            --requests /tmp/run42/all/requests/batch-001.jsonl \
+            --decisions /tmp/decisions \
+            --out-file /tmp/all-decisions.jsonl \
+            --shard-count "${{ github.event.inputs.shard_count || '30' }}" \
+            --report /tmp/run42/all/decision-rebind-report.json
+          cat /tmp/run42/all/decision-rebind-report.json
+          wc -l /tmp/all-decisions.jsonl
       - name: Build evidence-bound grade records
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
