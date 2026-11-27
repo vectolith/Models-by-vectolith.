@@ -95,7 +95,7 @@ jobs:
           cat /tmp/run42/prior-rebind-report.json
           ls -l /tmp/run42/prior | head -40
           cat /tmp/run42/prior/*.jsonl 2>/dev/null | wc -l
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: run42-prepared
           path: /tmp/run42
@@ -157,7 +157,7 @@ jobs:
           python evaluation/grading/local_semantic_grader.py \
             --input /tmp/shard.jsonl \
             --output /tmp/decisions/shard-${{ matrix.shard }}.jsonl $RESUME
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: run42-decisions-${{ matrix.shard }}
           path: /tmp/decisions
@@ -225,7 +225,7 @@ jobs:
                 --decisions /tmp/all-decisions.jsonl \
                 --allow-partial \
                 --graded-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: run42-grade-ledger
           path: |

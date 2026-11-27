@@ -102,7 +102,7 @@ jobs:
             2>&1 | tee "artifacts/evaluations/${CANDIDATE_ID}-ash-prime.log"
       - name: Preserve snapshot, compute and every raw response
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
           path: |
@@ -211,7 +211,7 @@ jobs:
           python evaluation/compare_prime_teacher_responses.py "${ARGS[@]}" --output "$OUT"
       - name: Preserve disagreement report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: prime-teacher-comparison-report
           path: artifacts/reports/*.json

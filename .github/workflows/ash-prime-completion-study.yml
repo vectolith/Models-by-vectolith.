@@ -61,7 +61,7 @@ jobs:
             --cache-dir "${{ runner.temp }}/hf-cache"
       - name: Preserve candidate results and failure evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: prime-controlled-completion-${{ matrix.candidate }}-${{ inputs.max_new_tokens }}
           path: artifacts/completion-study/${{ matrix.candidate }}/

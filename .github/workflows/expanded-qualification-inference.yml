@@ -40,7 +40,7 @@ jobs:
           python evaluation/run_real_candidate_eval.py --repo ibm-granite/granite-3.1-3b-a800m-instruct --revision a02780686e08a03fe0d2679a293b5c74a90efa89 --family "IBM Granite" --candidate-id granite-3.1-3b-a800m --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/granite-3.1-3b-a800m-ash_prime.json 2>&1 | tee artifacts/evaluations/granite-3.1-3b-a800m-ash_prime.log
       - name: Preserve raw evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: prime-teacher-granite-3.1-3b-a800m
           path: |
@@ -75,7 +75,7 @@ jobs:
           python evaluation/run_real_candidate_eval.py --repo ibm-granite/granite-4.2-3b --revision 4e9c275e232f10211ec88644d106a1f6a1b60e06 --family "IBM Granite" --candidate-id granite-4.2-3b --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/granite-4.2-3b-ash_prime.json 2>&1 | tee artifacts/evaluations/granite-4.2-3b-ash_prime.log
       - name: Preserve raw evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: prime-teacher-granite-4.2-3b
           path: |
@@ -110,7 +110,7 @@ jobs:
           python evaluation/run_real_candidate_eval.py --repo openbmb/MiniCPM5-2B --revision 42433e90dad95123ab87729fd7011e7110629556 --family "OpenBMB MiniCPM" --candidate-id minicpm5-2b --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/minicpm5-2b-ash_prime.json 2>&1 | tee artifacts/evaluations/minicpm5-2b-ash_prime.log
       - name: Preserve raw evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: prime-teacher-minicpm5-2b
           path: |
@@ -156,7 +156,7 @@ jobs:
           python evaluation/run_real_candidate_eval.py --repo HuggingFaceTB/SmolLM3-3B --revision "$REVISION" --family "HuggingFaceTB SmolLM3" --candidate-id smollm3-3b --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/smollm3-3b-ash_prime.json 2>&1 | tee artifacts/evaluations/smollm3-3b-ash_prime.log
       - name: Preserve snapshot manifest and raw evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: prime-teacher-smollm3-3b
           path: |
@@ -195,7 +195,7 @@ jobs:
           python evaluation/run_real_candidate_eval.py --repo LiquidAI/LFM2.5-2.6B --revision "$REVISION" --family "LiquidAI LFM2.5" --candidate-id lfm2.5-2.6b --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/lfm2.5-2.6b-ash_prime.json 2>&1 | tee artifacts/evaluations/lfm2.5-2.6b-ash_prime.log
       - name: Preserve snapshot manifest and raw evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: prime-teacher-lfm2.5-2.6b
           path: |
@@ -233,7 +233,7 @@ jobs:
           python evaluation/run_real_candidate_eval.py --repo microsoft/Phi-4-mini-instruct --revision "$REVISION" --family "Microsoft Phi-4" --candidate-id phi-4-mini-instruct --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/phi-4-mini-instruct-ash_prime.json 2>&1 | tee artifacts/evaluations/phi-4-mini-instruct-ash_prime.log
       - name: Preserve snapshot manifest and raw evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: prime-teacher-phi-4-mini-instruct
           path: |
