@@ -59,7 +59,7 @@ def prepare_paths() -> None:
         path.mkdir(parents=True, exist_ok=True)
 
 
-REPO_URL = "https://github.com/vectolith/Models-by-vectolith.git"
+REPO_URL = "https://github.com/vectolith/Models-by-vectolith..git"
 
 # Pre-graded Run 42 corpus. When this directory exists the kernel trains from
 # graded responses instead of generating a fresh corpus on the GPU.
