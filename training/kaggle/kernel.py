@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import re
 import subprocess
@@ -380,6 +381,26 @@ def generate_corpus(tasks: list) -> dict:
         if not subset:
             log(f"teacher {name} has no assigned competencies; skipping")
             continue
+        cached = CORPUS / f"teacher-{name}.jsonl"
+        if cached.exists() and cached.stat().st_size > 0:
+            cached_rows = []
+            cache_ok = True
+            for line in cached.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                try:
+                    row = json.loads(line)
+                    validate_corpus_row(row)
+                except Exception:
+                    cache_ok = False
+                    break
+                cached_rows.append(row)
+            if cache_ok and cached_rows:
+                corpus[name] = cached_rows
+                log(f"teacher {name}: reused {len(cached_rows)} cached records from {cached}")
+                continue
+            log(f"teacher {name}: cached corpus at {cached} unusable; regenerating")
+
         tokenizer, model = load_teacher(name, spec)
         revision = REVISIONS.get(name)
         started = time.time()
@@ -494,6 +515,9 @@ def train_student(name: str, spec: dict, rows: list) -> dict:
     model.print_trainable_parameters()
 
     adapter_dir = OUT / f"{name}-adapter"
+    steps_per_epoch = max(1, math.ceil(len(rows) / (2 * 4)))
+    total_steps = max(1, steps_per_epoch * math.ceil(spec["epochs"]))
+    warmup_steps = max(1, int(0.03 * total_steps))
     arguments = TrainingArguments(
         output_dir=str(WORK / f"train-{name}"),
         per_device_train_batch_size=2,
@@ -501,7 +525,7 @@ def train_student(name: str, spec: dict, rows: list) -> dict:
         num_train_epochs=spec["epochs"],
         learning_rate=spec["learning_rate"],
         lr_scheduler_type="cosine",
-        warmup_ratio=0.03,
+        warmup_steps=warmup_steps,
         logging_steps=5,
         save_strategy="no",
         report_to=[],
