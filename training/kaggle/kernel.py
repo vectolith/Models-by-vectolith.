@@ -485,6 +485,7 @@ class ChatCollator:
 
 
 def train_student(name: str, spec: dict, rows: list) -> dict:
+    from datasets import Dataset
     from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
     dataset_path = OUT / f"{name}-sft.jsonl"
@@ -532,8 +533,9 @@ def train_student(name: str, spec: dict, rows: list) -> dict:
         seed=spec["seed"],
         fp16=True,
         optim="paged_adamw_8bit",
+        remove_unused_columns=False,
     )
-    trainer = Trainer(model=model, args=arguments, train_dataset=rows, data_collator=ChatCollator(tokenizer))
+    trainer = Trainer(model=model, args=arguments, train_dataset=Dataset.from_list(rows), data_collator=ChatCollator(tokenizer))
     started = time.time()
     result = trainer.train()
     elapsed = round(time.time() - started, 1)
