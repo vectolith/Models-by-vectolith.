@@ -260,7 +260,7 @@ def _offsite_copy(path: Path) -> None:
         traceback.print_exc()
 
 
-def persist(label: str, *paths: Path) -> dict:
+def _persist_locked(label: str, *paths: Path) -> dict:
     """Copy artifacts to durable storage now, then verify the copy."""
     root = durable_root()
     record = {"run_id": RUN_ID, "label": label, "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "artifacts": {}}
@@ -302,6 +302,26 @@ def persist(label: str, *paths: Path) -> dict:
         except Exception:  # noqa: BLE001 - logging must never kill a run
             pass
     return record
+
+
+PERSIST_LOCK = Path("/tmp/ash-prime-persist.lock")
+
+
+def persist(label: str, *paths: Path) -> dict:
+    """Mirror artifacts under an exclusive lock.
+
+    Two students now train in separate processes on their own GPU, so both can
+    mirror at the same moment; without the lock their dataset versions race and
+    one of them fails.
+    """
+    import fcntl
+
+    with PERSIST_LOCK.open("a+") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            return _persist_locked(label, *paths)
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 class PersistCallback(TrainerCallback):
@@ -943,6 +963,73 @@ def evaluate_student(name: str, spec: dict) -> dict:
     return {"student": name, "cases": len(cases)}
 
 
+def train_one(name: str) -> dict:
+    """Train a single student in this process, on the one GPU it can see."""
+    ensure_bitsandbytes()
+    prepare_paths()
+    fetch_repo()
+    graded_rows = load_graded_corpus()
+    if not graded_rows:
+        raise RuntimeError("single-student mode needs the graded corpus")
+    spec = GRADED_STUDENTS.get(name) or STUDENTS[name]
+    rows = build_graded_dataset(graded_rows, spec["panel"], spec["seed"])
+    log(f"{name}: {len(rows)} training records from panel {spec['panel']}")
+    if len(rows) < 10:
+        return {"student": name, "status": "insufficient_records", "records": len(rows)}
+    return train_student(name, spec, rows)
+
+
+def train_in_parallel(students: dict, graded_rows: list) -> dict:
+    """Run each student as its own process pinned to its own GPU.
+
+    Both cards are used at once: the 4B on cuda:0 and the 1.7B on cuda:1, so the
+    wall clock is the slower of the two instead of the sum.
+    """
+    started = time.time()
+    running = {}
+    for index, (name, spec) in enumerate(students.items()):
+        log_path = OUT / f"train-{name}.log"
+        env = dict(os.environ, CUDA_VISIBLE_DEVICES=str(index), ASH_PRIME_RUN_ID=RUN_ID)
+        env.setdefault("HF_HOME", str(WORK / "hf-cache"))
+        handle = log_path.open("w", encoding="utf-8")
+        proc = subprocess.Popen(  # noqa: S603 - fixed argv, own script
+            [sys.executable, "-u", str(Path(__file__).resolve()), "--student", name],
+            env=env,
+            stdout=handle,
+            stderr=subprocess.STDOUT,
+            cwd=str(WORK),
+        )
+        running[name] = (proc, handle, log_path)
+        log(f"{name}: training on GPU {index} (pid {proc.pid})")
+
+    manifests = {}
+    for name, (proc, handle, log_path) in running.items():
+        code = proc.wait()
+        handle.close()
+        manifest_path = OUT / f"{name}-training-manifest.json"
+        # filesystem timestamps can be coarse (whole seconds), so allow a second
+        fresh = manifest_path.exists() and manifest_path.stat().st_mtime >= started - 1.5
+        if code == 0 and fresh:
+            manifests[name] = json.loads(manifest_path.read_text(encoding="utf-8"))
+            log(f"{name}: finished on its own GPU, exit 0")
+        else:
+            tail = ""
+            try:
+                tail = log_path.read_text(encoding="utf-8", errors="replace")[-1200:]
+            except Exception:  # noqa: BLE001
+                pass
+            log(f"{name}: worker exited {code} without a fresh manifest; tail below")
+            log(tail)
+            manifests[name] = {
+                "student": name,
+                "status": "failed",
+                "exit_code": code,
+                "log": str(log_path),
+                "log_tail": tail,
+            }
+    return manifests
+
+
 def main() -> None:
     started = time.time()
     ensure_bitsandbytes()
@@ -961,7 +1048,15 @@ def main() -> None:
         corpus = generate_corpus(tasks)
 
     manifests = {}
-    for name, spec in students.items():
+    gpus = torch.cuda.device_count() if torch.cuda.is_available() else 0
+    parallel = gpus >= 2 and len(students) == 2 and bool(graded_rows)
+    if parallel:
+        log(f"{gpus} GPUs visible: {list(students)} train at the same time, one per card")
+        manifests = train_in_parallel(students, graded_rows)
+    else:
+        log(f"{gpus} GPU(s) visible: training sequentially")
+
+    for name, spec in ([] if parallel else students.items()):
         if graded_rows:
             rows = build_graded_dataset(graded_rows, spec["panel"], spec["seed"])
         else:
@@ -1021,4 +1116,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    if "--student" in sys.argv:
+        trained = train_one(sys.argv[sys.argv.index("--student") + 1])
+        print("MANIFEST " + json.dumps(trained))
+    else:
+        main()

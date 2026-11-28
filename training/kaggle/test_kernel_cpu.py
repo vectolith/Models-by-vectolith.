@@ -22,6 +22,7 @@ import types
 import unittest
 import zipfile
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
@@ -573,6 +574,115 @@ class ResumeTests(unittest.TestCase):
         train_dir = Path(self.dir.name) / "train-ash-prime"
         train_dir.mkdir()
         self.assertIsNone(self.kernel.latest_checkpoint(train_dir))
+
+    def test_metadata_requests_the_two_gpu_shape(self):
+        metadata = json.loads((HERE / "kernel-metadata.json").read_text(encoding="utf-8"))
+        self.assertTrue(metadata["enable_gpu"])
+        self.assertEqual(metadata["machine_shape"], "NvidiaTeslaT4")
+
+
+class ParallelTrainingTests(unittest.TestCase):
+    """Each student gets its own process on its own T4."""
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.kernel = load_kernel(self.dir.name)
+        self.kernel.OUT = Path(self.dir.name) / "out"
+        self.kernel.OUT.mkdir(parents=True, exist_ok=True)
+        self.students = {"ash-prime": {"seed": 11}, "fyr-prima": {"seed": 29}}
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def _run(self, side_effect):
+        with mock.patch("subprocess.Popen", side_effect=side_effect):
+            return self.kernel.train_in_parallel(self.students, [{"case_id": "x"}])
+
+    def test_each_worker_is_pinned_to_its_own_card(self):
+        seen = {}
+
+        def _popen(argv, **kwargs):
+            name = argv[argv.index("--student") + 1]
+            seen[name] = kwargs["env"]["CUDA_VISIBLE_DEVICES"]
+            kwargs["stdout"].write("")
+            kwargs["stdout"].close()
+
+            class _Proc:
+                pid = 1
+
+                def wait(self):
+                    return 0
+
+            return _Proc()
+
+        self._run(_popen)
+        self.assertEqual(set(seen.values()), {"0", "1"})
+        self.assertEqual(len(set(seen.values())), 2, "both students must not share a card")
+
+    def test_worker_manifests_are_collected(self):
+        out = self.kernel.OUT
+
+        def _popen(argv, **kwargs):
+            name = argv[argv.index("--student") + 1]
+            (out / f"{name}-training-manifest.json").write_text(
+                json.dumps({"student": name, "status": "trained", "records": 42}), encoding="utf-8"
+            )
+            kwargs["stdout"].close()
+
+            class _Proc:
+                pid = 1
+
+                def wait(self):
+                    return 0
+
+            return _Proc()
+
+        manifests = self._run(_popen)
+        self.assertEqual(manifests["ash-prime"]["status"], "trained")
+        self.assertEqual(manifests["fyr-prima"]["records"], 42)
+
+    def test_a_dead_worker_is_reported_not_disguised(self):
+        def _popen(argv, **kwargs):
+            name = argv[argv.index("--student") + 1]
+            kwargs["stdout"].write(f"{name} exploded\n")
+            kwargs["stdout"].close()
+
+            class _Proc:
+                pid = 1
+
+                def wait(self):
+                    return 1
+
+            return _Proc()
+
+        manifests = self._run(_popen)
+        self.assertEqual(manifests["ash-prime"]["status"], "failed")
+        self.assertEqual(manifests["ash-prime"]["exit_code"], 1)
+
+    def test_stale_manifest_from_an_old_run_is_not_trusted(self):
+        out = self.kernel.OUT
+        stale = out / "ash-prime-training-manifest.json"
+        stale.write_text(json.dumps({"student": "ash-prime", "status": "trained", "records": 1}), encoding="utf-8")
+        os.utime(stale, (0, 0))
+
+        def _popen(argv, **kwargs):
+            kwargs["stdout"].close()
+
+            class _Proc:
+                pid = 1
+
+                def wait(self):
+                    return 1
+
+            return _Proc()
+
+        manifests = self._run(_popen)
+        self.assertEqual(manifests["ash-prime"]["status"], "failed")
+
+    def test_persist_is_serialised_with_a_lock(self):
+        source = KERNEL.read_text(encoding="utf-8")
+        self.assertIn("fcntl.flock", source, "concurrent workers must serialise mirroring")
+        self.assertIn("_persist_locked", source)
 
     def test_training_arguments_checkpoint_instead_of_saving_nothing(self):
         source = KERNEL.read_text(encoding="utf-8")
