@@ -20,6 +20,7 @@ import sys
 import tempfile
 import types
 import unittest
+import zipfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -60,8 +61,9 @@ def _stub_dependencies() -> None:
         "AutoModelForCausalLM",
         "AutoTokenizer",
         "BitsAndBytesConfig",
-        "Trainer",
-        "TrainingArguments",
+            "Trainer",
+            "TrainerCallback",
+            "TrainingArguments",
     ):
         setattr(transformers, name, _NoOp)
     sys.modules.setdefault("torch", torch)
@@ -424,6 +426,102 @@ class GradedCorpusTests(unittest.TestCase):
             for teacher in spec["panel"]:
                 self.assertIn(teacher, self.kernel.GRADED_TEACHER_LICENSES, f"{name} panel names {teacher}")
 
+    # -- durable persistence -------------------------------------------------
+    def test_persist_mirrors_adapter_directory(self):
+        self.kernel.prepare_paths()
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        mirror = Path(tmp.name) / "mirror"
+        os.environ[self.kernel.MIRROR_DIR_ENV] = str(mirror)
+        self.kernel._DURABLE.clear()
+        adapter = self.kernel.OUT / "ash-prime-adapter"
+        adapter.mkdir(parents=True, exist_ok=True)
+        (adapter / "adapter_model.safetensors").write_bytes(b"weights" * 512)
+        (adapter / "adapter_config.json").write_text('{"r": 16}', encoding="utf-8")
+
+        record = self.kernel.persist("ash-prime-adapter", adapter)
+
+        copied = mirror / self.kernel.RUN_ID / "ash-prime-adapter"
+        self.assertTrue(copied.is_dir(), "adapter must be mirrored off the VM")
+        for name in ("adapter_model.safetensors", "adapter_config.json"):
+            self.assertEqual((adapter / name).read_bytes(), (copied / name).read_bytes())
+        self.assertEqual(record["artifacts"]["ash-prime-adapter"]["files"], 2)
+        log_path = mirror / self.kernel.RUN_ID / "persist-log.jsonl"
+        self.assertTrue(log_path.is_file(), "persist log must sit next to the mirror")
+        last = json.loads(log_path.read_text(encoding="utf-8").splitlines()[-1])
+        self.assertEqual(last["label"], "ash-prime-adapter")
+
+    def test_persist_verifies_file_checksum(self):
+        self.kernel.prepare_paths()
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        mirror = Path(tmp.name) / "mirror2"
+        os.environ[self.kernel.MIRROR_DIR_ENV] = str(mirror)
+        self.kernel._DURABLE.clear()
+        report = self.kernel.OUT / "ash-prime-evaluation.json"
+        report.write_text('{"cases": 3}', encoding="utf-8")
+
+        record = self.kernel.persist("ash-prime-evaluation", report)
+
+        copied = mirror / self.kernel.RUN_ID / "ash-prime-evaluation.json"
+        self.assertEqual(copied.read_text(encoding="utf-8"), '{"cases": 3}')
+        expected = hashlib.sha256(report.read_bytes()).hexdigest()
+        self.assertEqual(record["artifacts"]["ash-prime-evaluation.json"]["sha256"], expected)
+
+    def test_persist_reports_missing_storage_instead_of_losing_data(self):
+        self.kernel.prepare_paths()
+        os.environ.pop(self.kernel.MIRROR_DIR_ENV, None)
+        self.kernel._DURABLE.clear()
+        artifact = self.kernel.OUT / "fyr-prima-training-manifest.json"
+        artifact.write_text("{}", encoding="utf-8")
+        original = self.kernel._offsite_copy
+        self.kernel._offsite_copy = lambda path: None
+        try:
+            record = self.kernel.persist("fyr-prima-manifest", artifact)
+        finally:
+            self.kernel._offsite_copy = original
+            self.kernel._DURABLE.clear()
+        self.assertIsNone(record["mirror"], "no durable root must be reported, not silently ignored")
+        self.assertEqual(record["artifacts"]["fyr-prima-training-manifest.json"]["files"], 1)
+
+    def test_persist_callback_saves_adapter_mid_training(self):
+        self.kernel.prepare_paths()
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        mirror = Path(tmp.name) / "mirror3"
+        os.environ[self.kernel.MIRROR_DIR_ENV] = str(mirror)
+        self.kernel._DURABLE.clear()
+        adapter = self.kernel.OUT / "fyr-prima-adapter"
+
+        class _Model:
+            def __init__(self):
+                self.saves = 0
+
+            def save_pretrained(self, target):
+                self.saves += 1
+                Path(target).mkdir(parents=True, exist_ok=True)
+                (Path(target) / "adapter_model.safetensors").write_bytes(b"step" * 128)
+
+        state = types.SimpleNamespace(global_step=0)
+        model = _Model()
+        callback = self.kernel.PersistCallback("fyr-prima", adapter, every=4)
+        for step in range(1, 10):
+            state.global_step = step
+            callback.on_step_end(None, state, None, model=model)
+        self.assertEqual(model.saves, 2, "the adapter is saved every 4 steps")
+        mirrored = mirror / self.kernel.RUN_ID / "fyr-prima-adapter-step8" / "adapter_model.safetensors"
+        self.assertTrue(mirrored.is_file(), "mid-training adapter must reach durable storage")
+
+    def test_package_run_zips_every_output(self):
+        self.kernel.prepare_paths()
+        (self.kernel.OUT / "run-summary.json").write_text("{}", encoding="utf-8")
+        archive = self.kernel.package_run()
+        try:
+            with zipfile.ZipFile(archive) as bundle:
+                self.assertIn("out/run-summary.json", bundle.namelist())
+        finally:
+            archive.unlink()
+
 
 if __name__ == "__main__":
-        unittest.main()
+    unittest.main()

@@ -30,8 +30,10 @@ import json
 import math
 import os
 import re
+import shutil
 import subprocess
 import time
+import zipfile
 import traceback
 from pathlib import Path
 
@@ -44,6 +46,7 @@ from transformers import (
     AutoTokenizer,
     BitsAndBytesConfig,
     Trainer,
+    TrainerCallback,
     TrainingArguments,
 )
 
@@ -166,6 +169,173 @@ REQUIRED_CORPUS_FIELDS = (
 
 # Filled during corpus generation: teacher name -> immutable Hub revision.
 REVISIONS: dict = {}
+
+# Durable persistence. A free Colab or Kaggle VM is recycled without notice, and
+# everything under /content or /kaggle/working dies with it. Every artifact is
+# mirrored the moment it is written, so a recycled VM costs a rerun of one stage
+# and never the adapters themselves.
+RUN_ID = os.environ.get("ASH_PRIME_RUN_ID") or time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+MIRROR_DIR_ENV = "ASH_PRIME_MIRROR_DIR"
+OFFSITE_DIR = WORK / "offsite"
+_DURABLE: list = []  # one-element cache: [Path | None]
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _tree_stats(path: Path) -> tuple:
+    if path.is_file():
+        return 1, path.stat().st_size
+    files = [item for item in path.rglob("*") if item.is_file()]
+    return len(files), sum(item.stat().st_size for item in files)
+
+
+def _mount_drive() -> Path | None:
+    """Mount Google Drive and return MyDrive, or None when unavailable."""
+    drive = Path("/content/drive")
+    try:
+        if not (drive / "MyDrive").is_dir():
+            from google.colab import drive as colab_drive  # type: ignore
+
+            log("mounting Google Drive for durable artifact storage")
+            colab_drive.mount(str(drive), force_remount=False, timeout_ms=180000)
+    except Exception as exc:  # noqa: BLE001 - no Drive is a supported mode
+        log(f"drive mount unavailable: {type(exc).__name__}: {exc}")
+        return None
+    return drive / "MyDrive" if (drive / "MyDrive").is_dir() else None
+
+
+def durable_root() -> Path | None:
+    """Persistent mirror root, or None when this host has no durable storage."""
+    if _DURABLE:
+        return _DURABLE[0]
+    root = None
+    override = os.environ.get(MIRROR_DIR_ENV)
+    if override:
+        root = Path(override)
+    if root is None:
+        my_drive = _mount_drive()
+        if my_drive is not None:
+            root = my_drive / "ash-prime-runs"
+    if root is None and Path("/kaggle/working").is_dir():
+        root = Path("/kaggle/working") / "persisted"
+    if root is not None:
+        try:
+            (root / RUN_ID).mkdir(parents=True, exist_ok=True)
+        except Exception as exc:  # noqa: BLE001
+            log(f"mirror root unusable: {type(exc).__name__}: {exc}")
+            root = None
+    _DURABLE.append(root)
+    log(f"durable mirror: {root if root is not None else 'NONE'}")
+    return root
+
+
+def _offsite_copy(path: Path) -> None:
+    """Upload an artifact to an anonymous host as a last-resort durable copy."""
+    archive = OFFSITE_DIR / f"{path.stem}-{RUN_ID}.tar.gz"
+    try:
+        OFFSITE_DIR.mkdir(parents=True, exist_ok=True)
+        shutil.make_archive(str(archive)[: -len(".tar.gz")], "gztar", root_dir=str(path.parent), base_dir=path.name)
+        completed = subprocess.run(
+            ["curl", "-s", "-m", "600", "-F", f"file=@{archive}", "https://tmpfiles.org/api/v1/upload"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        payload = json.loads(completed.stdout or "{}")
+        url = (payload.get("data") or {}).get("url")
+        if url:
+            log(f"OFFSITE {path.name}: {url}")
+            (OFFSITE_DIR / "urls.txt").open("a", encoding="utf-8").write(f"{path.name} {url}\n")
+        else:
+            log(f"offsite upload of {path.name} failed: {completed.stdout[:200]}")
+    except Exception:  # noqa: BLE001 - offsite copy is best effort
+        traceback.print_exc()
+
+
+def persist(label: str, *paths: Path) -> dict:
+    """Copy artifacts to durable storage now, then verify the copy."""
+    root = durable_root()
+    record = {"run_id": RUN_ID, "label": label, "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "artifacts": {}}
+    for path in paths:
+        files, size = _tree_stats(path)
+        record["artifacts"][path.name] = {
+            "files": files,
+            "bytes": size,
+            "sha256": _sha256_file(path) if path.is_file() else None,
+        }
+        if root is None:
+            _offsite_copy(path)
+            continue
+        target = root / RUN_ID / path.name
+        if target.exists():
+            if target.is_dir():
+                shutil.rmtree(target)
+            else:
+                target.unlink()
+        if path.is_file():
+            shutil.copy2(path, target)
+        else:
+            shutil.copytree(path, target)
+        got_files, got_bytes = _tree_stats(target)
+        if got_files != files or got_bytes != size:
+            raise RuntimeError(f"mirror of {path.name} incomplete: {got_files}/{files} files, {got_bytes}/{size} bytes")
+        if path.is_file() and _sha256_file(target) != record["artifacts"][path.name]["sha256"]:
+            raise RuntimeError(f"mirror of {path.name} failed its checksum")
+        log(f"persisted {label} -> {target}")
+    record["mirror"] = str(root) if root is not None else None
+    line = json.dumps(record) + "\n"
+    targets = [WORK / "persist-log.jsonl"]
+    if root is not None:
+        targets.append(root / RUN_ID / "persist-log.jsonl")
+    for log_path in targets:
+        try:
+            with log_path.open("a", encoding="utf-8") as handle:
+                handle.write(line)
+        except Exception:  # noqa: BLE001 - logging must never kill a run
+            pass
+    return record
+
+
+class PersistCallback(TrainerCallback):
+    """Mirror the LoRA adapter to durable storage during training, not only at the end."""
+
+    def __init__(self, name: str, adapter_dir: Path, every: int = 25):
+        self.name = name
+        self.adapter_dir = adapter_dir
+        self.every = max(1, every)
+        self.last_step = 0
+
+    def on_step_end(self, args, state, control, model=None, **kwargs):  # noqa: ANN001, ARG002
+        if model is None or state.global_step - self.last_step < self.every:
+            return control
+        self.last_step = state.global_step
+        try:
+            snapshot = self.adapter_dir.parent / f"{self.adapter_dir.name}-step{state.global_step}"
+            snapshot.mkdir(parents=True, exist_ok=True)
+            model.save_pretrained(str(snapshot))
+            persist(snapshot.name, snapshot)
+            for stale in sorted(self.adapter_dir.parent.glob(f"{self.adapter_dir.name}-step*"))[:-2]:
+                shutil.rmtree(stale, ignore_errors=True)
+        except Exception:  # noqa: BLE001 - checkpoint mirroring is best effort
+            traceback.print_exc()
+        return control
+
+
+def package_run() -> Path:
+    """Zip the whole output tree so it can be downloaded or mirrored as one file."""
+    archive = WORK / "ash-prime-out.zip"
+    with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as bundle:
+        for item in sorted(OUT.rglob("*")):
+            if item.is_file() and item != archive:
+                bundle.write(item, item.relative_to(WORK))
+    log(f"packaged {archive} ({archive.stat().st_size} bytes)")
+    return archive
 
 
 def log(message: str) -> None:
@@ -535,12 +705,20 @@ def train_student(name: str, spec: dict, rows: list) -> dict:
         optim="paged_adamw_8bit",
         remove_unused_columns=False,
     )
-    trainer = Trainer(model=model, args=arguments, train_dataset=Dataset.from_list(rows), data_collator=ChatCollator(tokenizer))
+    persist_callback = PersistCallback(name, adapter_dir, every=max(5, total_steps // 4))
+    trainer = Trainer(
+        model=model,
+        args=arguments,
+        train_dataset=Dataset.from_list(rows),
+        data_collator=ChatCollator(tokenizer),
+        callbacks=[persist_callback],
+    )
     started = time.time()
     result = trainer.train()
     elapsed = round(time.time() - started, 1)
     trainer.save_model(str(adapter_dir))
     tokenizer.save_pretrained(str(adapter_dir))
+    persist(f"{name}-adapter", adapter_dir)
 
     manifest = {
         "student": name,
@@ -556,7 +734,9 @@ def train_student(name: str, spec: dict, rows: list) -> dict:
         "lora": {"r": 16, "alpha": 32, "dropout": 0.05},
         "dataset_sha256": sha(dataset_path.read_text(encoding="utf-8")),
     }
-    (OUT / f"{name}-training-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    manifest_path = OUT / f"{name}-training-manifest.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    persist(f"{name}-manifest", manifest_path, OUT / f"{name}-sft.jsonl")
     log(f"trained {name}: loss {result.training_loss:.4f} in {elapsed}s")
 
     del model, trainer
@@ -604,7 +784,9 @@ def evaluate_student(name: str, spec: dict) -> dict:
         "human_review_status": "pending",
         "note": "Deterministic checks only. Promotion requires blinded human grading per release policy.",
     }
-    (OUT / f"{name}-evaluation.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    report_path = OUT / f"{name}-evaluation.json"
+    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    persist(f"{name}-evaluation", report_path)
     del model, base
     torch.cuda.empty_cache()
     return {"student": name, "cases": len(cases)}
@@ -667,7 +849,14 @@ def main() -> None:
         "graded_corpus_responses": len(graded_rows),
         "curriculum_tasks": len(tasks),
     }
-    (OUT / "run-summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+    summary_path = OUT / "run-summary.json"
+    summary_path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+    archive = package_run()
+    persist("run-summary", summary_path)
+    persist("ash-prime-out", archive)
+    root = durable_root()
+    where = str(root / RUN_ID) if root is not None else "LOCAL ONLY - see the offsite links above"
+    log(f"artifacts: {where}")
     log("done")
 
 
