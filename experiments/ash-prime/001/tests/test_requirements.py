@@ -14,7 +14,7 @@ class RequirementsTests(unittest.TestCase):
   self.assertEqual(lines,["-r requirements.txt","peft==0.13.0"])
  def test_ci_persists_hashed_dependency_inventory(self):
   workflow=(REPOSITORY_ROOT/".github/workflows/ash-prime-experiment-tests.yml").read_text(encoding="utf-8")
-  self.assertIn("actions/upload-artifact@615b319bd27bb32c3d64dca6b6ed6974d5fbe653",workflow)
+  self.assertIn("actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",workflow)
   self.assertIn("evidence/dependency-inventory.txt",workflow)
   self.assertIn("evidence/dependency-inventory.sha256",workflow)
   self.assertIn("if-no-files-found: error",workflow)
