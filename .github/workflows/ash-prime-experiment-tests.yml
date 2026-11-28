@@ -10,6 +10,9 @@ on:
     paths:
       - "experiments/ash-prime/001/**"
       - ".github/workflows/ash-prime-experiment-tests.yml"
+permissions:
+  contents: read
+
 jobs:
   dependency-compatibility:
     runs-on: ubuntu-26.04
