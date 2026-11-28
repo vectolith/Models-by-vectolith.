@@ -34,6 +34,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import threading
 import time
 import zipfile
 import traceback
@@ -260,6 +261,69 @@ def _offsite_copy(path: Path) -> None:
         traceback.print_exc()
 
 
+PUSH_LOCK = threading.Lock()
+
+
+def _dataset_ref(label: str) -> str:
+    """Private dataset that will hold this run's artifacts."""
+    slug = re.sub(r"[^a-z0-9-]+", "-", label.lower()).strip("-")
+    owner = os.environ.get("KAGGLE_USERNAME") or "vectolith"
+    return f"{owner}/{RUN_ID.lower()}-{slug}"
+
+
+def _external_push(label: str, paths: tuple[Path, ...]) -> None:
+    """Push artifacts to a private Kaggle dataset, off the training thread.
+
+    A crash loses /kaggle/working, so a mirror that only lives there is not
+    durable. Dataset versions outlive the session, so every persist or snapshot
+    gets one. The network work runs in a daemon thread so training never waits.
+    """
+    if not paths or not os.environ.get("KAGGLE_KERNEL_RUN_TYPE"):
+        return
+    if shutil.which("kaggle") is None:
+        log("no kaggle CLI on PATH, skipping dataset push")
+        return
+    staging = WORK / "push" / re.sub(r"[^a-z0-9-]+", "-", label.lower())
+
+    def push() -> None:
+        with PUSH_LOCK:
+            try:
+                if staging.exists():
+                    shutil.rmtree(staging, ignore_errors=True)
+                staging.mkdir(parents=True, exist_ok=True)
+                for path in paths:
+                    if not path.exists():
+                        continue
+                    dest = staging / path.name
+                    if path.is_dir():
+                        shutil.copytree(path, dest)
+                    else:
+                        shutil.copy2(path, dest)
+                ref = _dataset_ref(label)
+                title = f"{RUN_ID} {label}"[:50]
+                (staging / "dataset-metadata.json").write_text(
+                    json.dumps({"title": title, "id": ref, "licenses": [{"name": "CC0-1.0"}]}),
+                    encoding="utf-8",
+                )
+                created = subprocess.run(
+                    ["kaggle", "datasets", "create", "-p", str(staging), "--dir-mode", "zip"],
+                    capture_output=True, text=True, check=False,
+                )
+                if created.returncode != 0:
+                    pushed = subprocess.run(
+                        ["kaggle", "datasets", "version", "-p", str(staging), "-m", f"{label} {RUN_ID}"],
+                        capture_output=True, text=True, check=False,
+                    )
+                    if pushed.returncode != 0:
+                        log(f"dataset push of {label} failed: {(pushed.stderr or pushed.stdout)[:200]}")
+                        return
+                log(f"OFFSITE dataset {label} -> {ref}")
+            except Exception:  # noqa: BLE001 - pushing must never kill a run
+                traceback.print_exc()
+
+        threading.Thread(target=push, name=f"push-{label}", daemon=True).start()
+
+
 def _persist_locked(label: str, *paths: Path) -> dict:
     """Copy artifacts to durable storage now, then verify the copy."""
     root = durable_root()
@@ -301,6 +365,7 @@ def _persist_locked(label: str, *paths: Path) -> dict:
                 handle.write(line)
         except Exception:  # noqa: BLE001 - logging must never kill a run
             pass
+    _external_push(label, paths)
     return record
 
 

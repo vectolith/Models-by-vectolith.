@@ -18,6 +18,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import threading
 import types
 import unittest
 import zipfile
@@ -484,6 +485,46 @@ class GradedCorpusTests(unittest.TestCase):
             self.kernel._DURABLE.clear()
         self.assertIsNone(record["mirror"], "no durable root must be reported, not silently ignored")
         self.assertEqual(record["artifacts"]["fyr-prima-training-manifest.json"]["files"], 1)
+
+    def test_every_persist_also_pushes_a_private_dataset_copy(self):
+        """A crash loses the working dir, so each persist must reach durable storage."""
+        self.kernel.prepare_paths()
+        os.environ.pop(self.kernel.MIRROR_DIR_ENV, None)
+        self.kernel._DURABLE.clear()
+        artifact = self.kernel.OUT / "ash-prime-training-manifest.json"
+        artifact.write_text("{}", encoding="utf-8")
+        original_copy = self.kernel._offsite_copy
+        original_push = self.kernel._external_push
+        pushed = []
+        self.kernel._offsite_copy = lambda path: None
+        self.kernel._external_push = lambda label, paths: pushed.append(label)
+        try:
+            self.kernel.persist("ash-prime-manifest", artifact)
+        finally:
+            self.kernel._offsite_copy = original_copy
+            self.kernel._external_push = original_push
+            self.kernel._DURABLE.clear()
+        self.assertEqual(pushed, ["ash-prime-manifest"], "persist must request a durable dataset copy")
+
+    def test_push_is_inert_outside_a_kaggle_kernel(self):
+        """Locally there is no session to lose, so the push must not run at all."""
+        saved = os.environ.pop("KAGGLE_KERNEL_RUN_TYPE", None)
+        original = subprocess.run
+        calls = []
+
+        def spy(*args, **kwargs):
+            calls.append(args)
+            raise AssertionError("push must not shell out outside Kaggle")
+
+        subprocess.run = spy
+        try:
+            self.kernel._external_push("ash-prime-adapter", (self.kernel.OUT,))
+            threading.Event().wait(0.2)
+        finally:
+            subprocess.run = original
+            if saved is not None:
+                os.environ["KAGGLE_KERNEL_RUN_TYPE"] = saved
+        self.assertEqual(calls, [], "no push attempt should happen without a kernel session")
 
     def test_persist_callback_saves_adapter_mid_training(self):
         self.kernel.prepare_paths()
