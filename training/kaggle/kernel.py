@@ -874,8 +874,16 @@ def main() -> None:
             rows = build_dataset(corpus, spec["panel"], spec["seed"])
         log(f"{name}: {len(rows)} training records from panel {spec['panel']}")
         if len(rows) < 10:
-            raise RuntimeError(f"{name} has too few accepted records to train on: {len(rows)}")
-        manifests[name] = train_student(name, spec, rows)
+            log(f"{name}: only {len(rows)} accepted records, skipping this student")
+            manifests[name] = {"student": name, "status": "insufficient_records", "records": len(rows)}
+            continue
+        try:
+            manifests[name] = train_student(name, spec, rows)
+        except Exception as error:  # one student failing must not kill the other
+            traceback.print_exc()
+            log(f"{name}: training failed with {type(error).__name__}: {error}")
+            manifests[name] = {"student": name, "status": "failed", "error": f"{type(error).__name__}: {error}"}
+            torch.cuda.empty_cache()
 
     evaluations = {}
     for name, spec in students.items():
