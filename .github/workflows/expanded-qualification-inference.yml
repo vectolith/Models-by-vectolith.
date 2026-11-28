@@ -23,8 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.11"
       - name: Install pinned CPU inference dependencies
@@ -40,7 +40,7 @@ jobs:
           python evaluation/run_real_candidate_eval.py --repo ibm-granite/granite-3.1-3b-a800m-instruct --revision a02780686e08a03fe0d2679a293b5c74a90efa89 --family "IBM Granite" --candidate-id granite-3.1-3b-a800m --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/granite-3.1-3b-a800m-ash_prime.json 2>&1 | tee artifacts/evaluations/granite-3.1-3b-a800m-ash_prime.log
       - name: Preserve raw evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: prime-teacher-granite-3.1-3b-a800m
           path: |
@@ -58,8 +58,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.11"
       - name: Install pinned CPU inference dependencies
@@ -75,7 +75,7 @@ jobs:
           python evaluation/run_real_candidate_eval.py --repo ibm-granite/granite-4.2-3b --revision 4e9c275e232f10211ec88644d106a1f6a1b60e06 --family "IBM Granite" --candidate-id granite-4.2-3b --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/granite-4.2-3b-ash_prime.json 2>&1 | tee artifacts/evaluations/granite-4.2-3b-ash_prime.log
       - name: Preserve raw evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: prime-teacher-granite-4.2-3b
           path: |
@@ -93,8 +93,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.11"
       - name: Install pinned CPU inference dependencies
@@ -110,7 +110,7 @@ jobs:
           python evaluation/run_real_candidate_eval.py --repo openbmb/MiniCPM5-2B --revision 42433e90dad95123ab87729fd7011e7110629556 --family "OpenBMB MiniCPM" --candidate-id minicpm5-2b --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/minicpm5-2b-ash_prime.json 2>&1 | tee artifacts/evaluations/minicpm5-2b-ash_prime.log
       - name: Preserve raw evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: prime-teacher-minicpm5-2b
           path: |
@@ -128,8 +128,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.11"
       - name: Install pinned CPU inference stack
@@ -156,7 +156,7 @@ jobs:
           python evaluation/run_real_candidate_eval.py --repo HuggingFaceTB/SmolLM3-3B --revision "$REVISION" --family "HuggingFaceTB SmolLM3" --candidate-id smollm3-3b --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/smollm3-3b-ash_prime.json 2>&1 | tee artifacts/evaluations/smollm3-3b-ash_prime.log
       - name: Preserve snapshot manifest and raw evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: prime-teacher-smollm3-3b
           path: |
@@ -176,8 +176,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.11"
       - name: Install pinned CPU inference stack
@@ -195,7 +195,7 @@ jobs:
           python evaluation/run_real_candidate_eval.py --repo LiquidAI/LFM2.5-2.6B --revision "$REVISION" --family "LiquidAI LFM2.5" --candidate-id lfm2.5-2.6b --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/lfm2.5-2.6b-ash_prime.json 2>&1 | tee artifacts/evaluations/lfm2.5-2.6b-ash_prime.log
       - name: Preserve snapshot manifest and raw evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: prime-teacher-lfm2.5-2.6b
           path: |
@@ -214,8 +214,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.11"
       - name: Install pinned CPU inference stack
@@ -233,7 +233,7 @@ jobs:
           python evaluation/run_real_candidate_eval.py --repo microsoft/Phi-4-mini-instruct --revision "$REVISION" --family "Microsoft Phi-4" --candidate-id phi-4-mini-instruct --suite evaluation/fixtures/prime_benchmark_v1.jsonl --suite evaluation/fixtures/prime_qualification_v2.jsonl --suite evaluation/fixtures/prime_qualification_v3.jsonl --suite evaluation/fixtures/prime_qualification_v4.jsonl --dtype bfloat16 --max-new-tokens 256 --cache-dir "${{ runner.temp }}/hf-cache" --output artifacts/evaluations/phi-4-mini-instruct-ash_prime.json 2>&1 | tee artifacts/evaluations/phi-4-mini-instruct-ash_prime.log
       - name: Preserve snapshot manifest and raw evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: prime-teacher-phi-4-mini-instruct
           path: |
