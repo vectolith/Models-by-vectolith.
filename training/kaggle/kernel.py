@@ -32,6 +32,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import time
 import zipfile
 import traceback
@@ -340,6 +341,62 @@ def package_run() -> Path:
 
 def log(message: str) -> None:
     print(f"[{time.strftime('%H:%M:%S')}] {message}", flush=True)
+
+
+def ensure_bitsandbytes(min_version: str = "0.46.1") -> str:
+    """Guarantee a bitsandbytes new enough for transformers 4-bit loading.
+
+    The Kaggle image ships a build older than the 0.46.1 floor transformers
+    enforces, so upgrade it and reload in place instead of trusting the
+    notebook's pip cell (which runs against a different site-packages).
+    """
+    def _version(mod) -> tuple:
+        parts = []
+        for piece in mod.__version__.split(".")[:3]:
+            digits = re.sub(r"\D", "", piece)
+            parts.append(int(digits) if digits else 0)
+        return tuple(parts)
+
+    want = tuple(int(p) for p in min_version.split("."))
+    try:
+        import bitsandbytes as _bnb
+
+        if _version(_bnb) >= want:
+            log(f"bitsandbytes {_bnb.__version__} ok")
+            return _bnb.__version__
+    except Exception:
+        pass
+
+    log(f"upgrading bitsandbytes to >={min_version}")
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "-q",
+            "--no-cache-dir",
+            "--upgrade",
+            f"bitsandbytes>={min_version}",
+        ],
+        check=False,
+    )
+    import importlib
+    import site
+
+    for extra in list(site.getsitepackages()) + [site.getusersitepackages()]:
+        if extra and extra not in sys.path and os.path.isdir(extra):
+            sys.path.insert(0, extra)
+    importlib.invalidate_caches()
+    import bitsandbytes as bnb
+
+    importlib.reload(bnb)
+    if _version(bnb) < want:
+        raise RuntimeError(
+            f"bitsandbytes {bnb.__version__} still below {min_version} after upgrade"
+        )
+    log(f"bitsandbytes {bnb.__version__} installed")
+    return bnb.__version__
 
 
 def sha(text: str) -> str:
@@ -794,6 +851,7 @@ def evaluate_student(name: str, spec: dict) -> dict:
 
 def main() -> None:
     started = time.time()
+    ensure_bitsandbytes()
     prepare_paths()
     fetch_repo()
     graded_rows = load_graded_corpus()
