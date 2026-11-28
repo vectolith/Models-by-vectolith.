@@ -189,7 +189,7 @@ jobs:
             --requests /tmp/run42/all/requests/batch-001.jsonl \
             --decisions /tmp/decisions \
             --out-file /tmp/all-decisions.jsonl \
-            --shard-count "${{ github.event.inputs.shard_count || '30' }}" \
+            --shard-count "30" \
             --report /tmp/run42/all/decision-rebind-report.json
           cat /tmp/run42/all/decision-rebind-report.json
           wc -l /tmp/all-decisions.jsonl
