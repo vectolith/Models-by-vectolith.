@@ -22,6 +22,9 @@ on:
       - "scripts/export_ash_prime_personality_train_data.py"
       - "scripts/tests/**"
 
+permissions:
+  contents: read
+
 jobs:
   validate:
     runs-on: ubuntu-latest
