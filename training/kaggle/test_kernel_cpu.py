@@ -523,5 +523,63 @@ class GradedCorpusTests(unittest.TestCase):
             archive.unlink()
 
 
+class ResumeTests(unittest.TestCase):
+    """A re-pushed kernel must pick up adapters a dead run already produced."""
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.kernel = load_kernel(Path(self.dir.name).as_posix() + "/work")
+        self.inputs = Path(self.dir.name) / "input"
+        self.inputs.mkdir()
+        os.environ["ASH_INPUT_ROOT"] = str(self.inputs)
+
+    def tearDown(self):
+        os.environ.pop("ASH_INPUT_ROOT", None)
+        self.dir.cleanup()
+
+    def _mount(self, name: str) -> Path:
+        adapter = self.inputs / "ash-prime-fyr-prima-adapters" / name
+        adapter.mkdir(parents=True)
+        (adapter / "adapter_config.json").write_text('{"r": 16}', encoding="utf-8")
+        (adapter / "adapter_model.safetensors").write_bytes(b"w" * 256)
+        return adapter
+
+    def test_finds_a_mounted_adapter(self):
+        mounted = self._mount("ash-prime-adapter")
+        found = self.kernel.resume_source("ash-prime")
+        self.assertIsNotNone(found, "a mounted adapter must be detected")
+        self.assertEqual(found.resolve(), mounted.resolve())
+        self.assertIsNone(self.kernel.resume_source("fyr-prima"), "only the mounted student resumes")
+
+    def test_ignores_a_folder_without_config(self):
+        broken = self.inputs / "ash-prime-fyr-prima-adapters" / "ash-prime-adapter"
+        broken.mkdir(parents=True)
+        (broken / "adapter_model.safetensors").write_bytes(b"w" * 16)
+        self.assertIsNone(self.kernel.resume_source("ash-prime"), "an unfinished adapter is not resumable")
+
+    def test_returns_none_without_a_mount(self):
+        os.environ["ASH_INPUT_ROOT"] = str(Path(self.dir.name) / "missing")
+        self.assertIsNone(self.kernel.resume_source("ash-prime"))
+
+    def test_latest_checkpoint_picks_the_highest_step(self):
+        train_dir = Path(self.dir.name) / "train-ash-prime"
+        for step in (10, 40, 20):
+            (train_dir / f"checkpoint-{step}").mkdir(parents=True)
+        (train_dir / "checkpoint-not-a-step").mkdir()
+        chosen = self.kernel.latest_checkpoint(train_dir)
+        self.assertEqual(chosen.name, "checkpoint-40")
+
+    def test_latest_checkpoint_is_none_when_empty(self):
+        train_dir = Path(self.dir.name) / "train-ash-prime"
+        train_dir.mkdir()
+        self.assertIsNone(self.kernel.latest_checkpoint(train_dir))
+
+    def test_training_arguments_checkpoint_instead_of_saving_nothing(self):
+        source = KERNEL.read_text(encoding="utf-8")
+        self.assertNotIn('save_strategy="no"', source, "training must not run without checkpoints")
+        self.assertIn('save_strategy="steps"', source)
+        self.assertIn("save_total_limit", source)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -31,6 +31,7 @@ import math
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -711,12 +712,64 @@ class ChatCollator:
         return batch
 
 
+def resume_source(name: str) -> Path | None:
+    """A previously trained adapter for this student, exposed under /kaggle/input.
+
+    Mount the adapters dataset as a source on a re-pushed kernel and a run that
+    died after training finished resumes instead of paying for the GPUs twice.
+    """
+    base = Path(os.environ.get("ASH_INPUT_ROOT", "/kaggle/input"))
+    if not base.is_dir():
+        return None
+    try:
+        for candidate in sorted(base.rglob(f"{name}-adapter")):
+            if (candidate / "adapter_config.json").exists():
+                return candidate
+    except Exception:  # noqa: BLE001 - a bad mount must never kill a run
+        traceback.print_exc()
+    return None
+
+
+def latest_checkpoint(root: Path) -> Path | None:
+    """Newest Trainer checkpoint-<step> directory, for same-session resumes."""
+    best = None
+    best_step = -1
+    try:
+        for item in root.glob("checkpoint-*"):
+            suffix = item.name.split("-")[-1]
+            if suffix.isdigit() and int(suffix) > best_step:
+                best, best_step = item, int(suffix)
+    except Exception:  # noqa: BLE001
+        return None
+    return best
+
+
 def train_student(name: str, spec: dict, rows: list) -> dict:
     from datasets import Dataset
     from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
     dataset_path = OUT / f"{name}-sft.jsonl"
     dataset_path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows), encoding="utf-8")
+
+    adapter_dir = OUT / f"{name}-adapter"
+    prior = resume_source(name)
+    if prior is not None:
+        log(f"{name}: adapter already exists at {prior}, skipping training")
+        if prior.resolve() != adapter_dir.resolve():
+            if adapter_dir.exists():
+                shutil.rmtree(adapter_dir)
+            shutil.copytree(prior, adapter_dir)
+        persist(f"{name}-adapter", adapter_dir)
+        carried = prior.parent / f"{name}-training-manifest.json"
+        if carried.exists():
+            data = json.loads(carried.read_text(encoding="utf-8"))
+            data["reused_from"] = str(prior)
+            data["dataset_sha256_local"] = sha(dataset_path.read_text(encoding="utf-8"))
+            manifest_path = OUT / f"{name}-training-manifest.json"
+            manifest_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+            persist(f"{name}-manifest", manifest_path)
+            return data
+        return {"student": name, "status": "reused", "reused_from": str(prior), "records": len(rows)}
 
     tokenizer = AutoTokenizer.from_pretrained(spec["model_id"])
     if tokenizer.pad_token is None:
@@ -742,12 +795,13 @@ def train_student(name: str, spec: dict, rows: list) -> dict:
     model = get_peft_model(model, lora)
     model.print_trainable_parameters()
 
-    adapter_dir = OUT / f"{name}-adapter"
     steps_per_epoch = max(1, math.ceil(len(rows) / (2 * 4)))
     total_steps = max(1, steps_per_epoch * math.ceil(spec["epochs"]))
     warmup_steps = max(1, int(0.03 * total_steps))
+    checkpoint_every = max(10, total_steps // 4)
+    train_dir = WORK / f"train-{name}"
     arguments = TrainingArguments(
-        output_dir=str(WORK / f"train-{name}"),
+        output_dir=str(train_dir),
         per_device_train_batch_size=2,
         gradient_accumulation_steps=4,
         num_train_epochs=spec["epochs"],
@@ -755,7 +809,9 @@ def train_student(name: str, spec: dict, rows: list) -> dict:
         lr_scheduler_type="cosine",
         warmup_steps=warmup_steps,
         logging_steps=5,
-        save_strategy="no",
+        save_strategy="steps",
+        save_steps=checkpoint_every,
+        save_total_limit=2,
         report_to=[],
         seed=spec["seed"],
         fp16=True,
@@ -770,8 +826,46 @@ def train_student(name: str, spec: dict, rows: list) -> dict:
         data_collator=ChatCollator(tokenizer),
         callbacks=[persist_callback],
     )
+    resume_from = latest_checkpoint(train_dir)
+    if resume_from is not None:
+        log(f"{name}: resuming from {resume_from.name}")
+
+    def _emergency(signum, _frame):  # noqa: ANN001
+        log(f"{name}: caught signal {signum}, saving the adapter before exit")
+        try:
+            trainer.save_model(str(adapter_dir))
+            tokenizer.save_pretrained(str(adapter_dir))
+            persist(f"{name}-adapter-emergency", adapter_dir)
+            package_run()
+        except Exception:  # noqa: BLE001 - never mask the shutdown
+            traceback.print_exc()
+        os._exit(143)
+
+    previous_handlers = {}
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        try:
+            previous_handlers[sig] = signal.signal(sig, _emergency)
+        except Exception:  # noqa: BLE001 - not the main thread
+            pass
+
     started = time.time()
-    result = trainer.train()
+    try:
+        result = trainer.train(resume_from_checkpoint=str(resume_from) if resume_from is not None else None)
+    except Exception as error:
+        log(f"{name}: training raised {type(error).__name__}: {error}; keeping partial adapter")
+        try:
+            trainer.save_model(str(adapter_dir))
+            tokenizer.save_pretrained(str(adapter_dir))
+            persist(f"{name}-adapter-partial", adapter_dir)
+        except Exception:  # noqa: BLE001
+            traceback.print_exc()
+        raise
+    finally:
+        for sig, handler in previous_handlers.items():
+            try:
+                signal.signal(sig, handler)
+            except Exception:  # noqa: BLE001
+                pass
     elapsed = round(time.time() - started, 1)
     trainer.save_model(str(adapter_dir))
     tokenizer.save_pretrained(str(adapter_dir))
